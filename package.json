@@ -1,0 +1,20 @@
+{ "name": "channel"
+, "description": "Pipeline constructor for Node.js."
+, "author": "Alan Gutierrez"
+, "version": "0.0.0"
+, "keywords": [ "shell", "events", "streams" ]
+, "licenses": [
+  { "type": "MIT"
+  , "url": "http://github.com/bigeasy/channel/raw/master/LICENSE"
+  }]
+, "homepage": "https://github.com/bigeasy/channel"
+, "repository":
+  { "type": "git"
+  , "url": "http://github.com/bigeasy/channel.git"
+  }
+, "scripts" : { "test": "proof t/*/*.t" }
+, "devDependencies":
+  { "proof": "0.0.15"
+  }
+, "dependencies": { "through": "~0.1" }
+}

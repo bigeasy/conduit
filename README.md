@@ -23,5 +23,7 @@ Changes for each release.
 
 ### Version 0.0.0
 
+Released: Mon Jul 23 10:54:45 UTC 2012
+
  * Build on Travis CI. #4.
  * Create pipeline. #2.

@@ -1,6 +1,6 @@
-# Channel
+# Channel [![Build Status](https://secure.travis-ci.org/bigeasy/channel.png?branch=master)](http://travis-ci.org/bigeasy/channel)
 
-Pipeline constuctor for Node.js.
+Pipeline constructor for Node.js.
 
 # Synopsis
 

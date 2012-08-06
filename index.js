@@ -22,10 +22,7 @@ function extend (to, from) {
 function okay (event, callback) { callback(0) }
 
 
-function Channel (stdin, stderr, vargs) {
-  this._stdin = stdin;
-  this._stderr = stderr;
-  this._vargs = vargs;
+function Channel () {
 }
 
 function Continuable (stdout, stderr) {
@@ -94,9 +91,7 @@ function gatherer (filter) {
   return pipe;
 }
 
-util.inherits(Channel, events.EventEmitter);
-
-Object.defineProperties(Channel.prototype,
+Object.defineProperties({},
 { read: {
     get: function () {
     }
@@ -137,6 +132,14 @@ Object.defineProperties(Channel.prototype,
 });
 
 Channel.prototype =
+{ call: function () {
+    var vargs = slice(arguments), callback = vargs.pop();
+    if (vargs[0] && Array.isArray(vargs[0])) {
+    } else {
+    }
+  }
+};
+var _prototype =
 { toArray: function () {
     var remainder
       , output = []
@@ -181,6 +184,8 @@ Channel.prototype =
   }
 }
 
+util.inherits(Channel, events.EventEmitter);
+
 function parse (arg) {
   var args = [];
   arg.replace(/(?:[^\\'"\s]|\\.|(["'])(?:[^\\\1]|\\.)*\1)+/g, function (arg) {
@@ -193,16 +198,94 @@ function parse (arg) {
 }
 
 // How do we do SIGPIPE?
+var SYMBOL = 
+{ '<': [ '<' ]
+, '>': [ '>' ]
+, '|': [ '|' ]
+};
+
+function symbol (token) {
+  if (Array.isArray(token)) return token[0];
+}
+
+function parse (args) {
+  var node;
+  switch (symbol(args[0])) {
+  default:
+    node = { command: funckify(args.shift()), parameters: [] };
+    while (args.length && !symbol(args[0])) {
+      node.parameters(funckify(args.shift()));
+    }
+    if (symbol(args[0]) == '<') {
+      node.input = funckify(args.splice(0, 2).pop());
+    }
+    if (symbol(args[0]) == '>') {
+      node.output = funckify(args.splice(0, 2).pop());
+    }
+  }
+  return node;
+}
+
+function funckify (string) {
+  var f = [], position = 0, i;
+  string.replace(/\$(\d+)/, function (_, pos) { position = Math.max(position, pos) });
+  for (i = 0; i < position; i++) {
+    f.push('$' + (i + 1));
+  }
+  f.push('return ' + string);
+  return Function.apply(Function, f);
+}
 
 // Standard error is one common pipe, unless a process invocation specifies a
 // redirection.
-function channel () {
-  var stderr = through(function data (data) {
-    this.emit('data', data);
-  }, function end () {
-    this.emit('end');
+function channel (command) {
+  var args = [];
+  command.replace(/(?:[^\\'"\s]|\\.|(["'])(?:[^\\\1]|\\.)*\1)+/g, function (arg) {
+    if (/[\$'"]/.test(arg)) {
+      arg = arg.replace(/\+ \+/g, function () { return ' + "+" + " +" + ' });
+      arg = arg.replace(/\$\d/, function (arg) {
+        return '+ ' + arg + ' +';
+      });
+      arg = arg.replace(/(?:(["'])(?:[^\\\1]|\\.)*\1|\\.)/g, function (arg) {
+        if (arg[0] == '\\') return arg[1];
+        else return arg.slice(1, arg.length - 1).replace(/\\(.)/g, "$1");
+      });
+      arg = '"" + ' + arg + ' + ""';
+      arg = arg.replace(/\+( \+)+/g, '+');
+    } else if (SYMBOL[arg]) {
+      arg = SYMBOL[arg];
+    } else {
+      arg = '"' + arg.replace(/"\\/, '\\$1') + '"';
+    }
+    args.push(arg);
   });
-  return new Channel(null, stderr, slice(arguments, 0));
+  var node = parse(args);
+  return function () {
+    var vargs = arguments;
+
+    var command = node.command.apply(node.command, vargs);
+    var parameters = node.parameters.map(function (parameter) {
+      return parameter.apply(parameter, vargs);
+    });
+
+    var proc = children.spawn(command, parameters);
+
+    if (node.input) {
+      var input = fs.createReadStream(node.input.apply(node.input, vargs));
+      input.pipe(proc.stdin);
+    }
+
+    if (node.output) {
+      var output = fs.createWriteStream(node.output.apply(node.input, vargs));
+      proc.stdout.pipe(output);
+    }
+
+    var channel = new Channel();
+
+    proc.on('exit', function () { channel.emit('exit') });
+
+    return channel;
+  }
 }
 
 module.exports = channel;

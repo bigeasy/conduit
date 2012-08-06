@@ -3,12 +3,13 @@
 require('proof')(1, function (equal, deepEqual, callback) {
   var channel = require('../..'), fs = require('fs'), meow, child;
 
-  meow = channel('cat < $1 > out.txt');
-  child = meow(__filename);
-  
+  meow = channel('node $1 a b c | node $2');
+  child = meow(__dirname + '/../echo.js', __dirname + '/../cat.js');
+
+  var output = [];
+  child.stdout.setEncoding('utf8');
+  child.stdout.on('data', function (data) { output.push(data) });
   child.on('exit', function () {
-    equal(fs.readFileSync('out.txt', 'utf8'), fs.readFileSync(__filename, 'utf8'), 'copied');
-    fs.unlinkSync('out.txt');
-    callback();
+    equal(output.join(''), 'a\nb\nc\n', 'pipe');
   });
 });

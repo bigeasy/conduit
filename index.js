@@ -212,21 +212,24 @@ function parse (args) {
   var node;
   switch (symbol(args[0])) {
   default:
-    node = { command: funckify(args.shift()), parameters: [] };
+    node = { command: funcify(args.shift()), parameters: [] };
     while (args.length && !symbol(args[0])) {
-      node.parameters(funckify(args.shift()));
+      node.parameters.push(funcify(args.shift()));
     }
     if (symbol(args[0]) == '<') {
-      node.input = funckify(args.splice(0, 2).pop());
+      node.input = funcify(args.splice(0, 2).pop());
     }
     if (symbol(args[0]) == '>') {
-      node.output = funckify(args.splice(0, 2).pop());
+      node.output = funcify(args.splice(0, 2).pop());
+    } else if (symbol(args[0]) == '|') {
+      args.shift();
+      node.next = parse(args);
     }
   }
   return node;
 }
 
-function funckify (string) {
+function funcify (string) {
   var f = [], position = 0, i;
   string.replace(/\$(\d+)/, function (_, pos) { position = Math.max(position, pos) });
   for (i = 0; i < position; i++) {
@@ -234,6 +237,33 @@ function funckify (string) {
   }
   f.push('return ' + string);
   return Function.apply(Function, f);
+}
+
+function invoke (node, vargs) {
+  var command = node.command.apply(node.command, vargs);
+  var parameters = node.parameters.map(function (parameter) {
+    return parameter.apply(parameter, vargs);
+  });
+
+  var proc = children.spawn(command, parameters);
+
+  if (node.input) {
+    var input = fs.createReadStream(node.input.apply(node.input, vargs));
+    input.pipe(proc.stdin);
+  }
+
+  if (node.output) {
+    var output = fs.createWriteStream(node.output.apply(node.input, vargs));
+    proc.stdout.pipe(output);
+  }
+
+  if (node.next) {
+    var next = invoke(node.next, vargs);
+    proc.stdout.pipe(next.stdin);
+    proc = next;
+  }
+
+  return proc;
 }
 
 // Standard error is one common pipe, unless a process invocation specifies a
@@ -263,26 +293,13 @@ function channel (command) {
   return function () {
     var vargs = arguments;
 
-    var command = node.command.apply(node.command, vargs);
-    var parameters = node.parameters.map(function (parameter) {
-      return parameter.apply(parameter, vargs);
-    });
-
-    var proc = children.spawn(command, parameters);
-
-    if (node.input) {
-      var input = fs.createReadStream(node.input.apply(node.input, vargs));
-      input.pipe(proc.stdin);
-    }
-
-    if (node.output) {
-      var output = fs.createWriteStream(node.output.apply(node.input, vargs));
-      proc.stdout.pipe(output);
-    }
+    var proc = invoke(node, vargs);
 
     var channel = new Channel();
 
     proc.on('exit', function () { channel.emit('exit') });
+    // TODO: Skip if redirected.
+    channel.stdout = proc.stdout;
 
     return channel;
   }

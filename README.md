@@ -5,21 +5,36 @@ Pipeline constructor for Node.js.
 # Synopsis
 
 ```javascript
-var $ = require('channel'), pipe;
+var channel = require('../..')
+  , fs = require('fs')
+  , equal = require('assert').equal
+  , meow, child;
 
-pipe = $(__filename).read, $('tee').exec, $('out.txt').write).pipe
+// Channels are compiled into a function.
+meow = channel('cat < $1 > out.txt');
 
-pipe.on('exit', function () {
-  var fs = require('fs')
-    , equal = require('assert').equal;
+// The function creates an event emitter.
+child = meow(__filename);
 
+// The event emitter tracks the progress of the channel.
+child.on('exit', function () {
   equal(fs.readFileSync('out.txt', 'utf8'), fs.readFileSync(__filename, 'utf8'), 'copied');
+  fs.unlinkSync('out.txt');
 });
 ```
 
 ## Change Log
 
 Changes for each release.
+
+### Vervion 0.0.1
+
+ * Implement `grep` as `filter` and `reject`; implement JavaScript functions as
+   commands. #14.
+ * Update `README.md` for command interpreter. #12.
+ * Implement as command interpreter. #13.
+ * Implement argument parser #11.
+ * Process by line. #9. #7. #3.
 
 ### Version 0.0.0
 

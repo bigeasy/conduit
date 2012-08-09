@@ -29,8 +29,12 @@ Changes for each release.
 
 ### Vervion 0.0.1
 
+ * Implement `grep` as `filter` and `reject`; implement JavaScript functions as
+   commands. #14.
  * Update `README.md` for command interpreter. #12.
  * Implement as command interpreter. #13.
+ * Implement argument parser #11.
+ * Process by line. #9. #7. #3.
 
 ### Version 0.0.0
 

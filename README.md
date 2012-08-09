@@ -1,22 +1,22 @@
-# Channel [![Build Status](https://secure.travis-ci.org/bigeasy/channel.png?branch=master)](http://travis-ci.org/bigeasy/channel)
+# Conduit [![Build Status](https://secure.travis-ci.org/bigeasy/conduit.png?branch=master)](http://travis-ci.org/bigeasy/conduit)
 
 Pipeline constructor for Node.js.
 
 # Synopsis
 
 ```javascript
-var channel = require('../..')
+var conduit = require('conduit')
   , fs = require('fs')
   , equal = require('assert').equal
   , meow, child;
 
 // Channels are compiled into a function.
-meow = channel('cat < $1 > out.txt');
+meow = conduit('cat < $1 > out.txt');
 
 // The function creates an event emitter.
 child = meow(__filename);
 
-// The event emitter tracks the progress of the channel.
+// The event emitter tracks the progress of the conduit.
 child.on('exit', function () {
   equal(fs.readFileSync('out.txt', 'utf8'), fs.readFileSync(__filename, 'utf8'), 'copied');
   fs.unlinkSync('out.txt');

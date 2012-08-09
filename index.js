@@ -1,4 +1,4 @@
-var slice = channel.call.bind([].slice)
+var slice = conduit.call.bind([].slice)
   , fs = require('fs')
   , events = require('events')
   , util = require('util')
@@ -22,7 +22,7 @@ function extend (to, from) {
 function okay (event, callback) { callback(0) }
 
 
-function Channel () {
+function Conduit () {
 }
 
 function Continuable (stdout, stderr) {
@@ -32,7 +32,7 @@ function Continuable (stdout, stderr) {
 
 Continuable.prototype =
 { _: function () {
-    return new Channel(this.stdout, this.stderr, slice(arguments, 0));
+    return new Conduit(this.stdout, this.stderr, slice(arguments, 0));
   }
 , write: function () {
     var vargs = slice(arguments, 0);
@@ -136,7 +136,7 @@ Object.defineProperties({},
   } }
 });
 
-Channel.prototype =
+Conduit.prototype =
 { call: function () {
     var vargs = slice(arguments), callback = vargs.pop();
     if (vargs[0] && Array.isArray(vargs[0])) {
@@ -189,7 +189,7 @@ var _prototype =
   }
 }
 
-util.inherits(Channel, events.EventEmitter);
+util.inherits(Conduit, events.EventEmitter);
 
 function parse (arg) {
   var args = [];
@@ -349,7 +349,7 @@ function invoke (node, vargs) {
 
 // Standard error is one common pipe, unless a process invocation specifies a
 // redirection.
-function channel (command) {
+function conduit (command) {
   var args = [], rest = command, $, index = 0, part, string = [], tokens = []
     , call = 0, sub = 0, stack = [ '' ], join;
   while (rest) {
@@ -427,13 +427,13 @@ function channel (command) {
 
     var proc = invoke(node, vargs);
 
-    var channel = new Channel();
+    var conduit = new Conduit();
 
-    proc.on('exit', function () { channel.emit('exit') });
+    proc.on('exit', function () { conduit.emit('exit') });
     // TODO: Skip if redirected.
-    channel.stdout = proc.stdout;
+    conduit.stdout = proc.stdout;
 
-    return channel;
+    return conduit;
   }
 
   function quote (unquoted) {
@@ -448,4 +448,4 @@ function channel (command) {
   function error (index) { return new Error("invalid syntax at: " + index) }
 }
 
-module.exports = channel;
+module.exports = conduit;

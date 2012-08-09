@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 require('proof')(1, function (equal, deepEqual, callback) {
-  var channel = require('../..'), fs = require('fs'), meow, child;
+  var conduit = require('../..'), fs = require('fs'), meow, child;
 
-  meow = channel('cat < $1 > out.txt');
+  meow = conduit('cat < $1 > out.txt');
   child = meow(__filename);
   
   child.on('exit', function () {

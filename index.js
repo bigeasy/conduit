@@ -69,18 +69,6 @@ function gatherer (filter) {
   }
 }
 
-// TODO: Remove.
-function parse (arg) {
-  var args = [];
-  arg.replace(/(?:[^\\'"\s]|\\.|(["'])(?:[^\\\1]|\\.)*\1)+/g, function (arg) {
-    args.push(arg.replace(/(?:(["'])(?:[^\\\1]|\\.)*\1|\\.)/g, function (arg) {
-      if (arg[0] == '\\') return arg[1];
-      else return arg.slice(1, arg.length - 1).replace(/\\(.)/g, "$1"); 
-    }));
-  }); 
-  return args;
-}
-
 // TODO: How do we do SIGPIPE?
 var DIRECTION = { '<': [ '<' ] , '>': [ '>' ] , '|': [ '|' ] };
 var GROUPING =  { '(': [ '(' ] , ')': [ ')' ] , ',': [ ',' ] };

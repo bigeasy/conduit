@@ -6,7 +6,7 @@ require('proof')(1, function (equal, deepEqual, callback) {
   meow = conduit('cat < $1 > out.txt');
   child = meow(__filename);
   
-  child.on('exit', function () {
+  child.on('close', function () {
     equal(fs.readFileSync('out.txt', 'utf8'), fs.readFileSync(__filename, 'utf8'), 'copied');
     fs.unlinkSync('out.txt');
     callback();

@@ -388,7 +388,13 @@ function conduit (command) {
 
     var conduit = new Conduit();
 
-    proc.on('exit', function () { conduit.emit('exit') });
+    proc.on('exit', function () {
+      conduit.emit.apply(conduit, [ 'exit' ].concat(arguments));
+    });
+    proc.on('close', function () {
+      conduit.emit.apply(conduit, [ 'close' ].concat(arguments));
+    });
+
     // TODO: Skip if redirected.
     conduit.stdout = proc.stdout;
 

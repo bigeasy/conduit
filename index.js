@@ -1,9 +1,8 @@
 // Required libraries.
-var fs = require('fs')
-  , events = require('events')
-  , through = require('through')
-  , children = require('child_process')
-  ;
+var fs = require('fs'),
+    events = require('events'),
+    through = require('through'),
+    children = require('child_process');
 
 // Create a slice function that will accept an array as its first argument.
 var slice = conduit.call.bind([].slice);
@@ -60,11 +59,8 @@ function gatherer (filter) {
       this.emit('end');
     });
     extend(pipe, { setEncoding:  function (encoding) { encout = encoding } });
-    ee = extend(new events.EventEmitter(), { stdin: pipe
-                                    , stdout: pipe
-                                    , encoding: 'utf8'
-                                    , javascript: true
-                                    });
+    ee = extend(new events.EventEmitter(),
+                { stdin: pipe, stdout: pipe, encoding: 'utf8', javascript: true });
     return ee;
   }
 }
@@ -370,11 +366,9 @@ function conduit (command) {
 
   var node = parse(tokens);
   return function () {
-    var vargs = [ (void(0)) ].concat(slice(arguments));
-
-    var proc = invoke(node, vargs);
-
-    var conduit = new Conduit();
+    var vargs = [ (void(0)) ].concat(slice(arguments)),
+        proc = invoke(node, vargs),
+        conduit = new Conduit();
 
     proc.on('exit', function () {
       conduit.emit.apply(conduit, [ 'exit' ].concat(arguments));

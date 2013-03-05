@@ -13,11 +13,11 @@ var slice = conduit.call.bind([].slice);
 // Display a message on the console and exit immediately.
 function die () {
   console.log.apply(console, slice(arguments, 0));
-  return process.exit(1);
+  process.exit(1);
 }
 
 // Display a message on the console.
-function say () { return console.log.apply(console, slice(arguments, 0)) }
+function say () { console.log.apply(console, slice(arguments, 0)) }
 
 // Our Conduit class constructor. A `Conduit` is an `EventEmitter`.
 function Conduit () { }
@@ -39,7 +39,7 @@ function extend (to, from) {
 // This function will used to implement a number of planned default utility
 // functions, including analogs for UNIX `grep` and `sed`.
 function gatherer (filter) {
-  var encout, self = this;
+  var encout, gatherer = this;
   return function (vargs) {
     var ee, remainder, pipe = through(function write (data) {
       var split = ((remainder || '') + data).split('\n');
@@ -47,13 +47,16 @@ function gatherer (filter) {
       else remainder = split.pop();
       split.forEach(function (line) {
         vargs[0] = line;
-        var result = filter.call(self, vargs);
-        if (result != null) this.emit('data', encout == 'utf8' ? result + '\n' :  new Buffer(result + '\n', 'utf8'));
+        var result = filter.call(gatherer, vargs);
+        if (result != null) {
+          this.emit('data', encout == 'utf8' ? result + '\n'
+                                             : new Buffer(result + '\n', 'utf8'));
+        }
       }.bind(this));
     }, function end () {
       var result;
       vargs[0] = remainder;
-      if (remainder && (result = filter.apply(self, remainder)) != null) {
+      if (remainder && (result = filter.apply(gatherer, remainder)) != null) {
         this.emit('data', encout == 'utf8' ? result : new Buffer(result, 'utf8'));
       }
       this.emit('end');
@@ -109,7 +112,7 @@ var utilties = {
         return vargs[0];
       }
     });
-  } 
+  }
 };
 
 // Return the symbol value if the token is a symbol. We know the token is a
@@ -328,7 +331,7 @@ function conduit (command) {
         }
       // White space means we've completed a command argument.
       } else if (/^\s/.exec(rest)) {
-        token(); 
+        token();
       // A comma within function arguments is an argument delimiter, but it has
       // no special meaning within a string.
       } else if ($ = /^(,)(.*)$/.exec(rest)) {
@@ -352,7 +355,7 @@ function conduit (command) {
       // expressions.
       } else if (call && ($ = /^(\/)(.*)$/.exec(rest))) {
         if (!string.length) {
-          string.push($[1]); 
+          string.push($[1]);
           stack.unshift(')');
           rest = $[2];
           join = '';

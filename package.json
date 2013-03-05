@@ -1,16 +1,16 @@
-{ "name": "channel"
+{ "name": "conduit"
 , "description": "Pipeline constructor for Node.js."
 , "author": "Alan Gutierrez"
-, "version": "0.0.0"
+, "version": "0.0.1"
 , "keywords": [ "shell", "events", "streams" ]
 , "licenses": [
   { "type": "MIT"
-  , "url": "http://github.com/bigeasy/channel/raw/master/LICENSE"
+  , "url": "http://github.com/bigeasy/conduit/raw/master/LICENSE"
   }]
-, "homepage": "https://github.com/bigeasy/channel"
+, "homepage": "https://github.com/bigeasy/conduit"
 , "repository":
   { "type": "git"
-  , "url": "http://github.com/bigeasy/channel.git"
+  , "url": "http://github.com/bigeasy/conduit.git"
   }
 , "scripts" : { "test": "proof t/*/*.t.js" }
 , "devDependencies":

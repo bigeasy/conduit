@@ -27,8 +27,17 @@ child.on('exit', function () {
 
 Changes for each release.
 
-### Vervion 0.0.1
+### Version 0.0.1
 
+Tue Mar  5 08:33:19 UTC 2013
+
+ * Upgrade Proof to 0.0.20.
+ * Tidy. #22.
+ * Add `.js` suffix to test file names. #23.
+ * Delete defunct `parse` function. #21.
+ * Emit `close` event from pipeline. #24.
+ * Prune outgoing method chaining code. #19.
+ * Renamed Channel to Conduit. #17.
  * Implement `grep` as `filter` and `reject`; implement JavaScript functions as
    commands. #14.
  * Update `README.md` for command interpreter. #12.

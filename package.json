@@ -14,7 +14,7 @@
   }
 , "scripts" : { "test": "proof t/*/*.t.js" }
 , "devDependencies":
-  { "proof": "0.0.15"
+  { "proof": "0.0.20"
   }
 , "dependencies": { "through": "~0.1" }
 }

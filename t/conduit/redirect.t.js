@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-require('proof')(1, function (equal, deepEqual, callback) {
-  var conduit = require('../..'), fs = require('fs'), meow, child;
+require('proof')(1, function (equal, deepEqual, step) {
+  var conduit = require('../..'), fs = require('fs'), meow, child, callback = step();
 
   meow = conduit('cat < $1 > out.txt');
   child = meow(__filename);

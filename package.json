@@ -12,9 +12,9 @@
   { "type": "git"
   , "url": "http://github.com/bigeasy/conduit.git"
   }
-, "scripts" : { "test": "proof t/*/*.t.js" }
+, "scripts" : { "test": "proof test t/*/*.t.js" }
 , "devDependencies":
-  { "proof": "0.0.24"
+  { "proof": "0.0.30"
   }
 , "dependencies": { "through": "~0.1" }
 }

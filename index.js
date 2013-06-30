@@ -275,6 +275,8 @@ function conduit (command) {
     // Eat whitespace.
     $ = /^(\s*)(.*)$/.exec(rest), index += $[1].length, rest = $[2];
     // Match catenated strings stopping at any special character.
+    // TODO: What is that `\\.` doing outside the string? Am I using `\\` as an
+    // escape character in the command?
     $ = /^((?:[^,\\'"\s\/()$]|\\.|(["'])(?:[^\\\1]|\\.)*\2)*)(.*)/.exec(rest);
     if (!$) throw error(index);
     part = $[1], rest = $[3];

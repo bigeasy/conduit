@@ -1,20 +1,21 @@
-{ "name": "conduit"
-, "description": "Pipeline constructor for Node.js."
-, "author": "Alan Gutierrez"
-, "version": "0.0.1"
-, "keywords": [ "shell", "events", "streams" ]
-, "licenses": [
-  { "type": "MIT"
-  , "url": "http://github.com/bigeasy/conduit/raw/master/LICENSE"
-  }]
-, "homepage": "https://github.com/bigeasy/conduit"
-, "repository":
-  { "type": "git"
-  , "url": "http://github.com/bigeasy/conduit.git"
-  }
-, "scripts" : { "test": "proof test t/*/*.t.js" }
-, "devDependencies":
-  { "proof": "0.0.32"
-  }
-, "dependencies": { "through": "~0.1" }
+{
+    "name": "conduit",
+    "description": "Pipeline constructor for Node.js.",
+    "author": "Alan Gutierrez",
+    "version": "0.0.1",
+    "keywords": [ "shell", "events", "streams" ],
+    "licenses": [{
+        "type": "MIT",
+        "url": "http://github.com/bigeasy/conduit/raw/master/LICENSE"
+    }],
+    "homepage": "https://github.com/bigeasy/conduit",
+    "repository": {
+        "type": "git",
+        "url": "http://github.com/bigeasy/conduit.git"
+    },
+    "scripts" : { "test": "proof test t/*/*.t.js" },
+    "devDependencies": {
+        "proof": "0.0.32"
+    },
+    "dependencies": { "through": "~0.1" }
 }

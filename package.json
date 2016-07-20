@@ -18,6 +18,7 @@
     {
                             "test": "proof platform win32 && proof test */*.t.js || t/test"
     },
+    "main":                 "conduit",
     "devDependencies":
     {
         "proof": "1.0.x"

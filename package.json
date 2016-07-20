@@ -13,9 +13,13 @@
         "type": "git",
         "url": "http://github.com/bigeasy/conduit.git"
     },
-    "scripts" : { "test": "proof test t/*/*.t.js" },
-    "devDependencies": {
-        "proof": "0.0.33"
+    "scripts":
+    {
+        "test": "proof test t/*.t.js"
+    },
+    "devDependencies":
+    {
+        "proof": "1.0.x"
     },
     "dependencies": { "through": "~0.1" }
 }

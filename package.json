@@ -1,6 +1,7 @@
 {
     "name": "conduit",
-    "description": "Pipeline constructor for Node.js.",
+    "description":
+      "An HTTP to WebSockets proxy to advertise multiple HTTP applications through a single HTTP socket.",
     "author": "Alan Gutierrez",
     "version": "0.0.1",
     "keywords": [ "shell", "events", "streams" ],

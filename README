@@ -1,0 +1,20 @@
+Conduit
+
+An HTTP to WebSockets proxy to advertise multiple HTTP applications through a
+single HTTP socket.
+
+    Discussion:     https://github.com/bigeasy/conduit/issues/1
+
+    Documentation:  https://bigeasy.github.io/conduit
+    Source:         https://github.com/bigeasy/conduit
+    Issues:         https://github.com/bigeasy/conduit/issues
+    CI:             https://travis-ci.org/bigeasy/conduit
+    Coverage:       https://coveralls.io/github/bigeasy/conduit
+
+    Install:        `npm install conduit`
+
+    License:        MIT
+
+To learn everything you want to know about Conduit start here:
+
+    http://bigeasy.github.io/conduit

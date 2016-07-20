@@ -16,7 +16,7 @@
     },
     "scripts":
     {
-        "test": "proof test t/*.t.js"
+                            "test": "proof platform win32 && proof test */*.t.js || t/test"
     },
     "devDependencies":
     {

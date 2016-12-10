@@ -18,7 +18,6 @@
     },
     "dependencies":
     {
-                            "through":                      "~0.1"
     },
     "devDependencies":
     {

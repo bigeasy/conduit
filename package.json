@@ -1,27 +1,32 @@
 {
-    "name": "conduit",
+    "name":                 "conduit",
+    "version":              "0.0.1",
     "description":
+
       "An HTTP to WebSockets proxy to advertise multiple HTTP applications through a single HTTP socket.",
-    "author": "Alan Gutierrez",
-    "version": "0.0.1",
-    "keywords": [ "shell", "events", "streams" ],
-    "licenses": [{
-        "type": "MIT",
-        "url": "http://github.com/bigeasy/conduit/raw/master/LICENSE"
-    }],
-    "homepage": "https://github.com/bigeasy/conduit",
-    "repository": {
-        "type": "git",
-        "url": "http://github.com/bigeasy/conduit.git"
+
+    "keywords":
+    [
+                            "shell", "events", "streams"
+    ],
+    "author":               "Alan Gutierrez",
+    "homepage":             "https://github.com/bigeasy/conduit",
+    "repository":
+    {
+                            "type": "git",
+                            "url": "http://github.com/bigeasy/conduit.git"
     },
+    "dependencies":
+    {
+                            "through":                      "~0.1"
+    },
+    "devDependencies":
+    {
+                            "proof":                        "1.0.x"
+    },
+    "main":                 "conduit",
     "scripts":
     {
                             "test": "proof platform win32 && proof test */*.t.js || t/test"
-    },
-    "main":                 "conduit",
-    "devDependencies":
-    {
-        "proof": "1.0.x"
-    },
-    "dependencies": { "through": "~0.1" }
+    }
 }

@@ -7,7 +7,7 @@
 
     "keywords":
     [
-                            "shell", "events", "streams"
+                            "websockets", "http"
     ],
     "author":               "Alan Gutierrez",
     "homepage":             "https://github.com/bigeasy/conduit",

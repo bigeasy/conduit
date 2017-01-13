@@ -11,7 +11,8 @@ exports.connect = cadence(function (async, options) {
         port: options.port,
         host: options.host || 'localhost',
         secure: options.secure == null ? false : options.secure,
-        hashKey: options.hashKey == null ? '' : options.hashKey
+        hashKey: options.hashKey == null ? '' : options.hashKey,
+        headers: options.headers || {}
     }
     var protocol = options.secure ? PROTOCOL.https : PROTOCOL.http
     var headers = {
@@ -21,6 +22,9 @@ exports.connect = cadence(function (async, options) {
         'sec-conduit-protocol-id': 'c2845f0d55220303d62fc68e4c145877',
         'sec-conduit-version': 1,
         'sec-conduit-hash-key': options.hashKey == null ? '' : options.hashKey
+    }
+    for (var name in options.headers) {
+        headers[name] = options.headers[name]
     }
     var request = protocol.request({
         port: options.port,

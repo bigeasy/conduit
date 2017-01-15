@@ -5,6 +5,7 @@ var Monotonic = require('monotonic').asString
 var WildMap = require('wildmap')
 var url = require('url')
 var Header = require('./header')
+var coalesce = require('./coalesce')
 
 function Rendezvous () {
     this._magazine = new Cache().createMagazine()
@@ -101,7 +102,7 @@ Request.prototype.consume = cadence(function (async) {
         url: location,
         headers: this._request.headers,
         actualPath: path,
-        rawHeaders: this._request.rawHeaders
+        rawHeaders: coalesce(this._request.rawHeaders, [])
     }) + '\n'))
     async([function () {
         delta(async()).ee(this._request).on('end').on('data', this._consume.bind(this))

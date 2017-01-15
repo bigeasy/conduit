@@ -20,6 +20,7 @@
     "dependencies":
     {
                             "cadence":                      "1.0.x",
+                            "delta":                        "1.1.x",
                             "interlocutor":                 "0.0.2",
                             "magazine":                     "1.0.x",
                             "monotonic":                    "2.0.x",

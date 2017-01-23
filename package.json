@@ -1,6 +1,6 @@
 {
     "name":                 "conduit",
-    "version":              "0.0.1",
+    "version":              "0.0.2",
     "description":
 
       "An HTTP to WebSockets proxy to advertise multiple HTTP applications through a single HTTP socket.",

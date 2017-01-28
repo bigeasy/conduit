@@ -1,43 +1,39 @@
-var delta = require('delta')
 var cadence = require('cadence')
+var Spigot = { Queue: require('./spigot.queue') }
+var Basin = { Queue: require('./basin.queue') }
 
-var PROTOCOL = {
-    http: require('http'),
-    https: require('https')
+function Socket (multiplexer, id, serverSide) {
+    this._serverSide = serverSide
+    this._serverKey = '[server](' + id + ')'
+    this._clientKey = '[client](' + id + ')'
+    this._multiplexer = multiplexer
+    this._id = id
+    // TODO Server versus client?
+    this.spigot = new Spigot.Queue(this)
+    this.basin = new Basin.Queue(this)
 }
 
-exports.connect = cadence(function (async, options) {
-    options = {
-        port: options.port,
-        host: options.host || 'localhost',
-        secure: options.secure == null ? false : options.secure,
-        hashKey: options.hashKey == null ? '' : options.hashKey,
-        headers: options.headers || {}
-    }
-    var protocol = options.secure ? PROTOCOL.https : PROTOCOL.http
-    var headers = {
-        connection: 'Upgrade',
-        upgrade: 'Conduit',
-        host: options.host + ':' + options.port,
-        'sec-conduit-protocol-id': 'c2845f0d55220303d62fc68e4c145877',
-        'sec-conduit-version': 1,
-        'sec-conduit-hash-key': options.hashKey == null ? '' : options.hashKey
-    }
-    for (var name in options.headers) {
-        headers[name] = options.headers[name]
-    }
-    var request = protocol.request({
-        port: options.port,
-        host: options.host,
-        headers: headers
-    })
-    request.on('response', function () {
-        console.log('called')
-    })
+Socket.prototype.enqueue = cadence(function (async, envelope) {
+    var from = this._serverSide ? this._serverKey : this._clientKey
+    var to = this._serverSide ? this._clientKey : this._serverKey
     async(function () {
-        delta(async()).ee(request).on('upgrade')
-        request.end()
-    }, function (request, socket, head) {
-        return [ request, socket, head ]
+        if (envelope == null) {
+            this._multiplexer._output.write(JSON.stringify({
+                cookie: 'trailer', to: to, body: null
+            }) + '\n', async())
+        } else if (Buffer.isBuffer(envelope.body)) {
+            this._multiplexer._output.write(JSON.stringify({
+                cookie: 'chunk', to: to, body: { length: envelope.body.length }
+            }) + '\n', async())
+            this._multiplexer._output.write(envelope.body)
+        } else {
+            this._multiplexer._output.write(JSON.stringify({
+                cookie: 'envelope', to: to, body: envelope
+            }) + '\n', async())
+        }
+    }, function () {
+        return []
     })
 })
+
+module.exports = Socket

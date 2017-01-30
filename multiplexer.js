@@ -47,7 +47,12 @@ Multiplexer.prototype.connect = cadence(function (async) {
     var socket = new Socket(this, id, false)
     this._sockets[socket._clientKey] = socket
     async(function () {
-        this._output.write(JSON.stringify({ cookie: 'header', to: id, body: null }) + '\n', async())
+        this._output.write(JSON.stringify({
+            module: 'colleague',
+            type: 'header',
+            to: id,
+            body: null
+        }) + '\n', async())
     }, function () {
         return [ socket ]
     })
@@ -83,7 +88,7 @@ Multiplexer.prototype._json = cadence(function (async, buffer, start, end) {
     async(function () {
         if (this._record.object != null) {
             var envelope = this._record.object
-            switch (envelope.cookie) {
+            switch (envelope.type) {
             case 'header':
                 var socket = new Socket(this, envelope.to, true)
                 this._sockets[socket._serverKey] = socket
@@ -91,11 +96,17 @@ Multiplexer.prototype._json = cadence(function (async, buffer, start, end) {
                 break
             case 'envelope':
                 var socket = this._sockets[envelope.to]
-                var queue = socket._serverSide ? socket.spigot.requests : socket.basin.responses
+                var queue = envelope.outlet == 'spigot' ? socket.spigot.requests : socket.basin.responses
                 queue.enqueue(envelope.body, async())
                 break
             case 'chunk':
                 this._chunk = this._record.object
+                break
+            case 'trailer':
+                var socket = this._sockets[envelope.to]
+                var queue = envelope.outlet == 'spigot' ? spigot.requests : socket.basin.responses
+                queue.enqueue(null, async())
+                delete this._sockets[envelope.to]
                 break
             }
             this._record = new Jacket

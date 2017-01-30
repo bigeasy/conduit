@@ -30,13 +30,11 @@ function prove (async, assert) {
         async(function () {
             spigot.emptyInto(socket.basin)
             spigot.request(1, async())
-        }, [function (response) {
+        }, function (response) {
             assert(response, 2, 'round trip')
             multiplexers[0].destroy()
             multiplexers[1].destroy()
-        }, function (error) {
-            console.log(error.stack)
-        }], function () {
+        }, function () {
             assert(multiplexers[0].destroyed, 'destroyed')
         })
     })

@@ -1,15 +1,37 @@
-var cadence = require('cadence')
+// Utitlities common to my work.
 var coalesce = require('nascent.coalesce')
+
+// Control-flow utilities.
 var delta = require('delta')
+var cadence = require('cadence')
+
+// Wrap a user specified callback.
+var Operation = require('operation')
+
+// Evented stream reading and writing.
 var Staccato = require('staccato')
+
+// JSON for use in packets.
 var Jacket = require('nascent.jacket')
-var Socket = require('./socket')
+
+// Ever increasing serial value with no maximum value.
 var Monotonic = require('monotonic').asString
+
+// Controlled demolition of complicated objects.
 var Destructor = require('nascent.destructor')
+
+// Exceptions with context.
 var interrupt = require('interrupt').createInterrupter('conduit.muliplexer')
 
-function Multiplexer (reactor, input, output) {
-    this._reactor = reactor
+// Our socket implementation.
+var Socket = require('./socket')
+
+// Create a Multiplexer with the given input and output streams that invoked the
+// the connect operation when a new socket is created
+
+//
+function Multiplexer (input, output, connect) {
+    this._connect = connect == null ? null : new Operation(connect)
     this._record = new Jacket
     this._output = new Staccato.Writable(output)
     this._input = new Staccato.Readable(input)
@@ -92,7 +114,7 @@ Multiplexer.prototype._json = cadence(function (async, buffer, start, end) {
             case 'header':
                 var socket = new Socket(this, envelope.to, true)
                 this._sockets[socket._serverKey] = socket
-                this._reactor.connect(socket, async())
+                this._connect.apply([ socket, async() ])
                 break
             case 'envelope':
                 var socket = this._sockets[envelope.to]

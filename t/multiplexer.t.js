@@ -15,11 +15,9 @@ function prove (async, assert) {
             return value + 1
         })
     })
-    var multiplexers = [new Multiplexer({
-        connect: cadence(function (async, socket) {
-            socket.spigot.emptyInto(basin)
-        })
-    }, input, output), new Multiplexer(null, output, input)]
+    var multiplexers = [new Multiplexer(input, output, cadence(function (async, socket) {
+        socket.spigot.emptyInto(basin)
+    })), new Multiplexer(output, input)]
     async(function () {
         delta(async()).ee(input).on('readable')
         multiplexers[1].connect(async())

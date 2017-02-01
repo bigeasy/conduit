@@ -2,7 +2,7 @@ var Procession = require('procession')
 var util = require('util')
 
 function Spigot () {
-    this.messages = new Procession
+    this.requests = new Procession
 }
 
 Spigot.prototype.emptyInto = function (basin) {

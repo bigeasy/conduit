@@ -1,14 +1,24 @@
-var cadence = require('cadence')
-var Procesion = require('procession')
-var coalesce = require('nascent.coalesce')
+// Evented message queue.
+var Procession = require('procession')
 
-function Queue (object) {
-    this._object = object
-    this.responses = new Procesion
+// Correctly invokes delegates accounting for errors and end of stream.
+var Delegate = require('./delegate')
+
+// Construct a Basin.Queue that will invoke the `enqueued` method of the given
+// delegate object.
+
+//
+function Queue (delegate) {
+    this._delegate = new Delegate(delegate, 'enqueue')
+    this.responses = new Procession
 }
 
-Queue.prototype.enqueue = cadence(function (async, envelope) {
-    this._object.enqueue(envelope, async())
-})
+// Enqueue a value into the underlying delegate.
 
+//
+Queue.prototype.enqueue = function (envelope, callback) {
+    this._delegate.invoke(envelope, callback)
+}
+
+// Export as constructor.
 module.exports = Queue

@@ -1,4 +1,4 @@
-require('proof/redux')(2, require('cadence')(prove))
+require('proof/redux')(4, require('cadence')(prove))
 
 function prove (async, assert) {
     var Spigot = { Generator: require('../spigot.generator') }
@@ -22,5 +22,20 @@ function prove (async, assert) {
         }, function () {
             assert(requests.shift(), { type: 'conduit', from: null, body: 1 }, 'sent')
         })
-    })
+    }, function () {
+        async(function () {
+            requests.dequeue(async())
+        }, function (envelope) {
+            generator.enqueue(null, async())
+        })
+        async([function () {
+            generator.request(1, async())
+        }, function (error) {
+            assert(error.interrupt, 'conduit#closed', 'closed')
+        }])
+    }, [function () {
+        generator.request(1, async())
+    }, function (error) {
+        assert(error.interrupt, 'conduit#closed', 'still closed')
+    }])
 }

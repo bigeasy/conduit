@@ -30,7 +30,7 @@ var Socket = require('./socket')
 // the connect operation when a new socket is created
 
 //
-function Multiplexer (input, output, connect) {
+function Multiplexer (input, output, head, connect) {
     this._connect = connect == null ? null : new Operation(connect)
     this._record = new Jacket
     this._output = new Staccato.Writable(output)
@@ -38,11 +38,12 @@ function Multiplexer (input, output, connect) {
     this._sockets = {}
     this._identifier = '0'
     this._destructor = new Destructor(interrupt)
-    this._destructor.addJanitor('unlisten', this._unlisten.bind(this))
+    this._destructor.addJanitor('shutdown', this._shutdown.bind(this))
     this._destructor.addJanitor('mark', this._destroyed.bind(this))
+    this._listen(head, this._destructor.destroy.bind(this._destructor))
 }
 
-Multiplexer.prototype.listen = cadence(function (async, buffer) {
+Multiplexer.prototype._listen = cadence(function (async, buffer) {
     async(function () {
         this._parse(coalesce(buffer, new Buffer(0)), async())
     }, function () {
@@ -54,9 +55,15 @@ Multiplexer.prototype._destroyed = function () {
     this.destroyed = true
 }
 
-Multiplexer.prototype._unlisten = function () {
+Multiplexer.prototype._shutdown = function () {
     this._output.destroy()
     this._input.destroy()
+    var error = interrupt({ name: 'shutdown', cause: coalesce(this._destructor.cause) })
+    for (var key in this._sockets) {
+        var socket = this._sockets[key]
+        socket.basin.responses.push(error)
+        socket.spigot.requests.push(error)
+    }
 }
 
 Multiplexer.prototype.destroy = function () {

@@ -21,6 +21,11 @@ function Socket (multiplexer, id, serverSide) {
     this.basin = new Basin.Queue(new Contextualizer(this, 'spigot'))
 }
 
+Socket.prototype._shutdown = function (error) {
+    this.basin.responses.push(error)
+    this.spigot.requests.push(error)
+}
+
 Socket.prototype._enqueue = cadence(function (async, envelope, outlet) {
     var from = this._serverSide ? this._serverKey : this._clientKey
     var to = this._serverSide ? this._clientKey : this._serverKey

@@ -15,25 +15,25 @@ function prove (async, assert) {
             return value + 1
         })
     })
-    var multiplexers = [new Multiplexer(input, output, cadence(function (async, socket) {
-        socket.spigot.emptyInto(basin)
-    })), new Multiplexer(output, input)]
+    var multiplexers = []
     async(function () {
         delta(async()).ee(input).on('readable')
-        multiplexers[1].connect(async())
+        multiplexers.push(new Multiplexer(output, input))
+        multiplexers[0].connect(async())
     }, function (socket) {
-        var buffer = input.read()
-        multiplexers[0].listen(buffer, async())
-        multiplexers[1].listen(async())
+        var head = input.read()
+        multiplexers.push(new Multiplexer(input, output, head, cadence(function (async, socket) {
+            socket.spigot.emptyInto(basin)
+        })))
         async(function () {
             spigot.emptyInto(socket.basin)
             spigot.request(1, async())
         }, function (response) {
             assert(response, 2, 'round trip')
-            multiplexers[0].destroy()
             multiplexers[1].destroy()
+            multiplexers[0].destroy()
         }, function () {
-            assert(multiplexers[0].destroyed, 'destroyed')
+            assert(multiplexers[0].destroyed && multiplexers[1].destroyed, 'destroyed')
         })
     })
 }

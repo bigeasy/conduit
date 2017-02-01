@@ -81,7 +81,7 @@ source/%.js.js: ../%.js
 	mkdir -p source
 	cp $< $@
 
-docco/%.js.html: source/%.js.js node_modules/.bin/docco
+$(docco): $(sources) node_modules/.bin/docco
 	mkdir -p docco
 	node_modules/.bin/docco -o docco -c docco.css source/*.js.js
 	sed -i '' -e 's/[ \t]*$$//' docco/*.js.html
@@ -101,3 +101,5 @@ clean:
 
 serve: node_modules/.bin/serve
 	node_modules/.bin/serve -p 4000
+
+.INTERMEDIATE: $(sources)

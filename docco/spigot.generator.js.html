@@ -20,68 +20,63 @@
             <div id="jump_page">
 
 
-                <a class="source" href="basin.html">
+                <a class="source" href="basin.js.html">
                   basin.js
                 </a>
 
 
-                <a class="source" href="basin.queue.html">
+                <a class="source" href="basin.queue.js.html">
                   basin.queue.js
                 </a>
 
 
-                <a class="source" href="basin.responder.html">
+                <a class="source" href="basin.responder.js.html">
                   basin.responder.js
                 </a>
 
 
-                <a class="source" href="basin.transformer.html">
-                  basin.transformer.js
+                <a class="source" href="delegate.js.html">
+                  delegate.js
                 </a>
 
 
-                <a class="source" href="multiplexer.html">
+                <a class="source" href="multiplexer.js.html">
                   multiplexer.js
                 </a>
 
 
-                <a class="source" href="prefixer.html">
+                <a class="source" href="prefixer.js.html">
                   prefixer.js
                 </a>
 
 
-                <a class="source" href="responder.html">
+                <a class="source" href="responder.js.html">
                   responder.js
                 </a>
 
 
-                <a class="source" href="socket.html">
+                <a class="source" href="socket.js.html">
                   socket.js
                 </a>
 
 
-                <a class="source" href="spigot.base.html">
+                <a class="source" href="spigot.base.js.html">
                   spigot.base.js
                 </a>
 
 
-                <a class="source" href="spigot.generator.html">
+                <a class="source" href="spigot.generator.js.html">
                   spigot.generator.js
                 </a>
 
 
-                <a class="source" href="spigot.html">
+                <a class="source" href="spigot.js.html">
                   spigot.js
                 </a>
 
 
-                <a class="source" href="spigot.queue.html">
+                <a class="source" href="spigot.queue.js.html">
                   spigot.queue.js
-                </a>
-
-
-                <a class="source" href="spigot.transformer.html">
-                  spigot.transformer.js
                 </a>
 
             </div>
@@ -109,10 +104,15 @@
             </div>
 
             <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> util = <span class="hljs-built_in">require</span>(<span class="hljs-string">'util'</span>)
+
 <span class="hljs-keyword">var</span> cadence = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cadence'</span>)
+
 <span class="hljs-keyword">var</span> Procession = <span class="hljs-built_in">require</span>(<span class="hljs-string">'procession'</span>)
-<span class="hljs-keyword">var</span> Cliffhanger = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cliffhanger'</span>)
 <span class="hljs-keyword">var</span> Spigot = { <span class="hljs-attr">Base</span>: <span class="hljs-built_in">require</span>(<span class="hljs-string">'./spigot.base'</span>) }
+
+<span class="hljs-keyword">var</span> Cliffhanger = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cliffhanger'</span>)
+
+<span class="hljs-keyword">var</span> interrupt = <span class="hljs-built_in">require</span>(<span class="hljs-string">'interrupt'</span>).createInterrupter(<span class="hljs-string">'conduit'</span>)
 
 <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Generator</span> (<span class="hljs-params"></span>) </span>{
     <span class="hljs-keyword">this</span>._cliffhanger = <span class="hljs-keyword">new</span> Cliffhanger
@@ -121,15 +121,34 @@
 util.inherits(Generator, Spigot.Base)
 
 Generator.prototype.request = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, body</span>) </span>{
-    <span class="hljs-keyword">this</span>.requests.enqueue({
-        <span class="hljs-attr">type</span>: <span class="hljs-string">'conduit'</span>,
-        <span class="hljs-attr">from</span>: <span class="hljs-keyword">this</span>._cliffhanger.invoke(<span class="hljs-keyword">async</span>()),
-        <span class="hljs-attr">body</span>: body
-    }, <span class="hljs-keyword">async</span>())
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.requests.endOfStream) {
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> interrupt(<span class="hljs-string">'closed'</span>)
+    } <span class="hljs-keyword">else</span> {
+        <span class="hljs-keyword">this</span>.requests.enqueue({
+            <span class="hljs-attr">type</span>: <span class="hljs-string">'conduit'</span>,
+            <span class="hljs-attr">from</span>: <span class="hljs-keyword">this</span>._cliffhanger.invoke(<span class="hljs-keyword">async</span>()),
+            <span class="hljs-attr">body</span>: body
+        }, <span class="hljs-keyword">async</span>())
+    }
 })
 
 Generator.prototype.send = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, body</span>) </span>{
-    <span class="hljs-keyword">this</span>.requests.enqueue({
+</pre></div></div>
+
+        </li>
+
+
+        <li id="section-2">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>TODO Should be able to enqueue as a noop after stream is closed.</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">this</span>.requests.enqueue({
         <span class="hljs-attr">type</span>: <span class="hljs-string">'conduit'</span>,
         <span class="hljs-attr">from</span>: <span class="hljs-literal">null</span>,
         <span class="hljs-attr">body</span>: body
@@ -137,7 +156,15 @@ Generator.prototype.send = cadence(<span class="hljs-function"><span class="hljs
 })
 
 Generator.prototype.enqueue = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, envelope</span>) </span>{
-    <span class="hljs-keyword">this</span>._cliffhanger.resolve(envelope.to, [ <span class="hljs-literal">null</span>, envelope.body ])
+    <span class="hljs-keyword">if</span> (envelope == <span class="hljs-literal">null</span>) {
+        envelope = interrupt(<span class="hljs-string">'closed'</span>)
+    }
+    <span class="hljs-keyword">if</span> (envelope <span class="hljs-keyword">instanceof</span> <span class="hljs-built_in">Error</span>) {
+        <span class="hljs-keyword">this</span>.requests.push(<span class="hljs-literal">null</span>)
+        <span class="hljs-keyword">this</span>._cliffhanger.cancel(envelope)
+    } <span class="hljs-keyword">else</span> {
+        <span class="hljs-keyword">this</span>._cliffhanger.resolve(envelope.to, [ <span class="hljs-literal">null</span>, envelope.body ])
+    }
 })
 
 <span class="hljs-built_in">module</span>.exports = Generator

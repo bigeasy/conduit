@@ -2,7 +2,7 @@
 
 <html>
 <head>
-  <title>spigot.js</title>
+  <title>prefixer.js</title>
   <meta http-equiv="content-type" content="text/html; charset=UTF-8">
   <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
   <link rel="stylesheet" media="all" href="docco.css" />
@@ -20,68 +20,63 @@
             <div id="jump_page">
 
 
-                <a class="source" href="basin.html">
+                <a class="source" href="basin.js.html">
                   basin.js
                 </a>
 
 
-                <a class="source" href="basin.queue.html">
+                <a class="source" href="basin.queue.js.html">
                   basin.queue.js
                 </a>
 
 
-                <a class="source" href="basin.responder.html">
+                <a class="source" href="basin.responder.js.html">
                   basin.responder.js
                 </a>
 
 
-                <a class="source" href="basin.transformer.html">
-                  basin.transformer.js
+                <a class="source" href="delegate.js.html">
+                  delegate.js
                 </a>
 
 
-                <a class="source" href="multiplexer.html">
+                <a class="source" href="multiplexer.js.html">
                   multiplexer.js
                 </a>
 
 
-                <a class="source" href="prefixer.html">
+                <a class="source" href="prefixer.js.html">
                   prefixer.js
                 </a>
 
 
-                <a class="source" href="responder.html">
+                <a class="source" href="responder.js.html">
                   responder.js
                 </a>
 
 
-                <a class="source" href="socket.html">
+                <a class="source" href="socket.js.html">
                   socket.js
                 </a>
 
 
-                <a class="source" href="spigot.base.html">
+                <a class="source" href="spigot.base.js.html">
                   spigot.base.js
                 </a>
 
 
-                <a class="source" href="spigot.generator.html">
+                <a class="source" href="spigot.generator.js.html">
                   spigot.generator.js
                 </a>
 
 
-                <a class="source" href="spigot.html">
+                <a class="source" href="spigot.js.html">
                   spigot.js
                 </a>
 
 
-                <a class="source" href="spigot.queue.html">
+                <a class="source" href="spigot.queue.js.html">
                   spigot.queue.js
-                </a>
-
-
-                <a class="source" href="spigot.transformer.html">
-                  spigot.transformer.js
                 </a>
 
             </div>
@@ -93,7 +88,7 @@
 
           <li id="title">
               <div class="annotation">
-                  <h1>spigot.js</h1>
+                  <h1>prefixer.js</h1>
               </div>
           </li>
 
@@ -108,8 +103,17 @@
 
             </div>
 
-            <div class="content"><div class='highlight'><pre>exports.Generator = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./spigot.generator'</span>)
-exports.Transformer = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./spigot.transformer'</span>)
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> coalesce = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nascent.coalesce'</span>)
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Prefixer</span> (<span class="hljs-params">prefix</span>) </span>{
+    <span class="hljs-keyword">this</span>._prefix = coalesce(prefix, <span class="hljs-string">'_'</span>)
+}
+
+Prefixer.prototype.map = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">envelope</span>) </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>._prefix + envelope.cookie
+}
+
+<span class="hljs-built_in">module</span>.exports = Prefixer
 
 </pre></div></div>
 

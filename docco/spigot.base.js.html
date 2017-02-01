@@ -20,68 +20,63 @@
             <div id="jump_page">
 
 
-                <a class="source" href="basin.html">
+                <a class="source" href="basin.js.html">
                   basin.js
                 </a>
 
 
-                <a class="source" href="basin.queue.html">
+                <a class="source" href="basin.queue.js.html">
                   basin.queue.js
                 </a>
 
 
-                <a class="source" href="basin.responder.html">
+                <a class="source" href="basin.responder.js.html">
                   basin.responder.js
                 </a>
 
 
-                <a class="source" href="basin.transformer.html">
-                  basin.transformer.js
+                <a class="source" href="delegate.js.html">
+                  delegate.js
                 </a>
 
 
-                <a class="source" href="multiplexer.html">
+                <a class="source" href="multiplexer.js.html">
                   multiplexer.js
                 </a>
 
 
-                <a class="source" href="prefixer.html">
+                <a class="source" href="prefixer.js.html">
                   prefixer.js
                 </a>
 
 
-                <a class="source" href="responder.html">
+                <a class="source" href="responder.js.html">
                   responder.js
                 </a>
 
 
-                <a class="source" href="socket.html">
+                <a class="source" href="socket.js.html">
                   socket.js
                 </a>
 
 
-                <a class="source" href="spigot.base.html">
+                <a class="source" href="spigot.base.js.html">
                   spigot.base.js
                 </a>
 
 
-                <a class="source" href="spigot.generator.html">
+                <a class="source" href="spigot.generator.js.html">
                   spigot.generator.js
                 </a>
 
 
-                <a class="source" href="spigot.html">
+                <a class="source" href="spigot.js.html">
                   spigot.js
                 </a>
 
 
-                <a class="source" href="spigot.queue.html">
+                <a class="source" href="spigot.queue.js.html">
                   spigot.queue.js
-                </a>
-
-
-                <a class="source" href="spigot.transformer.html">
-                  spigot.transformer.js
                 </a>
 
             </div>
@@ -112,7 +107,7 @@
 <span class="hljs-keyword">var</span> util = <span class="hljs-built_in">require</span>(<span class="hljs-string">'util'</span>)
 
 <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Spigot</span> (<span class="hljs-params"></span>) </span>{
-    <span class="hljs-keyword">this</span>.messages = <span class="hljs-keyword">new</span> Procession
+    <span class="hljs-keyword">this</span>.requests = <span class="hljs-keyword">new</span> Procession
 }
 
 Spigot.prototype.emptyInto = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">basin</span>) </span>{

@@ -20,68 +20,63 @@
             <div id="jump_page">
 
 
-                <a class="source" href="basin.html">
+                <a class="source" href="basin.js.html">
                   basin.js
                 </a>
 
 
-                <a class="source" href="basin.queue.html">
+                <a class="source" href="basin.queue.js.html">
                   basin.queue.js
                 </a>
 
 
-                <a class="source" href="basin.responder.html">
+                <a class="source" href="basin.responder.js.html">
                   basin.responder.js
                 </a>
 
 
-                <a class="source" href="basin.transformer.html">
-                  basin.transformer.js
+                <a class="source" href="delegate.js.html">
+                  delegate.js
                 </a>
 
 
-                <a class="source" href="multiplexer.html">
+                <a class="source" href="multiplexer.js.html">
                   multiplexer.js
                 </a>
 
 
-                <a class="source" href="prefixer.html">
+                <a class="source" href="prefixer.js.html">
                   prefixer.js
                 </a>
 
 
-                <a class="source" href="responder.html">
+                <a class="source" href="responder.js.html">
                   responder.js
                 </a>
 
 
-                <a class="source" href="socket.html">
+                <a class="source" href="socket.js.html">
                   socket.js
                 </a>
 
 
-                <a class="source" href="spigot.base.html">
+                <a class="source" href="spigot.base.js.html">
                   spigot.base.js
                 </a>
 
 
-                <a class="source" href="spigot.generator.html">
+                <a class="source" href="spigot.generator.js.html">
                   spigot.generator.js
                 </a>
 
 
-                <a class="source" href="spigot.html">
+                <a class="source" href="spigot.js.html">
                   spigot.js
                 </a>
 
 
-                <a class="source" href="spigot.queue.html">
+                <a class="source" href="spigot.queue.js.html">
                   spigot.queue.js
-                </a>
-
-
-                <a class="source" href="spigot.transformer.html">
-                  spigot.transformer.js
                 </a>
 
             </div>
@@ -112,47 +107,58 @@
 <span class="hljs-keyword">var</span> Spigot = { <span class="hljs-attr">Queue</span>: <span class="hljs-built_in">require</span>(<span class="hljs-string">'./spigot.queue'</span>) }
 <span class="hljs-keyword">var</span> Basin = { <span class="hljs-attr">Queue</span>: <span class="hljs-built_in">require</span>(<span class="hljs-string">'./basin.queue'</span>) }
 
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Contextualizer</span> (<span class="hljs-params">socket, outlet</span>) </span>{
+    <span class="hljs-keyword">this</span>._socket = socke
+    <span class="hljs-keyword">this</span>._outlet = outle
+}
+
+Contextualizer.prototype.enqueue = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">envelope, callback</span>) </span>{
+    <span class="hljs-keyword">this</span>._socket._enqueue(envelope, <span class="hljs-keyword">this</span>._outlet, callback)
+}
+
 <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Socket</span> (<span class="hljs-params">multiplexer, id, serverSide</span>) </span>{
     <span class="hljs-keyword">this</span>._serverSide = serverSide
     <span class="hljs-keyword">this</span>._serverKey = <span class="hljs-string">'[server]('</span> + id + <span class="hljs-string">')'</span>
     <span class="hljs-keyword">this</span>._clientKey = <span class="hljs-string">'[client]('</span> + id + <span class="hljs-string">')'</span>
     <span class="hljs-keyword">this</span>._multiplexer = multiplexer
     <span class="hljs-keyword">this</span>._id = id
-</pre></div></div>
-
-        </li>
-
-
-        <li id="section-2">
-            <div class="annotation">
-
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-2">&#182;</a>
-              </div>
-              <p>TODO Server versus client?</p>
-
-            </div>
-
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">this</span>.spigot = <span class="hljs-keyword">new</span> Spigot.Queue(<span class="hljs-keyword">this</span>)
-    <span class="hljs-keyword">this</span>.basin = <span class="hljs-keyword">new</span> Basin.Queue(<span class="hljs-keyword">this</span>)
+    <span class="hljs-keyword">this</span>.spigot = <span class="hljs-keyword">new</span> Spigot.Queue(<span class="hljs-keyword">new</span> Contextualizer(<span class="hljs-keyword">this</span>, <span class="hljs-string">'basin'</span>))
+    <span class="hljs-keyword">this</span>.basin = <span class="hljs-keyword">new</span> Basin.Queue(<span class="hljs-keyword">new</span> Contextualizer(<span class="hljs-keyword">this</span>, <span class="hljs-string">'spigot'</span>))
 }
 
-Socket.prototype.enqueue = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, envelope</span>) </span>{
+Socket.prototype._shutdown = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">error</span>) </span>{
+    <span class="hljs-keyword">this</span>.basin.responses.push(error)
+    <span class="hljs-keyword">this</span>.spigot.requests.push(error)
+}
+
+Socket.prototype._enqueue = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, envelope, outlet</span>) </span>{
     <span class="hljs-keyword">var</span> <span class="hljs-keyword">from</span> = <span class="hljs-keyword">this</span>._serverSide ? <span class="hljs-keyword">this</span>._serverKey : <span class="hljs-keyword">this</span>._clientKey
     <span class="hljs-keyword">var</span> to = <span class="hljs-keyword">this</span>._serverSide ? <span class="hljs-keyword">this</span>._clientKey : <span class="hljs-keyword">this</span>._serverKey
     <span class="hljs-keyword">async</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
         <span class="hljs-keyword">if</span> (envelope == <span class="hljs-literal">null</span>) {
             <span class="hljs-keyword">this</span>._multiplexer._output.write(<span class="hljs-built_in">JSON</span>.stringify({
-                <span class="hljs-attr">cookie</span>: <span class="hljs-string">'trailer'</span>, <span class="hljs-attr">to</span>: to, <span class="hljs-attr">body</span>: <span class="hljs-literal">null</span>
+                <span class="hljs-attr">module</span>: <span class="hljs-string">'conduit'</span>,
+                <span class="hljs-attr">type</span>: <span class="hljs-string">'trailer'</span>,
+                <span class="hljs-attr">to</span>: to,
+                <span class="hljs-attr">outlet</span>: outlet,
+                <span class="hljs-attr">body</span>: <span class="hljs-literal">null</span>
             }) + <span class="hljs-string">'\n'</span>, <span class="hljs-keyword">async</span>())
         } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (Buffer.isBuffer(envelope.body)) {
             <span class="hljs-keyword">this</span>._multiplexer._output.write(<span class="hljs-built_in">JSON</span>.stringify({
-                <span class="hljs-attr">cookie</span>: <span class="hljs-string">'chunk'</span>, <span class="hljs-attr">to</span>: to, <span class="hljs-attr">body</span>: { <span class="hljs-attr">length</span>: envelope.body.length }
+                <span class="hljs-attr">module</span>: <span class="hljs-string">'conduit'</span>,
+                <span class="hljs-attr">type</span>: <span class="hljs-string">'chunk'</span>,
+                <span class="hljs-attr">to</span>: to,
+                <span class="hljs-attr">outlet</span>: outlet,
+                <span class="hljs-attr">body</span>: { <span class="hljs-attr">length</span>: envelope.body.length }
             }) + <span class="hljs-string">'\n'</span>, <span class="hljs-keyword">async</span>())
             <span class="hljs-keyword">this</span>._multiplexer._output.write(envelope.body)
         } <span class="hljs-keyword">else</span> {
             <span class="hljs-keyword">this</span>._multiplexer._output.write(<span class="hljs-built_in">JSON</span>.stringify({
-                <span class="hljs-attr">cookie</span>: <span class="hljs-string">'envelope'</span>, <span class="hljs-attr">to</span>: to, <span class="hljs-attr">body</span>: envelope
+                <span class="hljs-attr">module</span>: <span class="hljs-string">'conduit'</span>,
+                <span class="hljs-attr">type</span>: <span class="hljs-string">'envelope'</span>,
+                <span class="hljs-attr">to</span>: to,
+                <span class="hljs-attr">outlet</span>: outlet,
+                <span class="hljs-attr">body</span>: envelope
             }) + <span class="hljs-string">'\n'</span>, <span class="hljs-keyword">async</span>())
         }
     }, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{

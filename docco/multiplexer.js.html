@@ -20,68 +20,63 @@
             <div id="jump_page">
 
 
-                <a class="source" href="basin.html">
+                <a class="source" href="basin.js.html">
                   basin.js
                 </a>
 
 
-                <a class="source" href="basin.queue.html">
+                <a class="source" href="basin.queue.js.html">
                   basin.queue.js
                 </a>
 
 
-                <a class="source" href="basin.responder.html">
+                <a class="source" href="basin.responder.js.html">
                   basin.responder.js
                 </a>
 
 
-                <a class="source" href="basin.transformer.html">
-                  basin.transformer.js
+                <a class="source" href="delegate.js.html">
+                  delegate.js
                 </a>
 
 
-                <a class="source" href="multiplexer.html">
+                <a class="source" href="multiplexer.js.html">
                   multiplexer.js
                 </a>
 
 
-                <a class="source" href="prefixer.html">
+                <a class="source" href="prefixer.js.html">
                   prefixer.js
                 </a>
 
 
-                <a class="source" href="responder.html">
+                <a class="source" href="responder.js.html">
                   responder.js
                 </a>
 
 
-                <a class="source" href="socket.html">
+                <a class="source" href="socket.js.html">
                   socket.js
                 </a>
 
 
-                <a class="source" href="spigot.base.html">
+                <a class="source" href="spigot.base.js.html">
                   spigot.base.js
                 </a>
 
 
-                <a class="source" href="spigot.generator.html">
+                <a class="source" href="spigot.generator.js.html">
                   spigot.generator.js
                 </a>
 
 
-                <a class="source" href="spigot.html">
+                <a class="source" href="spigot.js.html">
                   spigot.js
                 </a>
 
 
-                <a class="source" href="spigot.queue.html">
+                <a class="source" href="spigot.queue.js.html">
                   spigot.queue.js
-                </a>
-
-
-                <a class="source" href="spigot.transformer.html">
-                  spigot.transformer.js
                 </a>
 
             </div>
@@ -105,32 +100,191 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
+              <p>Utitlities common to my work.</p>
 
             </div>
 
-            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> cadence = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cadence'</span>)
-<span class="hljs-keyword">var</span> coalesce = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nascent.coalesce'</span>)
-<span class="hljs-keyword">var</span> delta = <span class="hljs-built_in">require</span>(<span class="hljs-string">'delta'</span>)
-<span class="hljs-keyword">var</span> Staccato = <span class="hljs-built_in">require</span>(<span class="hljs-string">'staccato'</span>)
-<span class="hljs-keyword">var</span> Jacket = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nascent.jacket'</span>)
-<span class="hljs-keyword">var</span> Socket = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./socket'</span>)
-<span class="hljs-keyword">var</span> Monotonic = <span class="hljs-built_in">require</span>(<span class="hljs-string">'monotonic'</span>).asString
-<span class="hljs-keyword">var</span> Destructor = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nascent.destructor'</span>)
-<span class="hljs-keyword">var</span> interrupt = <span class="hljs-built_in">require</span>(<span class="hljs-string">'interrupt'</span>).createInterrupter(<span class="hljs-string">'conduit.muliplexer'</span>)
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> coalesce = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nascent.coalesce'</span>)
 
-<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Multiplexer</span> (<span class="hljs-params">reactor, input, output</span>) </span>{
-    <span class="hljs-keyword">this</span>._reactor = reactor
+</pre></div></div>
+
+        </li>
+
+
+        <li id="section-2">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Control-flow utilities.</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> delta = <span class="hljs-built_in">require</span>(<span class="hljs-string">'delta'</span>)
+<span class="hljs-keyword">var</span> cadence = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cadence'</span>)
+
+</pre></div></div>
+
+        </li>
+
+
+        <li id="section-3">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>Wrap a user specified callback.</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Operation = <span class="hljs-built_in">require</span>(<span class="hljs-string">'operation'</span>)
+
+</pre></div></div>
+
+        </li>
+
+
+        <li id="section-4">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>Evented stream reading and writing.</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Staccato = <span class="hljs-built_in">require</span>(<span class="hljs-string">'staccato'</span>)
+
+</pre></div></div>
+
+        </li>
+
+
+        <li id="section-5">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>JSON for use in packets.</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Jacket = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nascent.jacket'</span>)
+
+</pre></div></div>
+
+        </li>
+
+
+        <li id="section-6">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>Ever increasing serial value with no maximum value.</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Monotonic = <span class="hljs-built_in">require</span>(<span class="hljs-string">'monotonic'</span>).asString
+
+</pre></div></div>
+
+        </li>
+
+
+        <li id="section-7">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>Controlled demolition of complicated objects.</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Destructor = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nascent.destructor'</span>)
+
+</pre></div></div>
+
+        </li>
+
+
+        <li id="section-8">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>Exceptions with context.</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> interrupt = <span class="hljs-built_in">require</span>(<span class="hljs-string">'interrupt'</span>).createInterrupter(<span class="hljs-string">'conduit.muliplexer'</span>)
+
+</pre></div></div>
+
+        </li>
+
+
+        <li id="section-9">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>Our socket implementation.</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Socket = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./socket'</span>)
+
+</pre></div></div>
+
+        </li>
+
+
+        <li id="section-10">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>Create a Multiplexer with the given input and output streams that invoked the
+the connect operation when a new socket is created</p>
+
+            </div>
+
+        </li>
+
+
+        <li id="section-11">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Multiplexer</span> (<span class="hljs-params">input, output, head, connect</span>) </span>{
+    <span class="hljs-keyword">this</span>._connect = connect == <span class="hljs-literal">null</span> ? <span class="hljs-literal">null</span> : <span class="hljs-keyword">new</span> Operation(connect)
     <span class="hljs-keyword">this</span>._record = <span class="hljs-keyword">new</span> Jacke
     <span class="hljs-keyword">this</span>._output = <span class="hljs-keyword">new</span> Staccato.Writable(output)
     <span class="hljs-keyword">this</span>._input = <span class="hljs-keyword">new</span> Staccato.Readable(input)
     <span class="hljs-keyword">this</span>._sockets = {}
     <span class="hljs-keyword">this</span>._identifier = <span class="hljs-string">'0'</span>
     <span class="hljs-keyword">this</span>._destructor = <span class="hljs-keyword">new</span> Destructor(interrupt)
-    <span class="hljs-keyword">this</span>._destructor.addJanitor(<span class="hljs-string">'unlisten'</span>, <span class="hljs-keyword">this</span>._unlisten.bind(<span class="hljs-keyword">this</span>))
+    <span class="hljs-keyword">this</span>._destructor.addJanitor(<span class="hljs-string">'shutdown'</span>, <span class="hljs-keyword">this</span>._shutdown.bind(<span class="hljs-keyword">this</span>))
     <span class="hljs-keyword">this</span>._destructor.addJanitor(<span class="hljs-string">'mark'</span>, <span class="hljs-keyword">this</span>._destroyed.bind(<span class="hljs-keyword">this</span>))
+    <span class="hljs-keyword">this</span>._listen(head, <span class="hljs-keyword">this</span>._destructor.destroy.bind(<span class="hljs-keyword">this</span>._destructor))
 }
 
-Multiplexer.prototype.listen = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, buffer</span>) </span>{
+Multiplexer.prototype._listen = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, buffer</span>) </span>{
     <span class="hljs-keyword">async</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
         <span class="hljs-keyword">this</span>._parse(coalesce(buffer, <span class="hljs-keyword">new</span> Buffer(<span class="hljs-number">0</span>)), <span class="hljs-keyword">async</span>())
     }, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
@@ -142,9 +296,15 @@ Multiplexer.prototype._destroyed = <span class="hljs-function"><span class="hljs
     <span class="hljs-keyword">this</span>.destroyed = <span class="hljs-literal">true</span>
 }
 
-Multiplexer.prototype._unlisten = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+Multiplexer.prototype._shutdown = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
     <span class="hljs-keyword">this</span>._output.destroy()
     <span class="hljs-keyword">this</span>._input.destroy()
+    <span class="hljs-keyword">var</span> error = interrupt({ <span class="hljs-attr">name</span>: <span class="hljs-string">'shutdown'</span>, <span class="hljs-attr">cause</span>: coalesce(<span class="hljs-keyword">this</span>._destructor.cause) })
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> key <span class="hljs-keyword">in</span> <span class="hljs-keyword">this</span>._sockets) {
+        <span class="hljs-keyword">var</span> socket = <span class="hljs-keyword">this</span>._sockets[key]
+        socket.basin.responses.push(error)
+        socket.spigot.requests.push(error)
+    }
 }
 
 Multiplexer.prototype.destroy = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
@@ -158,11 +318,11 @@ Multiplexer.prototype.connect = cadence(<span class="hljs-function"><span class=
         </li>
 
 
-        <li id="section-2">
+        <li id="section-12">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-2">&#182;</a>
+                <a class="pilcrow" href="#section-12">&#182;</a>
               </div>
               <p>TODO id is going to collide, value on each side, mark with creator?</p>
 
@@ -171,7 +331,12 @@ Multiplexer.prototype.connect = cadence(<span class="hljs-function"><span class=
             <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">var</span> socket = <span class="hljs-keyword">new</span> Socket(<span class="hljs-keyword">this</span>, id, <span class="hljs-literal">false</span>)
     <span class="hljs-keyword">this</span>._sockets[socket._clientKey] = socke
     <span class="hljs-keyword">async</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
-        <span class="hljs-keyword">this</span>._output.write(<span class="hljs-built_in">JSON</span>.stringify({ <span class="hljs-attr">cookie</span>: <span class="hljs-string">'header'</span>, <span class="hljs-attr">to</span>: id, <span class="hljs-attr">body</span>: <span class="hljs-literal">null</span> }) + <span class="hljs-string">'\n'</span>, <span class="hljs-keyword">async</span>())
+        <span class="hljs-keyword">this</span>._output.write(<span class="hljs-built_in">JSON</span>.stringify({
+            <span class="hljs-attr">module</span>: <span class="hljs-string">'colleague'</span>,
+            <span class="hljs-attr">type</span>: <span class="hljs-string">'header'</span>,
+            <span class="hljs-attr">to</span>: id,
+            <span class="hljs-attr">body</span>: <span class="hljs-literal">null</span>
+        }) + <span class="hljs-string">'\n'</span>, <span class="hljs-keyword">async</span>())
     }, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
         <span class="hljs-keyword">return</span> [ socket ]
     })
@@ -207,19 +372,25 @@ Multiplexer.prototype._json = cadence(<span class="hljs-function"><span class="h
     <span class="hljs-keyword">async</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
         <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>._record.object != <span class="hljs-literal">null</span>) {
             <span class="hljs-keyword">var</span> envelope = <span class="hljs-keyword">this</span>._record.objec
-            <span class="hljs-keyword">switch</span> (envelope.cookie) {
+            <span class="hljs-keyword">switch</span> (envelope.type) {
             <span class="hljs-keyword">case</span> <span class="hljs-string">'header'</span>:
                 <span class="hljs-keyword">var</span> socket = <span class="hljs-keyword">new</span> Socket(<span class="hljs-keyword">this</span>, envelope.to, <span class="hljs-literal">true</span>)
                 <span class="hljs-keyword">this</span>._sockets[socket._serverKey] = socke
-                <span class="hljs-keyword">this</span>._reactor.connect(socket, <span class="hljs-keyword">async</span>())
+                <span class="hljs-keyword">this</span>._connect.apply([ socket, <span class="hljs-keyword">async</span>() ])
                 <span class="hljs-keyword">break</span>
             <span class="hljs-keyword">case</span> <span class="hljs-string">'envelope'</span>:
                 <span class="hljs-keyword">var</span> socket = <span class="hljs-keyword">this</span>._sockets[envelope.to]
-                <span class="hljs-keyword">var</span> queue = socket._serverSide ? socket.spigot.requests : socket.basin.responses
+                <span class="hljs-keyword">var</span> queue = envelope.outlet == <span class="hljs-string">'spigot'</span> ? socket.spigot.requests : socket.basin.responses
                 queue.enqueue(envelope.body, <span class="hljs-keyword">async</span>())
                 <span class="hljs-keyword">break</span>
             <span class="hljs-keyword">case</span> <span class="hljs-string">'chunk'</span>:
                 <span class="hljs-keyword">this</span>._chunk = <span class="hljs-keyword">this</span>._record.objec
+                <span class="hljs-keyword">break</span>
+            <span class="hljs-keyword">case</span> <span class="hljs-string">'trailer'</span>:
+                <span class="hljs-keyword">var</span> socket = <span class="hljs-keyword">this</span>._sockets[envelope.to]
+                <span class="hljs-keyword">var</span> queue = envelope.outlet == <span class="hljs-string">'spigot'</span> ? spigot.requests : socket.basin.responses
+                queue.enqueue(<span class="hljs-literal">null</span>, <span class="hljs-keyword">async</span>())
+                <span class="hljs-keyword">delete</span> <span class="hljs-keyword">this</span>._sockets[envelope.to]
                 <span class="hljs-keyword">break</span>
             }
             <span class="hljs-keyword">this</span>._record = <span class="hljs-keyword">new</span> Jacke

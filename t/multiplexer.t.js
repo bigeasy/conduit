@@ -6,6 +6,7 @@ function prove (async, assert) {
     var Spigot = require('../spigot')
     var stream = require('stream')
     var delta = require('delta')
+    var abend = require('abend')
     var cadence = require('cadence')
     var input = new stream.PassThrough
     var output = new stream.PassThrough
@@ -19,12 +20,14 @@ function prove (async, assert) {
     async(function () {
         delta(async()).ee(input).on('readable')
         multiplexers.push(new Multiplexer(output, input))
+        multiplexers[0].listen(abend)
         multiplexers[0].connect(async())
     }, function (socket) {
         var head = input.read()
-        multiplexers.push(new Multiplexer(input, output, head, cadence(function (async, socket) {
+        multiplexers.push(new Multiplexer(input, output, cadence(function (async, socket) {
             socket.spigot.emptyInto(basin)
         })))
+        multiplexers[1].listen(head, abend)
         async(function () {
             spigot.emptyInto(socket.basin)
             spigot.request(1, async())

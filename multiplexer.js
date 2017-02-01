@@ -30,7 +30,7 @@ var Socket = require('./socket')
 // the connect operation when a new socket is created
 
 //
-function Multiplexer (input, output, head, connect) {
+function Multiplexer (input, output, connect) {
     this._connect = connect == null ? null : new Operation(connect)
     this._record = new Jacket
     this._output = new Staccato.Writable(output)
@@ -41,15 +41,19 @@ function Multiplexer (input, output, head, connect) {
     this._destructor = new Destructor(interrupt)
     this._destructor.addJanitor('shutdown', this._shutdown.bind(this))
     this._destructor.addJanitor('mark', this._destroyed.bind(this))
-    this._listen(head, this._destructor.destroy.bind(this._destructor))
 }
 
-Multiplexer.prototype._listen = cadence(function (async, buffer) {
-    async(function () {
-        this._parse(coalesce(buffer, new Buffer(0)), async())
-    }, function () {
-        this._read(async())
-    })
+Multiplexer.prototype.listen = cadence(function (async, buffer) {
+    async([function () {
+        async(function () {
+            this._parse(coalesce(buffer, new Buffer(0)), async())
+        }, function () {
+            this._read(async())
+        })
+    }, function (error) {
+        this._destructor.destroy(error)
+        throw error
+    }])
 })
 
 Multiplexer.prototype._destroyed = function () {
@@ -163,18 +167,14 @@ Multiplexer.prototype._parse = cadence(function (async, buffer) {
 })
 
 Multiplexer.prototype._read = cadence(function (async) {
-    async([function () {
-        var read = async(function () {
-            this._input.read(async())
-        }, function (buffer) {
-            if (buffer == null) {
-                return [ read.break ]
-            }
-            this._parse(buffer, async())
-        })()
-    }, function (error) {
-        this._destructor.destroy(error)
-    }])
+    var read = async(function () {
+        this._input.read(async())
+    }, function (buffer) {
+        if (buffer == null) {
+            return [ read.break ]
+        }
+        this._parse(buffer, async())
+    })()
 })
 
 module.exports = Multiplexer

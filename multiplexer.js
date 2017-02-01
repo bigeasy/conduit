@@ -96,6 +96,7 @@ Multiplexer.prototype.connect = cadence(function (async) {
 Multiplexer.prototype._buffer = cadence(function (async, buffer, start, end) {
     async(function () {
         var length = Math.min(buffer.length, this._chunk.length)
+        var slice = buffer.slice(start, start + length)
         start += length
         this._chunk.length -= length
         var socket = this._sockets[this._chunk.to]
@@ -104,7 +105,7 @@ Multiplexer.prototype._buffer = cadence(function (async, buffer, start, end) {
         if (this._chunk.length != 0) {
             envelope = JSON.parse(JSON.stringify(envelope))
         }
-        envelope.body = buffer.slice(start, start + length)
+        envelope.body = slice
         queue.enqueue(envelope, async())
     }, function () {
         if (this._chunk.length == 0) {

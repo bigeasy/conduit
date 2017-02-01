@@ -58,7 +58,8 @@ Multiplexer.prototype._destroyed = function () {
 Multiplexer.prototype._shutdown = function () {
     this._output.destroy()
     this._input.destroy()
-    var error = interrupt({ name: 'shutdown', cause: coalesce(this._destructor.cause) })
+    this._endable.end()
+    var error = interrupt('shutdown', coalesce(this._destructor.cause))
     for (var key in this._sockets) {
         var socket = this._sockets[key]
         socket.basin.responses.push(error)
@@ -121,6 +122,8 @@ Multiplexer.prototype._json = cadence(function (async, buffer, start, end) {
             case 'header':
                 var socket = new Socket(this, envelope.to, true)
                 this._sockets[socket._serverKey] = socket
+                // Not sure what to do in the case of these errors, no sockets
+                // to send them through, so maybe we do just crash.
                 this._connect.apply([ socket, async() ])
                 break
             case 'envelope':
@@ -159,14 +162,18 @@ Multiplexer.prototype._parse = cadence(function (async, buffer) {
 })
 
 Multiplexer.prototype._read = cadence(function (async) {
-    var read = async(function () {
-        this._input.read(async())
-    }, function (buffer) {
-        if (buffer == null) {
-            return [ read.break ]
-        }
-        this._parse(buffer, async())
-    })()
+    async([function () {
+        var read = async(function () {
+            this._input.read(async())
+        }, function (buffer) {
+            if (buffer == null) {
+                return [ read.break ]
+            }
+            this._parse(buffer, async())
+        })()
+    }, function (error) {
+        this._destructor.destroy(error)
+    }])
 })
 
 module.exports = Multiplexer

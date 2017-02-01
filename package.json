@@ -19,6 +19,7 @@
     },
     "dependencies":
     {
+                            "abend":                        "1.0.x",
                             "cadence":                      "1.0.x",
                             "cliffhanger":                  "1.3.x",
                             "interrupt":                    "4.0.x",

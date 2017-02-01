@@ -43,7 +43,7 @@ export CHROME_REFRESH
 PATH  := "$(PATH):$(PWD)/node_modules/.bin"
 SHELL := env PATH=$(PATH) /bin/sh
 
-javascript := $(wildcard ../*.js)
+javascript := $(filter-out ../_%, $(wildcard ../*.js))
 sources := $(patsubst ../%.js,source/%.js.js,$(javascript))
 docco := $(patsubst source/%.js.js,docco/%.js.html,$(sources))
 outputs := $(docco) css/style.css index.html

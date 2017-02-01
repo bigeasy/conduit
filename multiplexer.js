@@ -35,6 +35,7 @@ function Multiplexer (input, output, head, connect) {
     this._record = new Jacket
     this._output = new Staccato.Writable(output)
     this._input = new Staccato.Readable(input)
+    this._endable = output
     this._sockets = {}
     this._identifier = '0'
     this._destructor = new Destructor(interrupt)

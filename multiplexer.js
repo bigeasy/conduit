@@ -95,26 +95,23 @@ Multiplexer.prototype.connect = cadence(function (async) {
 
 Multiplexer.prototype._buffer = cadence(function (async, buffer, start, end) {
     async(function () {
-        var object = this._record.object
-        var length = Math.min(buffer.length, object.length)
-        var spigot = cartridge.value.spigot
+        var length = Math.min(buffer.length, this._chunk.length)
         start += length
-        this._record.object.length -= length
-        this._sockets[this._chunk.to].basin.responses.enqueue({
-            cookie: coalesce(this._chunk.body.cookie),
-            to: coalesce(this._chunk.body.to),
-            from: coalesce(this._chunk.body.from),
-            body: buffer.slice(start, start + length)
-        }, async())
-    }, function () {
-        if (this._record.object.length == 0) {
-            this._record = new Jacket
-            cartridge.remove()
-            return [ start ]
-        } else {
-            cartridge.release()
-            return [ async.break, start ]
+        this._chunk.length -= length
+        var socket = this._sockets[this._chunk.to]
+        var queue = this._chunk.outlet == 'spigot' ? socket.spigot.requests : socket.basin.responses
+        var envelope = this._chunk.body
+        if (this._chunk.length != 0) {
+            envelope = JSON.parse(JSON.stringify(envelope))
         }
+        envelope.body = buffer.slice(start, start + length)
+        queue.enqueue(envelope, async())
+    }, function () {
+        if (this._chunk.length == 0) {
+            this._chunk = null
+            this._record = new Jacket
+        }
+        return start
     })
 })
 

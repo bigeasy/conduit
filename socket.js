@@ -39,14 +39,19 @@ Socket.prototype._enqueue = cadence(function (async, envelope, outlet) {
                 body: null
             }) + '\n', async())
         } else if (Buffer.isBuffer(envelope.body)) {
-            this._multiplexer._output.write(JSON.stringify({
+            var body = envelope.body
+            envelope.body = null
+            var packet = JSON.stringify({
                 module: 'conduit',
                 type: 'chunk',
                 to: to,
                 outlet: outlet,
-                body: { length: envelope.body.length }
-            }) + '\n', async())
-            this._multiplexer._output.write(envelope.body)
+                length: body.length,
+                body: envelope
+            }) + '\n'
+            envelope.body = body
+            this._multiplexer._output.write(packet, async())
+            this._multiplexer._output.write(envelope.body, async())
         } else {
             this._multiplexer._output.write(JSON.stringify({
                 module: 'conduit',

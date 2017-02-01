@@ -31,11 +31,11 @@ function prove (async, assert) {
         async([function () {
             generator.request(1, async())
         }, function (error) {
-            assert(error.interrupt, 'conduit#closed', 'closed')
+            assert(error.interrupt, 'procession#endOfStream', 'closed')
         }])
     }, [function () {
         generator.request(1, async())
     }, function (error) {
-        assert(error.interrupt, 'conduit#closed', 'still closed')
+        assert(error.interrupt, 'procession#endOfStream', 'still closed')
     }])
 }

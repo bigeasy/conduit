@@ -17,7 +17,7 @@ util.inherits(Generator, Spigot.Base)
 
 Generator.prototype.request = cadence(function (async, body) {
     if (this.requests.endOfStream) {
-        throw new interrupt('closed')
+        Procession.raiseEndOfStream(null)
     } else {
         this.requests.enqueue({
             type: 'conduit',
@@ -37,15 +37,14 @@ Generator.prototype.send = cadence(function (async, body) {
 })
 
 Generator.prototype.enqueue = cadence(function (async, envelope) {
-    if (envelope == null) {
-        envelope = interrupt('closed')
-    }
-    if (envelope instanceof Error) {
-        this.requests.push(null)
-        this._cliffhanger.cancel(envelope)
-    } else {
+    async([function () {
+        Procession.raiseError(envelope)
+        Procession.raiseEndOfStream(envelope)
         this._cliffhanger.resolve(envelope.to, [ null, envelope.body ])
-    }
+    }, function (error) {
+        this._cliffhanger.cancel(error)
+        this.requests.push(null)
+    }])
 })
 
 module.exports = Generator

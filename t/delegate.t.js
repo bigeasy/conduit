@@ -17,16 +17,18 @@ function prove (async, assert) {
         delegate.invoke(null, async())
     }, function () {
         object = {
-            destroy: function () {
-                assert(arguments.length, 0, 'destroy end of stream')
+            destroy: function (callback) {
+                assert(arguments.length, 1, 'destroy end of stream')
+                callback()
             }
         }
         delegate = new Delegate(object, 'enqueue')
         delegate.invoke(null, async())
     }, function () {
         object = {
-            destroy: function (error) {
+            destroy: function (error, callback) {
                 assert(error.message, 'badness', 'destroy error')
+                callback()
             }
         }
         delegate = new Delegate(object, 'enqueue')

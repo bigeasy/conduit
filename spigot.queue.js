@@ -12,7 +12,7 @@ var Delegate = require('./delegate')
 
 //
 function Queue (delegate) {
-    this._delegate = new Delegate(delegate, 'enqueue')
+    this._delegate = new Delegate(delegate)
     Spigot.Base.call(this)
 }
 util.inherits(Queue, Spigot.Base)
@@ -21,7 +21,7 @@ util.inherits(Queue, Spigot.Base)
 
 //
 Queue.prototype.enqueue = function (envelope, callback) {
-    this._delegate.invoke(envelope, callback)
+    this._delegate.enqueue(envelope, callback)
 }
 
 // Export as constructor.

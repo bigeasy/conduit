@@ -17,7 +17,7 @@ function Queue (delegate) {
 
 //
 Queue.prototype.enqueue = function (envelope, callback) {
-    this._delegate.invoke(envelope, callback)
+    this._delegate.enqueue(envelope, callback)
 }
 
 // Export as constructor.

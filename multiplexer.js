@@ -2,6 +2,7 @@
 var coalesce = require('nascent.coalesce')
 
 // Control-flow utilities.
+var abend = require('abend')
 var delta = require('delta')
 var cadence = require('cadence')
 
@@ -21,7 +22,7 @@ var Monotonic = require('monotonic').asString
 var Destructor = require('nascent.destructor')
 
 // Exceptions with context.
-var interrupt = require('interrupt').createInterrupter('conduit.muliplexer')
+var interrupt = require('interrupt').createInterrupter('conduit')
 
 // Our socket implementation.
 var Socket = require('./socket')
@@ -67,6 +68,8 @@ Multiplexer.prototype._shutdown = function () {
     var error = interrupt('shutdown', coalesce(this._destructor.cause))
     for (var key in this._sockets) {
         var socket = this._sockets[key]
+        socket.basin.enqueue(error, abend)
+        socket.spigot.enqueue(error, abend)
         socket.basin.responses.push(error)
         socket.spigot.requests.push(error)
     }

@@ -38,6 +38,16 @@ Socket.prototype._enqueue = cadence(function (async, envelope, outlet) {
                 outlet: outlet,
                 body: null
             }) + '\n', async())
+        } else if (envelope instanceof Error) {
+            if (!/^conduit#shutdown$/m.test(envelope.message)) {
+                this._multiplexer._output.write(JSON.stringify({
+                    module: 'conduit',
+                    type: 'hangup',
+                    to: to,
+                    outlet: outlet,
+                    body: null
+                }) + '\n', async())
+            }
         } else if (Buffer.isBuffer(envelope.body)) {
             var body = envelope.body
             envelope.body = null

@@ -1,17 +1,41 @@
-require('proof/redux')(1, require('cadence')(prove))
+require('proof/redux')(5, require('cadence')(prove))
 
 function prove (async, assert) {
     var Responder = require('../responder')
     var responder = new Responder({
-        mapped: function (value, callback) {
+        request: function (value, callback) {
             callback(null, value + 1)
         }
-    }, {
-        map: function () { return 'mapped' }
-    })
+    }, 'responder')
+    var responses = responder.basin.responses.shifter()
+    var requests = responder.spigot.requests.shifter()
     async(function () {
-        responder.request(1, async())
-    }, function (value) {
-        assert(value, 2, 'mapped')
+        responder.basin.requests.enqueue({
+            module: 'conduit',
+            to: 'responder',
+            from: 'requester',
+            cookie: '1',
+            body: 1
+        }, async())
+    }, function () {
+        assert(responses.shift().body, {
+            module: 'conduit',
+            to: 'requester',
+            from: 'responder',
+            cookie: '1',
+            body: 2
+        }, 'responder responded')
+    }, function () {
+        responder.basin.requests.enqueue(1, async())
+    }, function () {
+        assert(requests.shift().body, 1, 'responder forwarded')
+        responder.spigot.responses.enqueue(3, async())
+    }, function () {
+        assert(responses.shift().body, 3, 'responder backwarded')
+    }, function () {
+        responder.basin.requests.enqueue(null, async())
+    }, function () {
+        assert(responses.shift().method, 'endOfStream', 'basin closed')
+        assert(requests.shift().method, 'endOfStream', 'spigot closed')
     })
 }

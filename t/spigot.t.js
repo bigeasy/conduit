@@ -1,7 +1,12 @@
-require('proof/redux')(2, prove)
+require('proof/redux')(1, require('cadence')(prove))
 
-function prove (assert) {
-    var Basin = require('../basin')
-    assert(Basin.Queue, 'queue required')
-    assert(Basin.Responder, 'responder required')
+function prove (async, assert) {
+    var Spigot = require('../spigot')
+    var queue = new Spigot({
+        fromSpigot: function (envelope, callback) {
+            assert(envelope.body, 1, 'enqueued')
+            callback()
+        }
+    })
+    queue.responses.enqueue(1, async())
 }

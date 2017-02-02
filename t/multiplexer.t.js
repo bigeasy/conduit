@@ -2,21 +2,20 @@ require('proof/redux')(2, require('cadence')(prove))
 
 function prove (async, assert) {
     var Multiplexer = require('../multiplexer')
-    var Basin = require('../basin')
-    var Spigot = require('../spigot')
+    var Responder = require('../responder')
+    var Requester = require('../requester')
     var stream = require('stream')
     var delta = require('delta')
     var abend = require('abend')
     var cadence = require('cadence')
     var input = new stream.PassThrough
     var output = new stream.PassThrough
-    var spigot = new Spigot.Generator
-    var basin = new Basin.Responder({
+    var requester = new Requester('requester')
+    var responder = new Responder({
         request: cadence(function (async, value) {
-            console.log('called!')
             return value + 1
         })
-    })
+    }, 'responder')
     var multiplexers = []
     async(function () {
         delta(async()).ee(input).on('readable')
@@ -26,12 +25,12 @@ function prove (async, assert) {
     }, function (socket) {
         var head = input.read()
         multiplexers.push(new Multiplexer(input, output, cadence(function (async, socket) {
-            socket.spigot.emptyInto(basin)
+            socket.spigot.emptyInto(responder.basin)
         })))
         multiplexers[1].listen(head, abend)
         async(function () {
-            spigot.emptyInto(socket.basin)
-            spigot.request(1, async())
+            requester.spigot.emptyInto(socket.basin)
+            requester.request('responder', 1, async())
         }, function (response) {
             assert(response, 2, 'round trip')
             multiplexers[1].destroy()

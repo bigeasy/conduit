@@ -1,14 +1,17 @@
 var cadence = require('cadence')
-var Spigot = { Queue: require('./spigot.queue') }
-var Basin = { Queue: require('./basin.queue') }
+var Spigot = require('./spigot')
+var Basin = require('./basin')
 
-function Contextualizer (socket, outlet) {
+function Contextualizer (socket) {
     this._socket = socket
-    this._outlet = outlet
 }
 
-Contextualizer.prototype.enqueue = function (envelope, callback) {
-    this._socket._enqueue(envelope, this._outlet, callback)
+Contextualizer.prototype.fromSpigot = function (envelope, callback) {
+    this._socket._enqueue(envelope, 'basin', callback)
+}
+
+Contextualizer.prototype.fromBasin = function (envelope, callback) {
+    this._socket._enqueue(envelope, 'spigot', callback)
 }
 
 function Socket (multiplexer, id, serverSide) {
@@ -17,8 +20,8 @@ function Socket (multiplexer, id, serverSide) {
     this._clientKey = '[client](' + id + ')'
     this._multiplexer = multiplexer
     this._id = id
-    this.spigot = new Spigot.Queue(new Contextualizer(this, 'basin'))
-    this.basin = new Basin.Queue(new Contextualizer(this, 'spigot'))
+    this.spigot = new Spigot(new Contextualizer(this))
+    this.basin = new Basin(new Contextualizer(this))
 }
 
 Socket.prototype._shutdown = function (error) {

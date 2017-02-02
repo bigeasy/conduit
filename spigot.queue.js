@@ -12,17 +12,10 @@ var Delegate = require('./delegate')
 
 //
 function Queue (delegate) {
-    this._delegate = new Delegate(delegate)
     Spigot.Base.call(this)
+    this.responses.shifter().pump(delegate)
 }
 util.inherits(Queue, Spigot.Base)
-
-// Enqueue a value into the underlying delegate.
-
-//
-Queue.prototype.enqueue = function (envelope, callback) {
-    this._delegate.enqueue(envelope, callback)
-}
 
 // Export as constructor.
 module.exports = Queue

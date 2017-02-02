@@ -10,14 +10,15 @@ var Cliffhanger = require('cliffhanger')
 var interrupt = require('interrupt').createInterrupter('conduit')
 
 function Generator () {
+    Spigot.Base.call(this)
     this._cliffhanger = new Cliffhanger
-    this.requests = new Procession
+    this.responses.shifter().pump(this)
 }
 util.inherits(Generator, Spigot.Base)
 
 Generator.prototype.request = cadence(function (async, body) {
     if (this.requests.endOfStream) {
-        Procession.raiseEndOfStream(null)
+        Procession.raiseEndOfStream()
     } else {
         this.requests.enqueue({
             type: 'conduit',
@@ -40,7 +41,7 @@ Generator.prototype.enqueue = cadence(function (async, envelope) {
     async([function () {
         Procession.raiseError(envelope)
         Procession.raiseEndOfStream(envelope)
-        this._cliffhanger.resolve(envelope.to, [ null, envelope.body ])
+        this._cliffhanger.resolve(envelope.body.to, [ null, envelope.body.body ])
     }, function (error) {
         this._cliffhanger.cancel(error)
         this.requests.push(null)

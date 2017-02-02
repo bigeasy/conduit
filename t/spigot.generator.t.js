@@ -9,7 +9,8 @@ function prove (async, assert) {
         async(function () {
             requests.dequeue(async())
         }, function (envelope) {
-            generator.enqueue({ to: envelope.from, body: envelope.body + 1 }, async())
+            envelope = envelope.body
+            generator.responses.enqueue({ to: envelope.from, body: envelope.body + 1 }, async())
         })
         async(function () {
             generator.request(1, async())
@@ -20,13 +21,13 @@ function prove (async, assert) {
         async(function () {
             generator.send(1, async())
         }, function () {
-            assert(requests.shift(), { type: 'conduit', from: null, body: 1 }, 'sent')
+            assert(requests.shift().body, { type: 'conduit', from: null, body: 1 }, 'sent')
         })
     }, function () {
         async(function () {
             requests.dequeue(async())
         }, function (envelope) {
-            generator.enqueue(null, async())
+            generator.responses.enqueue(null, async())
         })
         async([function () {
             generator.request(1, async())

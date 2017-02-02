@@ -1,32 +1,39 @@
+// Control-flow utility.
 var cadence = require('cadence')
+
+// Evented message queue.
 var Procesion = require('procession')
 var coalesce = require('nascent.coalesce')
 
-function Responder (object) {
-    this._object = object
+function Responder (delegate) {
+    this._delegate = delegate
     this.responses = new Procesion
+    this.requests = new Procesion
+    this.requests.pump(this)
 }
 
 Responder.prototype.enqueue = cadence(function (async, envelope) {
-    if (envelope == null) {
-        // TODO Not sure what to do.
-    } else {
+    switch (envelope.method) {
+    case 'endOfStream':
+        this.responses.enqueue(null, async())
+        break
+    case 'error':
+        this.responses.enqueue(envelope.body, async())
+        break
+    case 'entry':
+        envelope = envelope.body
         async(function () {
-            var body = envelope
-            while (typeof body == 'object' && body.type == 'conduit') {
-                body = body.body
-            }
-            this._object.request(body, async())
+            this._delegate.request(envelope.body, async())
         }, function (response) {
             if (envelope.from != null) {
                 this.responses.enqueue({
-                    type: 'conduit',
-                    cookie: coalesce(envelope.cookie),
+                    module: 'conduit',
                     to: envelope.from,
                     body: coalesce(response)
                 }, async())
             }
         })
+        break
     }
 })
 

@@ -13,6 +13,7 @@ function prove (async, assert) {
     var spigot = new Spigot.Generator
     var basin = new Basin.Responder({
         request: cadence(function (async, value) {
+            console.log('called!')
             return value + 1
         })
     })

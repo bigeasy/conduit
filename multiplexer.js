@@ -68,8 +68,8 @@ Multiplexer.prototype._shutdown = function () {
     var error = interrupt('shutdown', coalesce(this._destructor.cause))
     for (var key in this._sockets) {
         var socket = this._sockets[key]
-        socket.basin.enqueue(error, abend)
-        socket.spigot.enqueue(error, abend)
+        socket.basin.requests.push(error)
+        socket.spigot.responses.push(error)
         socket.basin.responses.push(error)
         socket.spigot.requests.push(error)
     }
@@ -86,8 +86,8 @@ Multiplexer.prototype.connect = cadence(function (async) {
     this._sockets[socket._clientKey] = socket
     async(function () {
         this._output.write(JSON.stringify({
-            module: 'colleague',
-            type: 'header',
+            module: 'conduit',
+            method: 'header',
             to: id,
             body: null
         }) + '\n', async())
@@ -124,7 +124,7 @@ Multiplexer.prototype._json = cadence(function (async, buffer, start, end) {
     async(function () {
         if (this._record.object != null) {
             var envelope = this._record.object
-            switch (envelope.type) {
+            switch (envelope.method) {
             case 'header':
                 var socket = new Socket(this, envelope.to, true)
                 this._sockets[socket._serverKey] = socket
@@ -135,6 +135,7 @@ Multiplexer.prototype._json = cadence(function (async, buffer, start, end) {
             case 'envelope':
                 var socket = this._sockets[envelope.to]
                 var queue = envelope.outlet == 'spigot' ? socket.spigot.requests : socket.basin.responses
+            console.log('enqueue!', envelope.body)
                 queue.enqueue(envelope.body, async())
                 break
             case 'chunk':

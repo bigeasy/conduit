@@ -18,7 +18,7 @@ var Jacket = require('nascent.jacket')
 // Ever increasing serial value with no maximum value.
 var Monotonic = require('monotonic').asString
 
-// Controlled demolition of complicated objects.
+// Orderly destruction of complicated objects.
 var Destructor = require('nascent.destructor')
 
 // Exceptions with context.

@@ -142,7 +142,7 @@ Multiplexer.prototype._json = cadence(function (async, buffer, start, end) {
                 break
             case 'trailer':
                 var socket = this._sockets[envelope.to]
-                var queue = envelope.outlet == 'spigot' ? spigot.requests : socket.basin.responses
+                var queue = envelope.outlet == 'spigot' ? socket.spigot.requests : socket.basin.responses
                 queue.enqueue(null, async())
                 delete this._sockets[envelope.to]
                 break

@@ -81,13 +81,8 @@ Multiplexer.prototype.destroy = function () {
 
 Multiplexer.prototype.connect = cadence(function (async) {
     var id = this._identifier = Monotonic.increment(this._identifier, 0)
-    // TODO id is going to collide, value on each side, mark with creator?
-    try {
     var socket = new Socket(this, id, false)
     this._sockets[socket._clientKey] = socket
-    } catch (e) {
-        console.log(e.stack)
-    }
     async(function () {
         this._output.write(JSON.stringify({
             module: 'conduit',

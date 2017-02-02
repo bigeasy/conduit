@@ -24,7 +24,7 @@ Responder.prototype.fromBasin = cadence(function (async, envelope) {
         break
     case 'entry':
         envelope = envelope.body
-        if (envelope.to == this._qualifier) {
+        if (envelope.module == 'conduit' && envelope.to == this._qualifier) {
             async(function () {
                 this._delegate.request(envelope.body, async())
             }, function (response) {

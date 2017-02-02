@@ -25,18 +25,13 @@
                 </a>
 
 
-                <a class="source" href="basin.queue.js.html">
-                  basin.queue.js
-                </a>
-
-
-                <a class="source" href="basin.responder.js.html">
-                  basin.responder.js
-                </a>
-
-
                 <a class="source" href="delegate.js.html">
                   delegate.js
+                </a>
+
+
+                <a class="source" href="dispatcher.js.html">
+                  dispatcher.js
                 </a>
 
 
@@ -50,6 +45,11 @@
                 </a>
 
 
+                <a class="source" href="requester.js.html">
+                  requester.js
+                </a>
+
+
                 <a class="source" href="responder.js.html">
                   responder.js
                 </a>
@@ -60,23 +60,8 @@
                 </a>
 
 
-                <a class="source" href="spigot.base.js.html">
-                  spigot.base.js
-                </a>
-
-
-                <a class="source" href="spigot.generator.js.html">
-                  spigot.generator.js
-                </a>
-
-
                 <a class="source" href="spigot.js.html">
                   spigot.js
-                </a>
-
-
-                <a class="source" href="spigot.queue.js.html">
-                  spigot.queue.js
                 </a>
 
             </div>
@@ -104,16 +89,19 @@
             </div>
 
             <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> cadence = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cadence'</span>)
-<span class="hljs-keyword">var</span> Spigot = { <span class="hljs-attr">Queue</span>: <span class="hljs-built_in">require</span>(<span class="hljs-string">'./spigot.queue'</span>) }
-<span class="hljs-keyword">var</span> Basin = { <span class="hljs-attr">Queue</span>: <span class="hljs-built_in">require</span>(<span class="hljs-string">'./basin.queue'</span>) }
+<span class="hljs-keyword">var</span> Spigot = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./spigot'</span>)
+<span class="hljs-keyword">var</span> Basin = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./basin'</span>)
 
-<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Contextualizer</span> (<span class="hljs-params">socket, outlet</span>) </span>{
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Contextualizer</span> (<span class="hljs-params">socket</span>) </span>{
     <span class="hljs-keyword">this</span>._socket = socke
-    <span class="hljs-keyword">this</span>._outlet = outle
 }
 
-Contextualizer.prototype.enqueue = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">envelope, callback</span>) </span>{
-    <span class="hljs-keyword">this</span>._socket._enqueue(envelope, <span class="hljs-keyword">this</span>._outlet, callback)
+Contextualizer.prototype.fromSpigot = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">envelope, callback</span>) </span>{
+    <span class="hljs-keyword">this</span>._socket._enqueue(envelope, <span class="hljs-string">'basin'</span>, callback)
+}
+
+Contextualizer.prototype.fromBasin = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">envelope, callback</span>) </span>{
+    <span class="hljs-keyword">this</span>._socket._enqueue(envelope, <span class="hljs-string">'spigot'</span>, callback)
 }
 
 <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Socket</span> (<span class="hljs-params">multiplexer, id, serverSide</span>) </span>{
@@ -122,8 +110,8 @@ Contextualizer.prototype.enqueue = <span class="hljs-function"><span class="hljs
     <span class="hljs-keyword">this</span>._clientKey = <span class="hljs-string">'[client]('</span> + id + <span class="hljs-string">')'</span>
     <span class="hljs-keyword">this</span>._multiplexer = multiplexer
     <span class="hljs-keyword">this</span>._id = id
-    <span class="hljs-keyword">this</span>.spigot = <span class="hljs-keyword">new</span> Spigot.Queue(<span class="hljs-keyword">new</span> Contextualizer(<span class="hljs-keyword">this</span>, <span class="hljs-string">'basin'</span>))
-    <span class="hljs-keyword">this</span>.basin = <span class="hljs-keyword">new</span> Basin.Queue(<span class="hljs-keyword">new</span> Contextualizer(<span class="hljs-keyword">this</span>, <span class="hljs-string">'spigot'</span>))
+    <span class="hljs-keyword">this</span>.spigot = <span class="hljs-keyword">new</span> Spigot(<span class="hljs-keyword">new</span> Contextualizer(<span class="hljs-keyword">this</span>))
+    <span class="hljs-keyword">this</span>.basin = <span class="hljs-keyword">new</span> Basin(<span class="hljs-keyword">new</span> Contextualizer(<span class="hljs-keyword">this</span>))
 }
 
 Socket.prototype._shutdown = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">error</span>) </span>{
@@ -135,31 +123,53 @@ Socket.prototype._enqueue = cadence(<span class="hljs-function"><span class="hlj
     <span class="hljs-keyword">var</span> <span class="hljs-keyword">from</span> = <span class="hljs-keyword">this</span>._serverSide ? <span class="hljs-keyword">this</span>._serverKey : <span class="hljs-keyword">this</span>._clientKey
     <span class="hljs-keyword">var</span> to = <span class="hljs-keyword">this</span>._serverSide ? <span class="hljs-keyword">this</span>._clientKey : <span class="hljs-keyword">this</span>._serverKey
     <span class="hljs-keyword">async</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
-        <span class="hljs-keyword">if</span> (envelope == <span class="hljs-literal">null</span>) {
+        <span class="hljs-keyword">switch</span> (envelope.method) {
+        <span class="hljs-keyword">case</span> <span class="hljs-string">'endOfStream'</span>:
             <span class="hljs-keyword">this</span>._multiplexer._output.write(<span class="hljs-built_in">JSON</span>.stringify({
                 <span class="hljs-attr">module</span>: <span class="hljs-string">'conduit'</span>,
-                <span class="hljs-attr">type</span>: <span class="hljs-string">'trailer'</span>,
+                <span class="hljs-attr">method</span>: <span class="hljs-string">'trailer'</span>,
                 <span class="hljs-attr">to</span>: to,
                 <span class="hljs-attr">outlet</span>: outlet,
                 <span class="hljs-attr">body</span>: <span class="hljs-literal">null</span>
             }) + <span class="hljs-string">'\n'</span>, <span class="hljs-keyword">async</span>())
-        } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (Buffer.isBuffer(envelope.body)) {
-            <span class="hljs-keyword">this</span>._multiplexer._output.write(<span class="hljs-built_in">JSON</span>.stringify({
-                <span class="hljs-attr">module</span>: <span class="hljs-string">'conduit'</span>,
-                <span class="hljs-attr">type</span>: <span class="hljs-string">'chunk'</span>,
-                <span class="hljs-attr">to</span>: to,
-                <span class="hljs-attr">outlet</span>: outlet,
-                <span class="hljs-attr">body</span>: { <span class="hljs-attr">length</span>: envelope.body.length }
-            }) + <span class="hljs-string">'\n'</span>, <span class="hljs-keyword">async</span>())
-            <span class="hljs-keyword">this</span>._multiplexer._output.write(envelope.body)
-        } <span class="hljs-keyword">else</span> {
-            <span class="hljs-keyword">this</span>._multiplexer._output.write(<span class="hljs-built_in">JSON</span>.stringify({
-                <span class="hljs-attr">module</span>: <span class="hljs-string">'conduit'</span>,
-                <span class="hljs-attr">type</span>: <span class="hljs-string">'envelope'</span>,
-                <span class="hljs-attr">to</span>: to,
-                <span class="hljs-attr">outlet</span>: outlet,
-                <span class="hljs-attr">body</span>: envelope
-            }) + <span class="hljs-string">'\n'</span>, <span class="hljs-keyword">async</span>())
+            <span class="hljs-keyword">break</span>
+        <span class="hljs-keyword">case</span> <span class="hljs-string">'error'</span>:
+            <span class="hljs-keyword">if</span> (!<span class="hljs-regexp">/^conduit#shutdown$/m</span>.test(envelope.body.message)) {
+                <span class="hljs-keyword">this</span>._multiplexer._output.write(<span class="hljs-built_in">JSON</span>.stringify({
+                    <span class="hljs-attr">module</span>: <span class="hljs-string">'conduit'</span>,
+                    <span class="hljs-attr">method</span>: <span class="hljs-string">'hangup'</span>,
+                    <span class="hljs-attr">to</span>: to,
+                    <span class="hljs-attr">outlet</span>: outlet,
+                    <span class="hljs-attr">body</span>: <span class="hljs-literal">null</span>
+                }) + <span class="hljs-string">'\n'</span>, <span class="hljs-keyword">async</span>())
+            }
+            <span class="hljs-keyword">break</span>
+        <span class="hljs-keyword">case</span> <span class="hljs-string">'entry'</span>:
+            envelope = envelope.body
+            <span class="hljs-keyword">if</span> (Buffer.isBuffer(envelope.body)) {
+                <span class="hljs-keyword">var</span> body = envelope.body
+                envelope.body = <span class="hljs-literal">null</span>
+                <span class="hljs-keyword">var</span> packet = <span class="hljs-built_in">JSON</span>.stringify({
+                    <span class="hljs-attr">module</span>: <span class="hljs-string">'conduit'</span>,
+                    <span class="hljs-attr">method</span>: <span class="hljs-string">'chunk'</span>,
+                    <span class="hljs-attr">to</span>: to,
+                    <span class="hljs-attr">outlet</span>: outlet,
+                    <span class="hljs-attr">length</span>: body.length,
+                    <span class="hljs-attr">body</span>: envelope
+                }) + <span class="hljs-string">'\n'</span>
+                envelope.body = body
+                <span class="hljs-keyword">this</span>._multiplexer._output.write(packet, <span class="hljs-keyword">async</span>())
+                <span class="hljs-keyword">this</span>._multiplexer._output.write(envelope.body, <span class="hljs-keyword">async</span>())
+            } <span class="hljs-keyword">else</span> {
+                <span class="hljs-keyword">this</span>._multiplexer._output.write(<span class="hljs-built_in">JSON</span>.stringify({
+                    <span class="hljs-attr">module</span>: <span class="hljs-string">'conduit'</span>,
+                    <span class="hljs-attr">method</span>: <span class="hljs-string">'envelope'</span>,
+                    <span class="hljs-attr">to</span>: to,
+                    <span class="hljs-attr">outlet</span>: outlet,
+                    <span class="hljs-attr">body</span>: envelope
+                }) + <span class="hljs-string">'\n'</span>, <span class="hljs-keyword">async</span>())
+            }
+            <span class="hljs-keyword">break</span>
         }
     }, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
         <span class="hljs-keyword">return</span> []

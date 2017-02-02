@@ -2,7 +2,7 @@
 
 <html>
 <head>
-  <title>responder.js</title>
+  <title>requester.js</title>
   <meta http-equiv="content-type" content="text/html; charset=UTF-8">
   <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
   <link rel="stylesheet" media="all" href="docco.css" />
@@ -73,7 +73,7 @@
 
           <li id="title">
               <div class="annotation">
-                  <h1>responder.js</h1>
+                  <h1>requester.js</h1>
               </div>
           </li>
 
@@ -85,73 +85,67 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
-              <p>Control-flow utility.</p>
 
             </div>
 
-            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> cadence = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cadence'</span>)
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> util = <span class="hljs-built_in">require</span>(<span class="hljs-string">'util'</span>)
 
-</pre></div></div>
+<span class="hljs-keyword">var</span> cadence = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cadence'</span>)
 
-        </li>
+<span class="hljs-keyword">var</span> Procession = <span class="hljs-built_in">require</span>(<span class="hljs-string">'procession'</span>)
 
+<span class="hljs-keyword">var</span> Cliffhanger = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cliffhanger'</span>)
 
-        <li id="section-2">
-            <div class="annotation">
-
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-2">&#182;</a>
-              </div>
-              <p>Evented message queue.</p>
-
-            </div>
-
-            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Procesion = <span class="hljs-built_in">require</span>(<span class="hljs-string">'procession'</span>)
-<span class="hljs-keyword">var</span> coalesce = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nascent.coalesce'</span>)
+<span class="hljs-keyword">var</span> interrupt = <span class="hljs-built_in">require</span>(<span class="hljs-string">'interrupt'</span>).createInterrupter(<span class="hljs-string">'conduit'</span>)
 
 <span class="hljs-keyword">var</span> Basin = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./basin'</span>)
 <span class="hljs-keyword">var</span> Spigot = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./spigot'</span>)
 
-<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Responder</span> (<span class="hljs-params">delegate, qualifier</span>) </span>{
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Requester</span> (<span class="hljs-params">qualifier</span>) </span>{
     <span class="hljs-keyword">this</span>._qualifier = qualifier
-    <span class="hljs-keyword">this</span>._delegate = delegate
+    <span class="hljs-keyword">this</span>._cliffhanger = <span class="hljs-keyword">new</span> Cliffhanger
     <span class="hljs-keyword">this</span>.basin = <span class="hljs-keyword">new</span> Basin(<span class="hljs-keyword">this</span>)
     <span class="hljs-keyword">this</span>.spigot = <span class="hljs-keyword">new</span> Spigot(<span class="hljs-keyword">this</span>)
 }
 
-Responder.prototype.fromBasin = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, envelope</span>) </span>{
+Requester.prototype.request = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, qualifier, body</span>) </span>{
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.spigot.requests.endOfStream) {
+        Procession.raiseEndOfStream()
+    } <span class="hljs-keyword">else</span> {
+        <span class="hljs-keyword">this</span>.spigot.requests.enqueue({
+            <span class="hljs-attr">module</span>: <span class="hljs-string">'conduit'</span>,
+            <span class="hljs-attr">to</span>: qualifier,
+            <span class="hljs-attr">from</span>: <span class="hljs-keyword">this</span>._qualifier,
+            <span class="hljs-attr">cookie</span>: <span class="hljs-keyword">this</span>._cliffhanger.invoke(<span class="hljs-keyword">async</span>()),
+            <span class="hljs-attr">body</span>: body
+        }, <span class="hljs-keyword">async</span>())
+    }
+})
+
+Requester.prototype.fromSpigot = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, envelope</span>) </span>{
     <span class="hljs-keyword">switch</span> (envelope.method) {
     <span class="hljs-keyword">case</span> <span class="hljs-string">'endOfStream'</span>:
     <span class="hljs-keyword">case</span> <span class="hljs-string">'error'</span>:
+        <span class="hljs-keyword">this</span>._cliffhanger.cancel(envelope.error)
         <span class="hljs-keyword">this</span>.basin.responses.enqueue(envelope, <span class="hljs-keyword">async</span>())
         <span class="hljs-keyword">this</span>.spigot.requests.enqueue(envelope, <span class="hljs-keyword">async</span>())
         <span class="hljs-keyword">break</span>
     <span class="hljs-keyword">case</span> <span class="hljs-string">'entry'</span>:
-        envelope = envelope.body
-        <span class="hljs-keyword">if</span> (envelope.to == <span class="hljs-keyword">this</span>._qualifier) {
-            <span class="hljs-keyword">async</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
-                <span class="hljs-keyword">this</span>._delegate.request(envelope.body, <span class="hljs-keyword">async</span>())
-            }, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">response</span>) </span>{
-                <span class="hljs-keyword">this</span>.basin.responses.enqueue({
-                    <span class="hljs-attr">module</span>: <span class="hljs-string">'conduit'</span>,
-                    <span class="hljs-attr">to</span>: envelope.from,
-                    <span class="hljs-attr">from</span>: <span class="hljs-keyword">this</span>._qualifier,
-                    <span class="hljs-attr">cookie</span>: envelope.cookie,
-                    <span class="hljs-attr">body</span>: coalesce(response)
-                }, <span class="hljs-keyword">async</span>())
-            })
+        <span class="hljs-keyword">var</span> envelope = envelope.body
+        <span class="hljs-keyword">if</span> (envelope.module == <span class="hljs-string">'conduit'</span> &amp;&amp; envelope.to == <span class="hljs-keyword">this</span>._qualifier) {
+            <span class="hljs-keyword">this</span>._cliffhanger.resolve(envelope.cookie, [ <span class="hljs-literal">null</span>, envelope.body ])
         } <span class="hljs-keyword">else</span> {
-            <span class="hljs-keyword">this</span>.spigot.requests.enqueue(envelope, <span class="hljs-keyword">async</span>())
+            <span class="hljs-keyword">this</span>.basin.responses.enqueue(envelope, <span class="hljs-keyword">async</span>())
         }
         <span class="hljs-keyword">break</span>
     }
 })
 
-Responder.prototype.fromSpigot = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">envelope, callback</span>) </span>{
-    <span class="hljs-keyword">this</span>.basin.responses.enqueue(envelope, callback)
+Requester.prototype.fromBasin = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">envelope, callback</span>) </span>{
+    <span class="hljs-keyword">this</span>.spigot.requests.enqueue(envelope, callback)
 }
 
-<span class="hljs-built_in">module</span>.exports = Responder
+<span class="hljs-built_in">module</span>.exports = Requester
 
 </pre></div></div>
 

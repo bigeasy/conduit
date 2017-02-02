@@ -25,18 +25,13 @@
                 </a>
 
 
-                <a class="source" href="basin.queue.js.html">
-                  basin.queue.js
-                </a>
-
-
-                <a class="source" href="basin.responder.js.html">
-                  basin.responder.js
-                </a>
-
-
                 <a class="source" href="delegate.js.html">
                   delegate.js
+                </a>
+
+
+                <a class="source" href="dispatcher.js.html">
+                  dispatcher.js
                 </a>
 
 
@@ -50,6 +45,11 @@
                 </a>
 
 
+                <a class="source" href="requester.js.html">
+                  requester.js
+                </a>
+
+
                 <a class="source" href="responder.js.html">
                   responder.js
                 </a>
@@ -60,23 +60,8 @@
                 </a>
 
 
-                <a class="source" href="spigot.base.js.html">
-                  spigot.base.js
-                </a>
-
-
-                <a class="source" href="spigot.generator.js.html">
-                  spigot.generator.js
-                </a>
-
-
                 <a class="source" href="spigot.js.html">
                   spigot.js
-                </a>
-
-
-                <a class="source" href="spigot.queue.js.html">
-                  spigot.queue.js
                 </a>
 
             </div>
@@ -100,11 +85,99 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
+              <p>Evented message queue.</p>
 
             </div>
 
-            <div class="content"><div class='highlight'><pre>exports.Queue = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./spigot.queue'</span>)
-exports.Generator = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./spigot.generator'</span>)
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Procession = <span class="hljs-built_in">require</span>(<span class="hljs-string">'procession'</span>)
+
+</pre></div></div>
+
+        </li>
+
+
+        <li id="section-2">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Construct a Spigot that will forward requests to the <code>fromSpigot</code> method of the
+given delegate object.</p>
+
+            </div>
+
+        </li>
+
+
+        <li id="section-3">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Spigot</span> (<span class="hljs-params">delegate</span>) </span>{
+    <span class="hljs-keyword">this</span>._delegate = delegate
+    <span class="hljs-keyword">this</span>.requests = <span class="hljs-keyword">new</span> Procession
+    <span class="hljs-keyword">this</span>.responses = <span class="hljs-keyword">new</span> Procession
+    <span class="hljs-keyword">this</span>.responses.shifter().pump(<span class="hljs-keyword">this</span>)
+}
+
+</pre></div></div>
+
+        </li>
+
+
+        <li id="section-4">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>Forward an enqueued message to the delegate.</p>
+
+            </div>
+
+        </li>
+
+
+        <li id="section-5">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre>Spigot.prototype.enqueue = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">envelope, callback</span>) </span>{
+    <span class="hljs-keyword">this</span>._delegate.fromSpigot(envelope, callback)
+}
+
+Spigot.prototype.emptyInto = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">basin</span>) </span>{
+    <span class="hljs-keyword">this</span>.requests.shifter().pump(basin.requests)
+    basin.responses.shifter().pump(<span class="hljs-keyword">this</span>.responses)
+}
+
+</pre></div></div>
+
+        </li>
+
+
+        <li id="section-6">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>Export as constructor.</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre><span class="hljs-built_in">module</span>.exports = Spigo
 
 </pre></div></div>
 

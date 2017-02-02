@@ -2,7 +2,7 @@
 
 <html>
 <head>
-  <title>spigot.base.js</title>
+  <title>dispatcher.js</title>
   <meta http-equiv="content-type" content="text/html; charset=UTF-8">
   <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
   <link rel="stylesheet" media="all" href="docco.css" />
@@ -25,18 +25,13 @@
                 </a>
 
 
-                <a class="source" href="basin.queue.js.html">
-                  basin.queue.js
-                </a>
-
-
-                <a class="source" href="basin.responder.js.html">
-                  basin.responder.js
-                </a>
-
-
                 <a class="source" href="delegate.js.html">
                   delegate.js
+                </a>
+
+
+                <a class="source" href="dispatcher.js.html">
+                  dispatcher.js
                 </a>
 
 
@@ -50,6 +45,11 @@
                 </a>
 
 
+                <a class="source" href="requester.js.html">
+                  requester.js
+                </a>
+
+
                 <a class="source" href="responder.js.html">
                   responder.js
                 </a>
@@ -60,23 +60,8 @@
                 </a>
 
 
-                <a class="source" href="spigot.base.js.html">
-                  spigot.base.js
-                </a>
-
-
-                <a class="source" href="spigot.generator.js.html">
-                  spigot.generator.js
-                </a>
-
-
                 <a class="source" href="spigot.js.html">
                   spigot.js
-                </a>
-
-
-                <a class="source" href="spigot.queue.js.html">
-                  spigot.queue.js
                 </a>
 
             </div>
@@ -88,7 +73,7 @@
 
           <li id="title">
               <div class="annotation">
-                  <h1>spigot.base.js</h1>
+                  <h1>dispatcher.js</h1>
               </div>
           </li>
 
@@ -103,19 +88,18 @@
 
             </div>
 
-            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Procession = <span class="hljs-built_in">require</span>(<span class="hljs-string">'procession'</span>)
-<span class="hljs-keyword">var</span> util = <span class="hljs-built_in">require</span>(<span class="hljs-string">'util'</span>)
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> cadence = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cadence'</span>)
 
-<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Spigot</span> (<span class="hljs-params"></span>) </span>{
-    <span class="hljs-keyword">this</span>.requests = <span class="hljs-keyword">new</span> Procession
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Dispatcher</span> (<span class="hljs-params">object, mapper</span>) </span>{
+    <span class="hljs-keyword">this</span>._object = objec
+    <span class="hljs-keyword">this</span>._mapper = mapper
 }
 
-Spigot.prototype.emptyInto = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">basin</span>) </span>{
-    <span class="hljs-keyword">this</span>.requests.pump(basin)
-    basin.responses.pump(<span class="hljs-keyword">this</span>)
-}
+Dispatcher.prototype.request = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, envelope</span>) </span>{
+    <span class="hljs-keyword">this</span>._object[<span class="hljs-keyword">this</span>._mapper.map(envelope, <span class="hljs-keyword">this</span>._object)](envelope, <span class="hljs-keyword">async</span>())
+})
 
-<span class="hljs-built_in">module</span>.exports = Spigo
+<span class="hljs-built_in">module</span>.exports = Dispatcher
 
 </pre></div></div>
 

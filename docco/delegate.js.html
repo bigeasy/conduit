@@ -25,18 +25,13 @@
                 </a>
 
 
-                <a class="source" href="basin.queue.js.html">
-                  basin.queue.js
-                </a>
-
-
-                <a class="source" href="basin.responder.js.html">
-                  basin.responder.js
-                </a>
-
-
                 <a class="source" href="delegate.js.html">
                   delegate.js
+                </a>
+
+
+                <a class="source" href="dispatcher.js.html">
+                  dispatcher.js
                 </a>
 
 
@@ -50,6 +45,11 @@
                 </a>
 
 
+                <a class="source" href="requester.js.html">
+                  requester.js
+                </a>
+
+
                 <a class="source" href="responder.js.html">
                   responder.js
                 </a>
@@ -60,23 +60,8 @@
                 </a>
 
 
-                <a class="source" href="spigot.base.js.html">
-                  spigot.base.js
-                </a>
-
-
-                <a class="source" href="spigot.generator.js.html">
-                  spigot.generator.js
-                </a>
-
-
                 <a class="source" href="spigot.js.html">
                   spigot.js
-                </a>
-
-
-                <a class="source" href="spigot.queue.js.html">
-                  spigot.queue.js
                 </a>
 
             </div>
@@ -105,29 +90,19 @@
 
             <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> cadence = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cadence'</span>)
 
-<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Delegate</span> (<span class="hljs-params">delegate, method</span>) </span>{
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Delegate</span> (<span class="hljs-params">delegate</span>) </span>{
     <span class="hljs-keyword">this</span>._delegate = delegate
-    <span class="hljs-keyword">this</span>._method = method
     <span class="hljs-keyword">this</span>.endOfStream = <span class="hljs-literal">false</span>
 }
 
-Delegate.prototype.invoke = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, envelope</span>) </span>{
+Delegate.prototype.enqueue = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, envelope</span>) </span>{
     <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.endOfStream) {
-        <span class="hljs-keyword">return</span>
+        <span class="hljs-keyword">return</span> []
     }
     <span class="hljs-keyword">if</span> (envelope == <span class="hljs-literal">null</span> || envelope <span class="hljs-keyword">instanceof</span> <span class="hljs-built_in">Error</span>) {
         <span class="hljs-keyword">this</span>.endOfStream = <span class="hljs-literal">true</span>
-        <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> <span class="hljs-keyword">this</span>._delegate.destroy == <span class="hljs-string">'function'</span>) {
-            <span class="hljs-keyword">if</span> (envelope == <span class="hljs-literal">null</span>) {
-                <span class="hljs-keyword">this</span>._delegate.destroy()
-            } <span class="hljs-keyword">else</span> {
-                <span class="hljs-keyword">this</span>._delegate.destroy(envelope)
-            }
-        }
-        <span class="hljs-keyword">return</span> []
-    } <span class="hljs-keyword">else</span> {
-        <span class="hljs-keyword">this</span>._delegate[<span class="hljs-keyword">this</span>._method](envelope, <span class="hljs-keyword">async</span>())
     }
+    <span class="hljs-keyword">this</span>._delegate.enqueue(envelope, <span class="hljs-keyword">async</span>())
 })
 
 <span class="hljs-built_in">module</span>.exports = Delegate

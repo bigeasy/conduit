@@ -135,7 +135,6 @@ Multiplexer.prototype._json = cadence(function (async, buffer, start, end) {
             case 'envelope':
                 var socket = this._sockets[envelope.to]
                 var queue = envelope.outlet == 'spigot' ? socket.spigot.requests : socket.basin.responses
-            console.log('enqueue!', envelope.body)
                 queue.enqueue(envelope.body, async())
                 break
             case 'chunk':

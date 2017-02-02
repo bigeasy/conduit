@@ -8,7 +8,6 @@ function Contextualizer (socket, outlet) {
 }
 
 Contextualizer.prototype.enqueue = function (envelope, callback) {
-    console.log('context')
     this._socket._enqueue(envelope, this._outlet, callback)
 }
 
@@ -30,7 +29,6 @@ Socket.prototype._shutdown = function (error) {
 Socket.prototype._enqueue = cadence(function (async, envelope, outlet) {
     var from = this._serverSide ? this._serverKey : this._clientKey
     var to = this._serverSide ? this._clientKey : this._serverKey
-    console.log('>', envelope)
     async(function () {
         switch (envelope.method) {
         case 'endOfStream':
@@ -70,7 +68,6 @@ Socket.prototype._enqueue = cadence(function (async, envelope, outlet) {
                 this._multiplexer._output.write(packet, async())
                 this._multiplexer._output.write(envelope.body, async())
             } else {
-                console.log(':', envelope)
                 this._multiplexer._output.write(JSON.stringify({
                     module: 'conduit',
                     method: 'envelope',

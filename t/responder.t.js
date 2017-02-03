@@ -18,7 +18,7 @@ function prove (async, assert) {
             body: 1
         }, async())
     }, function () {
-        assert(responses.shift().body, {
+        assert(responses.shift(), {
             module: 'conduit',
             to: 'requester',
             from: 'responder',
@@ -28,14 +28,14 @@ function prove (async, assert) {
     }, function () {
         responder.basin.requests.enqueue(1, async())
     }, function () {
-        assert(requests.shift().body, 1, 'responder forwarded')
+        assert(requests.shift(), 1, 'responder forwarded')
         responder.spigot.responses.enqueue(3, async())
     }, function () {
-        assert(responses.shift().body, 3, 'responder backwarded')
+        assert(responses.shift(), 3, 'responder backwarded')
     }, function () {
         responder.basin.requests.enqueue(null, async())
     }, function () {
-        assert(responses.shift().method, 'endOfStream', 'basin closed')
-        assert(requests.shift().method, 'endOfStream', 'spigot closed')
+        assert(responses.shift(), null, 'basin closed')
+        assert(requests.shift(), null, 'spigot closed')
     })
 }

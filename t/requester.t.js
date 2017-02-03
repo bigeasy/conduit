@@ -10,7 +10,6 @@ function prove (async, assert) {
         async(function () {
             requests.dequeue(async())
         }, function (envelope) {
-            envelope = envelope.body
             requester.spigot.responses.enqueue({
                 module: 'conduit',
                 to: envelope.from,
@@ -28,28 +27,28 @@ function prove (async, assert) {
         async(function () {
             requester.basin.requests.enqueue('to basin', async())
         }, function () {
-            assert(requests.shift().body, 'to basin', 'forwarded')
+            assert(requests.shift(), 'to basin', 'forwarded')
         })
     }, function () {
         async(function () {
             requester.spigot.responses.enqueue('from spigot', async())
         }, function () {
-            assert(responses.shift().body, 'from spigot', 'backwarded')
+            assert(responses.shift(), 'from spigot', 'backwarded')
         })
     }, function () {
         async(function () {
             requests.dequeue(async())
-        }, function (envelope) {
+        }, function (value) {
             requester.spigot.responses.enqueue(null, async())
         })
         async([function () {
             requester.request('responder', 1, async())
         }, function (error) {
-            assert(error.interrupt, 'procession#endOfStream', 'closed')
+            assert(error.interrupt, 'conduit#endOfStream', 'closed')
         }])
     }, [function () {
         requester.request('responder', 1, async())
     }, function (error) {
-        assert(error.interrupt, 'procession#endOfStream', 'still closed')
+        assert(error.interrupt, 'conduit#endOfStream', 'still closed')
     }])
 }

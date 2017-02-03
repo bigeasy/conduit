@@ -24,17 +24,14 @@ function Socket (multiplexer, id, serverSide) {
     this.basin = new Basin(new Contextualizer(this))
 }
 
-Socket.prototype._shutdown = function (error) {
-    this.basin.responses.push(error)
-    this.spigot.requests.push(error)
-}
-
 Socket.prototype._enqueue = cadence(function (async, envelope, outlet) {
+    if (this._multiplexer.destroyed) {
+        return []
+    }
     var from = this._serverSide ? this._serverKey : this._clientKey
     var to = this._serverSide ? this._clientKey : this._serverKey
     async(function () {
-        switch (envelope.method) {
-        case 'endOfStream':
+        if (envelope == null) {
             this._multiplexer._output.write(JSON.stringify({
                 module: 'conduit',
                 method: 'trailer',
@@ -42,20 +39,7 @@ Socket.prototype._enqueue = cadence(function (async, envelope, outlet) {
                 outlet: outlet,
                 body: null
             }) + '\n', async())
-            break
-        case 'error':
-            if (!/^conduit#shutdown$/m.test(envelope.body.message)) {
-                this._multiplexer._output.write(JSON.stringify({
-                    module: 'conduit',
-                    method: 'hangup',
-                    to: to,
-                    outlet: outlet,
-                    body: null
-                }) + '\n', async())
-            }
-            break
-        case 'entry':
-            envelope = envelope.body
+        } else {
             if (Buffer.isBuffer(envelope.body)) {
                 var body = envelope.body
                 envelope.body = null
@@ -79,7 +63,6 @@ Socket.prototype._enqueue = cadence(function (async, envelope, outlet) {
                     body: envelope
                 }) + '\n', async())
             }
-            break
         }
     }, function () {
         return []

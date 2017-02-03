@@ -32,6 +32,7 @@ var Socket = require('./socket')
 
 //
 function Multiplexer (input, output, connect) {
+    this.destroyed = false
     this._connect = connect == null ? null : new Operation(connect)
     this._record = new Jacket
     this._output = new Staccato.Writable(output)
@@ -40,8 +41,8 @@ function Multiplexer (input, output, connect) {
     this._sockets = {}
     this._identifier = '0'
     this._destructor = new Destructor(interrupt)
-    this._destructor.addJanitor('shutdown', this._shutdown.bind(this))
     this._destructor.addJanitor('mark', this._destroyed.bind(this))
+    this._destructor.addJanitor('shutdown', this._shutdown.bind(this))
 }
 
 Multiplexer.prototype.listen = cadence(function (async, buffer) {
@@ -68,10 +69,10 @@ Multiplexer.prototype._shutdown = function () {
     var error = interrupt('shutdown', coalesce(this._destructor.cause))
     for (var key in this._sockets) {
         var socket = this._sockets[key]
-        socket.basin.requests.push(error)
-        socket.spigot.responses.push(error)
-        socket.basin.responses.push(error)
-        socket.spigot.requests.push(error)
+        socket.basin.requests.push(null)
+        socket.spigot.responses.push(null)
+        socket.basin.responses.push(null)
+        socket.spigot.requests.push(null)
     }
 }
 

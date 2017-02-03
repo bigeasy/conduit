@@ -16,14 +16,10 @@ function Responder (delegate, qualifier) {
 }
 
 Responder.prototype.fromBasin = cadence(function (async, envelope) {
-    switch (envelope.method) {
-    case 'endOfStream':
-    case 'error':
-        this.basin.responses.enqueue(envelope, async())
-        this.spigot.requests.enqueue(envelope, async())
-        break
-    case 'entry':
-        envelope = envelope.body
+    if (envelope == null) {
+        this.basin.responses.push(null)
+        this.spigot.requests.push(null)
+    } else {
         if (envelope.module == 'conduit' && envelope.to == this._qualifier) {
             async(function () {
                 this._delegate.request(envelope.body, async())
@@ -39,7 +35,6 @@ Responder.prototype.fromBasin = cadence(function (async, envelope) {
         } else {
             this.spigot.requests.enqueue(envelope, async())
         }
-        break
     }
 })
 

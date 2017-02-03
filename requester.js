@@ -20,7 +20,7 @@ function Requester (qualifier) {
 
 Requester.prototype.request = cadence(function (async, qualifier, body) {
     if (this.spigot.requests.endOfStream) {
-        Procession.raiseEndOfStream()
+        throw interrupt('endOfStream')
     } else {
         this.spigot.requests.enqueue({
             module: 'conduit',
@@ -33,21 +33,16 @@ Requester.prototype.request = cadence(function (async, qualifier, body) {
 })
 
 Requester.prototype.fromSpigot = cadence(function (async, envelope) {
-    switch (envelope.method) {
-    case 'endOfStream':
-    case 'error':
-        this._cliffhanger.cancel(envelope.error)
+    if (envelope == null) {
+        this._cliffhanger.cancel(interrupt('endOfStream'))
         this.basin.responses.enqueue(envelope, async())
         this.spigot.requests.enqueue(envelope, async())
-        break
-    case 'entry':
-        var envelope = envelope.body
+    } else {
         if (envelope.module == 'conduit' && envelope.to == this._qualifier) {
             this._cliffhanger.resolve(envelope.cookie, [ null, envelope.body ])
         } else {
             this.basin.responses.enqueue(envelope, async())
         }
-        break
     }
 })
 

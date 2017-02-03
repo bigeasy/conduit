@@ -128,7 +128,7 @@ Responder.prototype.fromBasin = cadence(<span class="hljs-function"><span class=
         <span class="hljs-keyword">break</span>
     <span class="hljs-keyword">case</span> <span class="hljs-string">'entry'</span>:
         envelope = envelope.body
-        <span class="hljs-keyword">if</span> (envelope.to == <span class="hljs-keyword">this</span>._qualifier) {
+        <span class="hljs-keyword">if</span> (envelope.module == <span class="hljs-string">'conduit'</span> &amp;&amp; envelope.to == <span class="hljs-keyword">this</span>._qualifier) {
             <span class="hljs-keyword">async</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
                 <span class="hljs-keyword">this</span>._delegate.request(envelope.body, <span class="hljs-keyword">async</span>())
             }, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">response</span>) </span>{

@@ -110,7 +110,7 @@
 
 Requester.prototype.request = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, qualifier, body</span>) </span>{
     <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.spigot.requests.endOfStream) {
-        Procession.raiseEndOfStream()
+        <span class="hljs-keyword">throw</span> interrupt(<span class="hljs-string">'endOfStream'</span>)
     } <span class="hljs-keyword">else</span> {
         <span class="hljs-keyword">this</span>.spigot.requests.enqueue({
             <span class="hljs-attr">module</span>: <span class="hljs-string">'conduit'</span>,
@@ -123,21 +123,16 @@ Requester.prototype.request = cadence(<span class="hljs-function"><span class="h
 })
 
 Requester.prototype.fromSpigot = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, envelope</span>) </span>{
-    <span class="hljs-keyword">switch</span> (envelope.method) {
-    <span class="hljs-keyword">case</span> <span class="hljs-string">'endOfStream'</span>:
-    <span class="hljs-keyword">case</span> <span class="hljs-string">'error'</span>:
-        <span class="hljs-keyword">this</span>._cliffhanger.cancel(envelope.error)
+    <span class="hljs-keyword">if</span> (envelope == <span class="hljs-literal">null</span>) {
+        <span class="hljs-keyword">this</span>._cliffhanger.cancel(interrupt(<span class="hljs-string">'endOfStream'</span>))
         <span class="hljs-keyword">this</span>.basin.responses.enqueue(envelope, <span class="hljs-keyword">async</span>())
         <span class="hljs-keyword">this</span>.spigot.requests.enqueue(envelope, <span class="hljs-keyword">async</span>())
-        <span class="hljs-keyword">break</span>
-    <span class="hljs-keyword">case</span> <span class="hljs-string">'entry'</span>:
-        <span class="hljs-keyword">var</span> envelope = envelope.body
+    } <span class="hljs-keyword">else</span> {
         <span class="hljs-keyword">if</span> (envelope.module == <span class="hljs-string">'conduit'</span> &amp;&amp; envelope.to == <span class="hljs-keyword">this</span>._qualifier) {
             <span class="hljs-keyword">this</span>._cliffhanger.resolve(envelope.cookie, [ <span class="hljs-literal">null</span>, envelope.body ])
         } <span class="hljs-keyword">else</span> {
             <span class="hljs-keyword">this</span>.basin.responses.enqueue(envelope, <span class="hljs-keyword">async</span>())
         }
-        <span class="hljs-keyword">break</span>
     }
 })
 

@@ -114,17 +114,14 @@ Contextualizer.prototype.fromBasin = <span class="hljs-function"><span class="hl
     <span class="hljs-keyword">this</span>.basin = <span class="hljs-keyword">new</span> Basin(<span class="hljs-keyword">new</span> Contextualizer(<span class="hljs-keyword">this</span>))
 }
 
-Socket.prototype._shutdown = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">error</span>) </span>{
-    <span class="hljs-keyword">this</span>.basin.responses.push(error)
-    <span class="hljs-keyword">this</span>.spigot.requests.push(error)
-}
-
 Socket.prototype._enqueue = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, envelope, outlet</span>) </span>{
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>._multiplexer.destroyed) {
+        <span class="hljs-keyword">return</span> []
+    }
     <span class="hljs-keyword">var</span> <span class="hljs-keyword">from</span> = <span class="hljs-keyword">this</span>._serverSide ? <span class="hljs-keyword">this</span>._serverKey : <span class="hljs-keyword">this</span>._clientKey
     <span class="hljs-keyword">var</span> to = <span class="hljs-keyword">this</span>._serverSide ? <span class="hljs-keyword">this</span>._clientKey : <span class="hljs-keyword">this</span>._serverKey
     <span class="hljs-keyword">async</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
-        <span class="hljs-keyword">switch</span> (envelope.method) {
-        <span class="hljs-keyword">case</span> <span class="hljs-string">'endOfStream'</span>:
+        <span class="hljs-keyword">if</span> (envelope == <span class="hljs-literal">null</span>) {
             <span class="hljs-keyword">this</span>._multiplexer._output.write(<span class="hljs-built_in">JSON</span>.stringify({
                 <span class="hljs-attr">module</span>: <span class="hljs-string">'conduit'</span>,
                 <span class="hljs-attr">method</span>: <span class="hljs-string">'trailer'</span>,
@@ -132,20 +129,7 @@ Socket.prototype._enqueue = cadence(<span class="hljs-function"><span class="hlj
                 <span class="hljs-attr">outlet</span>: outlet,
                 <span class="hljs-attr">body</span>: <span class="hljs-literal">null</span>
             }) + <span class="hljs-string">'\n'</span>, <span class="hljs-keyword">async</span>())
-            <span class="hljs-keyword">break</span>
-        <span class="hljs-keyword">case</span> <span class="hljs-string">'error'</span>:
-            <span class="hljs-keyword">if</span> (!<span class="hljs-regexp">/^conduit#shutdown$/m</span>.test(envelope.body.message)) {
-                <span class="hljs-keyword">this</span>._multiplexer._output.write(<span class="hljs-built_in">JSON</span>.stringify({
-                    <span class="hljs-attr">module</span>: <span class="hljs-string">'conduit'</span>,
-                    <span class="hljs-attr">method</span>: <span class="hljs-string">'hangup'</span>,
-                    <span class="hljs-attr">to</span>: to,
-                    <span class="hljs-attr">outlet</span>: outlet,
-                    <span class="hljs-attr">body</span>: <span class="hljs-literal">null</span>
-                }) + <span class="hljs-string">'\n'</span>, <span class="hljs-keyword">async</span>())
-            }
-            <span class="hljs-keyword">break</span>
-        <span class="hljs-keyword">case</span> <span class="hljs-string">'entry'</span>:
-            envelope = envelope.body
+        } <span class="hljs-keyword">else</span> {
             <span class="hljs-keyword">if</span> (Buffer.isBuffer(envelope.body)) {
                 <span class="hljs-keyword">var</span> body = envelope.body
                 envelope.body = <span class="hljs-literal">null</span>
@@ -169,7 +153,6 @@ Socket.prototype._enqueue = cadence(<span class="hljs-function"><span class="hlj
                     <span class="hljs-attr">body</span>: envelope
                 }) + <span class="hljs-string">'\n'</span>, <span class="hljs-keyword">async</span>())
             }
-            <span class="hljs-keyword">break</span>
         }
     }, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
         <span class="hljs-keyword">return</span> []

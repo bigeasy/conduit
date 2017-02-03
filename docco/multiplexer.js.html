@@ -258,6 +258,7 @@ the connect operation when a new socket is created</p>
             </div>
 
             <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Multiplexer</span> (<span class="hljs-params">input, output, connect</span>) </span>{
+    <span class="hljs-keyword">this</span>.destroyed = <span class="hljs-literal">false</span>
     <span class="hljs-keyword">this</span>._connect = connect == <span class="hljs-literal">null</span> ? <span class="hljs-literal">null</span> : <span class="hljs-keyword">new</span> Operation(connect)
     <span class="hljs-keyword">this</span>._record = <span class="hljs-keyword">new</span> Jacke
     <span class="hljs-keyword">this</span>._output = <span class="hljs-keyword">new</span> Staccato.Writable(output)
@@ -266,8 +267,8 @@ the connect operation when a new socket is created</p>
     <span class="hljs-keyword">this</span>._sockets = {}
     <span class="hljs-keyword">this</span>._identifier = <span class="hljs-string">'0'</span>
     <span class="hljs-keyword">this</span>._destructor = <span class="hljs-keyword">new</span> Destructor(interrupt)
-    <span class="hljs-keyword">this</span>._destructor.addJanitor(<span class="hljs-string">'shutdown'</span>, <span class="hljs-keyword">this</span>._shutdown.bind(<span class="hljs-keyword">this</span>))
     <span class="hljs-keyword">this</span>._destructor.addJanitor(<span class="hljs-string">'mark'</span>, <span class="hljs-keyword">this</span>._destroyed.bind(<span class="hljs-keyword">this</span>))
+    <span class="hljs-keyword">this</span>._destructor.addJanitor(<span class="hljs-string">'shutdown'</span>, <span class="hljs-keyword">this</span>._shutdown.bind(<span class="hljs-keyword">this</span>))
 }
 
 Multiplexer.prototype.listen = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async, buffer</span>) </span>{
@@ -294,10 +295,10 @@ Multiplexer.prototype._shutdown = <span class="hljs-function"><span class="hljs-
     <span class="hljs-keyword">var</span> error = interrupt(<span class="hljs-string">'shutdown'</span>, coalesce(<span class="hljs-keyword">this</span>._destructor.cause))
     <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> key <span class="hljs-keyword">in</span> <span class="hljs-keyword">this</span>._sockets) {
         <span class="hljs-keyword">var</span> socket = <span class="hljs-keyword">this</span>._sockets[key]
-        socket.basin.requests.push(error)
-        socket.spigot.responses.push(error)
-        socket.basin.responses.push(error)
-        socket.spigot.requests.push(error)
+        socket.basin.requests.push(<span class="hljs-literal">null</span>)
+        socket.spigot.responses.push(<span class="hljs-literal">null</span>)
+        socket.basin.responses.push(<span class="hljs-literal">null</span>)
+        socket.spigot.requests.push(<span class="hljs-literal">null</span>)
     }
 }
 

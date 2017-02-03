@@ -28,7 +28,7 @@
                             "nascent.destructor":           "0.0.3",
                             "nascent.jacket":               "0.0.0",
                             "operation":                    "1.2.x",
-                            "procession":                   "0.0.27",
+                            "procession":                   "0.0.28",
                             "staccato":                     "2.0.2"
     },
     "devDependencies":

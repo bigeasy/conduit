@@ -93,7 +93,7 @@
 <span class="hljs-keyword">var</span> Basin = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./basin'</span>)
 
 <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Contextualizer</span> (<span class="hljs-params">socket</span>) </span>{
-    <span class="hljs-keyword">this</span>._socket = socke
+    <span class="hljs-keyword">this</span>._socket = socket
 }
 
 Contextualizer.prototype.fromSpigot = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">envelope, callback</span>) </span>{
@@ -159,9 +159,7 @@ Socket.prototype._enqueue = cadence(<span class="hljs-function"><span class="hlj
     })
 })
 
-<span class="hljs-built_in">module</span>.exports = Socke
-
-</pre></div></div>
+<span class="hljs-built_in">module</span>.exports = Socket</pre></div></div>
 
         </li>
 

@@ -89,9 +89,7 @@
 
             </div>
 
-            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> coalesce = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nascent.coalesce'</span>)
-
-</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> coalesce = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nascent.coalesce'</span>)</pre></div></div>
 
         </li>
 
@@ -108,9 +106,7 @@
 
             <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> abend = <span class="hljs-built_in">require</span>(<span class="hljs-string">'abend'</span>)
 <span class="hljs-keyword">var</span> delta = <span class="hljs-built_in">require</span>(<span class="hljs-string">'delta'</span>)
-<span class="hljs-keyword">var</span> cadence = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cadence'</span>)
-
-</pre></div></div>
+<span class="hljs-keyword">var</span> cadence = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cadence'</span>)</pre></div></div>
 
         </li>
 
@@ -125,9 +121,7 @@
 
             </div>
 
-            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Operation = <span class="hljs-built_in">require</span>(<span class="hljs-string">'operation'</span>)
-
-</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Operation = <span class="hljs-built_in">require</span>(<span class="hljs-string">'operation'</span>)</pre></div></div>
 
         </li>
 
@@ -142,9 +136,7 @@
 
             </div>
 
-            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Staccato = <span class="hljs-built_in">require</span>(<span class="hljs-string">'staccato'</span>)
-
-</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Staccato = <span class="hljs-built_in">require</span>(<span class="hljs-string">'staccato'</span>)</pre></div></div>
 
         </li>
 
@@ -159,9 +151,7 @@
 
             </div>
 
-            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Jacket = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nascent.jacket'</span>)
-
-</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Jacket = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nascent.jacket'</span>)</pre></div></div>
 
         </li>
 
@@ -176,9 +166,7 @@
 
             </div>
 
-            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Monotonic = <span class="hljs-built_in">require</span>(<span class="hljs-string">'monotonic'</span>).asString
-
-</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Monotonic = <span class="hljs-built_in">require</span>(<span class="hljs-string">'monotonic'</span>).asString</pre></div></div>
 
         </li>
 
@@ -193,9 +181,7 @@
 
             </div>
 
-            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Destructor = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nascent.destructor'</span>)
-
-</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Destructor = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nascent.destructor'</span>)</pre></div></div>
 
         </li>
 
@@ -210,9 +196,7 @@
 
             </div>
 
-            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> interrupt = <span class="hljs-built_in">require</span>(<span class="hljs-string">'interrupt'</span>).createInterrupter(<span class="hljs-string">'conduit'</span>)
-
-</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> interrupt = <span class="hljs-built_in">require</span>(<span class="hljs-string">'interrupt'</span>).createInterrupter(<span class="hljs-string">'conduit'</span>)</pre></div></div>
 
         </li>
 
@@ -227,9 +211,7 @@
 
             </div>
 
-            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Socket = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./socket'</span>)
-
-</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Socket = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./socket'</span>)</pre></div></div>
 
         </li>
 
@@ -260,10 +242,10 @@ the connect operation when a new socket is created</p>
             <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Multiplexer</span> (<span class="hljs-params">input, output, connect</span>) </span>{
     <span class="hljs-keyword">this</span>.destroyed = <span class="hljs-literal">false</span>
     <span class="hljs-keyword">this</span>._connect = connect == <span class="hljs-literal">null</span> ? <span class="hljs-literal">null</span> : <span class="hljs-keyword">new</span> Operation(connect)
-    <span class="hljs-keyword">this</span>._record = <span class="hljs-keyword">new</span> Jacke
+    <span class="hljs-keyword">this</span>._record = <span class="hljs-keyword">new</span> Jacket
     <span class="hljs-keyword">this</span>._output = <span class="hljs-keyword">new</span> Staccato.Writable(output)
     <span class="hljs-keyword">this</span>._input = <span class="hljs-keyword">new</span> Staccato.Readable(input)
-    <span class="hljs-keyword">this</span>._endable = outpu
+    <span class="hljs-keyword">this</span>._endable = output
     <span class="hljs-keyword">this</span>._sockets = {}
     <span class="hljs-keyword">this</span>._identifier = <span class="hljs-string">'0'</span>
     <span class="hljs-keyword">this</span>._destructor = <span class="hljs-keyword">new</span> Destructor(interrupt)
@@ -309,7 +291,7 @@ Multiplexer.prototype.destroy = <span class="hljs-function"><span class="hljs-ke
 Multiplexer.prototype.connect = cadence(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">async</span>) </span>{
     <span class="hljs-keyword">var</span> id = <span class="hljs-keyword">this</span>._identifier = Monotonic.increment(<span class="hljs-keyword">this</span>._identifier, <span class="hljs-number">0</span>)
     <span class="hljs-keyword">var</span> socket = <span class="hljs-keyword">new</span> Socket(<span class="hljs-keyword">this</span>, id, <span class="hljs-literal">false</span>)
-    <span class="hljs-keyword">this</span>._sockets[socket._clientKey] = socke
+    <span class="hljs-keyword">this</span>._sockets[socket._clientKey] = socket
     <span class="hljs-keyword">async</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
         <span class="hljs-keyword">this</span>._output.write(<span class="hljs-built_in">JSON</span>.stringify({
             <span class="hljs-attr">module</span>: <span class="hljs-string">'conduit'</span>,
@@ -339,9 +321,9 @@ Multiplexer.prototype._buffer = cadence(<span class="hljs-function"><span class=
     }, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
         <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>._chunk.length == <span class="hljs-number">0</span>) {
             <span class="hljs-keyword">this</span>._chunk = <span class="hljs-literal">null</span>
-            <span class="hljs-keyword">this</span>._record = <span class="hljs-keyword">new</span> Jacke
+            <span class="hljs-keyword">this</span>._record = <span class="hljs-keyword">new</span> Jacket
         }
-        <span class="hljs-keyword">return</span> star
+        <span class="hljs-keyword">return</span> start
     })
 })
 
@@ -349,12 +331,11 @@ Multiplexer.prototype._json = cadence(<span class="hljs-function"><span class="h
     start = <span class="hljs-keyword">this</span>._record.parse(buffer, start, end)
     <span class="hljs-keyword">async</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
         <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>._record.object != <span class="hljs-literal">null</span>) {
-            <span class="hljs-keyword">var</span> envelope = <span class="hljs-keyword">this</span>._record.objec
+            <span class="hljs-keyword">var</span> envelope = <span class="hljs-keyword">this</span>._record.object
             <span class="hljs-keyword">switch</span> (envelope.method) {
             <span class="hljs-keyword">case</span> <span class="hljs-string">'header'</span>:
                 <span class="hljs-keyword">var</span> socket = <span class="hljs-keyword">new</span> Socket(<span class="hljs-keyword">this</span>, envelope.to, <span class="hljs-literal">true</span>)
-                <span class="hljs-keyword">this</span>._sockets[socket._serverKey] = socke
-</pre></div></div>
+                <span class="hljs-keyword">this</span>._sockets[socket._serverKey] = socket</pre></div></div>
 
         </li>
 
@@ -378,7 +359,7 @@ to send them through, so maybe we do just crash.</p>
                 queue.enqueue(envelope.body, <span class="hljs-keyword">async</span>())
                 <span class="hljs-keyword">break</span>
             <span class="hljs-keyword">case</span> <span class="hljs-string">'chunk'</span>:
-                <span class="hljs-keyword">this</span>._chunk = <span class="hljs-keyword">this</span>._record.objec
+                <span class="hljs-keyword">this</span>._chunk = <span class="hljs-keyword">this</span>._record.object
                 <span class="hljs-keyword">break</span>
             <span class="hljs-keyword">case</span> <span class="hljs-string">'trailer'</span>:
                 <span class="hljs-keyword">var</span> socket = <span class="hljs-keyword">this</span>._sockets[envelope.to]
@@ -387,10 +368,10 @@ to send them through, so maybe we do just crash.</p>
                 <span class="hljs-keyword">delete</span> <span class="hljs-keyword">this</span>._sockets[envelope.to]
                 <span class="hljs-keyword">break</span>
             }
-            <span class="hljs-keyword">this</span>._record = <span class="hljs-keyword">new</span> Jacke
+            <span class="hljs-keyword">this</span>._record = <span class="hljs-keyword">new</span> Jacket
         }
     }, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
-        <span class="hljs-keyword">return</span> star
+        <span class="hljs-keyword">return</span> start
     })
 })
 
@@ -418,9 +399,7 @@ Multiplexer.prototype._read = cadence(<span class="hljs-function"><span class="h
     })()
 })
 
-<span class="hljs-built_in">module</span>.exports = Multiplexer
-
-</pre></div></div>
+<span class="hljs-built_in">module</span>.exports = Multiplexer</pre></div></div>
 
         </li>
 

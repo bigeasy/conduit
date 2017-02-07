@@ -91,7 +91,7 @@
             <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> cadence = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cadence'</span>)
 
 <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Dispatcher</span> (<span class="hljs-params">object, mapper</span>) </span>{
-    <span class="hljs-keyword">this</span>._object = objec
+    <span class="hljs-keyword">this</span>._object = object
     <span class="hljs-keyword">this</span>._mapper = mapper
 }
 
@@ -99,9 +99,7 @@ Dispatcher.prototype.request = cadence(<span class="hljs-function"><span class="
     <span class="hljs-keyword">this</span>._object[<span class="hljs-keyword">this</span>._mapper.map(envelope, <span class="hljs-keyword">this</span>._object)](envelope, <span class="hljs-keyword">async</span>())
 })
 
-<span class="hljs-built_in">module</span>.exports = Dispatcher
-
-</pre></div></div>
+<span class="hljs-built_in">module</span>.exports = Dispatcher</pre></div></div>
 
         </li>
 

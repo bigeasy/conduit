@@ -89,9 +89,7 @@
 
             </div>
 
-            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Procession = <span class="hljs-built_in">require</span>(<span class="hljs-string">'procession'</span>)
-
-</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> Procession = <span class="hljs-built_in">require</span>(<span class="hljs-string">'procession'</span>)</pre></div></div>
 
         </li>
 
@@ -124,9 +122,7 @@ given delegate object.</p>
     <span class="hljs-keyword">this</span>.requests = <span class="hljs-keyword">new</span> Procession
     <span class="hljs-keyword">this</span>.responses = <span class="hljs-keyword">new</span> Procession
     <span class="hljs-keyword">this</span>.responses.shifter().pump(<span class="hljs-keyword">this</span>)
-}
-
-</pre></div></div>
+}</pre></div></div>
 
         </li>
 
@@ -160,9 +156,7 @@ given delegate object.</p>
 Spigot.prototype.emptyInto = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">basin</span>) </span>{
     <span class="hljs-keyword">this</span>.requests.shifter().pump(basin.requests)
     basin.responses.shifter().pump(<span class="hljs-keyword">this</span>.responses)
-}
-
-</pre></div></div>
+}</pre></div></div>
 
         </li>
 
@@ -177,9 +171,7 @@ Spigot.prototype.emptyInto = <span class="hljs-function"><span class="hljs-keywo
 
             </div>
 
-            <div class="content"><div class='highlight'><pre><span class="hljs-built_in">module</span>.exports = Spigo
-
-</pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="hljs-built_in">module</span>.exports = Spigot</pre></div></div>
 
         </li>
 

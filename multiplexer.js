@@ -41,8 +41,8 @@ function Multiplexer (input, output, connect) {
     this._sockets = {}
     this._identifier = '0'
     this._destructor = new Destructor(interrupt)
-    this._destructor.addJanitor('mark', this._destroyed.bind(this))
-    this._destructor.addJanitor('shutdown', this._shutdown.bind(this))
+    this._destructor.addDestructor('mark', this._destroyed.bind(this))
+    this._destructor.addDestructor('shutdown', this._shutdown.bind(this))
 }
 
 Multiplexer.prototype.listen = cadence(function (async, buffer) {

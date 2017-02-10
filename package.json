@@ -22,7 +22,7 @@
                             "abend":                        "1.0.x",
                             "cadence":                      "1.0.x",
                             "cliffhanger":                  "1.3.x",
-                            "interrupt":                    "4.0.x",
+                            "interrupt":                    "5.0.x",
                             "monotonic":                    "2.0.x",
                             "nascent.coalesce":             "0.0.0",
                             "nascent.destructor":           "0.0.5",
@@ -33,7 +33,7 @@
     },
     "devDependencies":
     {
-                            "delta":                        "1.2.0-beta.0",
+                            "delta":                        "1.2.x",
                             "proof":                        "1.2.x"
     },
     "scripts":

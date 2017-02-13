@@ -37,7 +37,6 @@ function Multiplexer (input, output, connect) {
     this._record = new Jacket
     this._output = new Staccato.Writable(output)
     this._input = new Staccato.Readable(input)
-    this._endable = output
     this._sockets = {}
     this._identifier = '0'
     this._destructor = new Destructor(interrupt)
@@ -65,8 +64,6 @@ Multiplexer.prototype._destroyed = function () {
 Multiplexer.prototype._shutdown = function () {
     this._output.destroy()
     this._input.destroy()
-    this._endable.end()
-    var error = interrupt('shutdown', coalesce(this._destructor.cause))
     for (var key in this._sockets) {
         var socket = this._sockets[key]
         socket.basin.requests.push(null)

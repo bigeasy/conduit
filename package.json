@@ -26,7 +26,7 @@
                             "interrupt":                    "5.0.x",
                             "monotonic":                    "2.0.x",
                             "nascent.coalesce":             "0.0.0",
-                            "destructible":                 "0.0.0",
+                            "destructible":                 "0.1.x",
                             "nascent.jacket":               "0.0.0",
                             "operation":                    "1.2.x",
                             "procession":                   "0.1.x",

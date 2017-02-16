@@ -16,6 +16,7 @@ function Basin (delegate) {
 
 //
 Basin.prototype.enqueue = function (envelope, callback) {
+    // TODO Maybe send `this`?
     this._delegate.fromBasin(envelope, callback)
 }
 

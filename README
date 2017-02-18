@@ -1,7 +1,6 @@
 Conduit
 
-An HTTP to WebSockets proxy to advertise multiple HTTP applications through a
-single HTTP socket.
+Multiplex an Node.js stream into evented pipelines.
 
     Discussion:     https://github.com/bigeasy/conduit/issues/1
 

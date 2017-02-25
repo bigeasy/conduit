@@ -77,7 +77,7 @@ Multiplexer.prototype.destroy = function () {
     this._destructor.destroy()
 }
 
-Multiplexer.prototype.connect = cadence(function (async) {
+Multiplexer.prototype.connect = cadence(function (async, envelope) {
     var id = this._identifier = Monotonic.increment(this._identifier, 0)
     var socket = new Socket(this, id, false)
     this._sockets[socket._clientKey] = socket
@@ -86,7 +86,7 @@ Multiplexer.prototype.connect = cadence(function (async) {
             module: 'conduit',
             method: 'header',
             to: id,
-            body: null
+            body: coalesce(envelope)
         }) + '\n', async())
     }, function () {
         return [ socket ]

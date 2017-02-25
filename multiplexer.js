@@ -127,7 +127,7 @@ Multiplexer.prototype._json = cadence(function (async, buffer, start, end) {
                 this._sockets[socket._serverKey] = socket
                 // Not sure what to do in the case of these errors, no sockets
                 // to send them through, so maybe we do just crash.
-                this._connect.apply([ socket, async() ])
+                this._connect.apply([ socket, envelope.body, async() ])
                 break
             case 'envelope':
                 var socket = this._sockets[envelope.to]

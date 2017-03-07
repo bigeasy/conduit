@@ -24,9 +24,9 @@ function prove (async, assert) {
         multiplexers[0].connect(async())
     }, function (socket) {
         var head = input.read()
-        multiplexers.push(new Multiplexer(input, output, cadence(function (async, socket) {
+        multiplexers.push(new Multiplexer(input, output, function (socket) {
             socket.spigot.emptyInto(responder.basin)
-        })))
+        }))
         multiplexers[1].listen(head, abend)
         async(function () {
             requester.spigot.emptyInto(socket.basin)

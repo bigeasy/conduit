@@ -7,7 +7,7 @@ var delta = require('delta')
 var cadence = require('cadence')
 
 // Wrap a user specified callback.
-var Operation = require('operation')
+var Operation = require('operation/redux')
 
 // Evented stream reading and writing.
 var Staccato = require('staccato')
@@ -33,7 +33,7 @@ var Socket = require('./socket')
 //
 function Multiplexer (input, output, connect) {
     this.destroyed = false
-    this._connect = connect == null ? null : new Operation(connect)
+    this._connect = connect == null ? null : Operation(connect)
     this._record = new Jacket
     this._output = new Staccato.Writable(output)
     this._input = new Staccato.Readable(input)
@@ -127,7 +127,7 @@ Multiplexer.prototype._json = cadence(function (async, buffer, start, end) {
                 this._sockets[socket._serverKey] = socket
                 // Not sure what to do in the case of these errors, no sockets
                 // to send them through, so maybe we do just crash.
-                this._connect.apply([ socket, envelope.body, async() ])
+                this._connect.call(null, socket, envelope.body)
                 break
             case 'envelope':
                 var socket = this._sockets[envelope.to]

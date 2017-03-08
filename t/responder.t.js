@@ -2,15 +2,19 @@ require('proof/redux')(5, require('cadence')(prove))
 
 function prove (async, assert) {
     var Responder = require('../responder')
+    var Procession = require('procession')
+    var conduit = { write: new Procession, read: new Procession }
     var responder = new Responder({
         request: function (value, callback) {
             callback(null, value + 1)
         }
-    }, 'responder')
-    var responses = responder.basin.responses.shifter()
-    var requests = responder.spigot.requests.shifter()
+    }, 'responder', conduit.read, conduit.write)
+    var read = {
+        conduit: conduit.write.shifter(),
+        responder: responder.read.shifter()
+    }
     async(function () {
-        responder.basin.requests.enqueue({
+        conduit.read.enqueue({
             module: 'conduit',
             to: 'responder',
             from: 'requester',
@@ -18,7 +22,7 @@ function prove (async, assert) {
             body: 1
         }, async())
     }, function () {
-        assert(responses.shift(), {
+        assert(read.conduit.shift(), {
             module: 'conduit',
             to: 'requester',
             from: 'responder',
@@ -26,16 +30,20 @@ function prove (async, assert) {
             body: 2
         }, 'responder responded')
     }, function () {
-        responder.basin.requests.enqueue(1, async())
+        responder.write.enqueue(1, async())
     }, function () {
-        assert(requests.shift(), 1, 'responder forwarded')
-        responder.spigot.responses.enqueue(3, async())
+        assert(read.conduit.shift(), 1, 'responder forwarded')
+        conduit.read.enqueue(3, async())
     }, function () {
-        assert(responses.shift(), 3, 'responder backwarded')
+        assert(read.responder.shift(), 3, 'responder backwarded')
     }, function () {
-        responder.basin.requests.enqueue(null, async())
+        responder.write.enqueue(null, async())
     }, function () {
-        assert(responses.shift(), null, 'basin closed')
-        assert(requests.shift(), null, 'spigot closed')
+        read.conduit.shift()
+        assert(read.conduit.endOfStream, 'basin closed')
+        conduit.read.enqueue(null, async())
+    }, function () {
+        read.responder.shift()
+        assert(read.responder.endOfStream, 'responder closed')
     })
 }

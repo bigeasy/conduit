@@ -3,14 +3,15 @@ require('proof/redux')(5, require('cadence')(prove))
 function prove (async, assert) {
     var Requester = require('../requester')
     var Procession = require('procession')
-    var requester = new Requester('requester')
-    var requests = requester.spigot.requests.shifter()
-    var responses = requester.basin.responses.shifter()
+    var conduit = { write: new Procession, read: new Procession }
+    var requester = new Requester('requester', conduit.read, conduit.write)
+    var write = conduit.write.shifter()
+    var read = requester.read.shifter()
     async(function () {
         async(function () {
-            requests.dequeue(async())
+            write.dequeue(async())
         }, function (envelope) {
-            requester.spigot.responses.enqueue({
+            conduit.read.enqueue({
                 module: 'conduit',
                 to: envelope.from,
                 from: 'responder',
@@ -25,21 +26,21 @@ function prove (async, assert) {
         })
     }, function () {
         async(function () {
-            requester.basin.requests.enqueue('to basin', async())
+            conduit.read.enqueue('to basin', async())
         }, function () {
-            assert(requests.shift(), 'to basin', 'forwarded')
+            assert(read.shift(), 'to basin', 'forwarded')
         })
     }, function () {
         async(function () {
-            requester.spigot.responses.enqueue('from spigot', async())
+            requester.write.enqueue('from spigot', async())
         }, function () {
-            assert(responses.shift(), 'from spigot', 'backwarded')
+            assert(write.shift(), 'from spigot', 'backwarded')
         })
     }, function () {
         async(function () {
-            requests.dequeue(async())
+            write.dequeue(async())
         }, function (value) {
-            requester.spigot.responses.enqueue(null, async())
+            conduit.read.enqueue(null, async())
         })
         async([function () {
             requester.request('responder', 1, async())

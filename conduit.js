@@ -1,13 +1,8 @@
-// Utitlities common to my work.
-var coalesce = require('nascent.coalesce')
-
-// Control-flow utilities.
-var abend = require('abend')
-var delta = require('delta')
 var cadence = require('cadence')
+var Procession = require('procession')
 
-// Wrap a user specified callback.
-var Operation = require('operation/redux')
+// Utilities.
+var coalesce = require('nascent.coalesce')
 
 // Evented stream reading and writing.
 var Staccato = require('staccato')
@@ -21,47 +16,72 @@ var Monotonic = require('monotonic').asString
 // Orderly destruction of complicated objects.
 var Destructor = require('destructible')
 
-// Exceptions with context.
-var interrupt = require('interrupt').createInterrupter('conduit')
-
-// Our socket implementation.
-var Socket = require('./socket')
-
-// Create a Multiplexer with the given input and output streams that invoked the
-// the connect operation when a new socket is created
-
-//
-function Multiplexer (input, output, connect) {
+function Conduit (input, output) {
     this.destroyed = false
-    this._connect = connect == null ? null : Operation(connect)
-    this._record = new Jacket
-    this._output = new Staccato.Writable(output)
     this._input = new Staccato.Readable(input)
-    this._sockets = {}
-    this._identifier = '0'
-    this._destructor = new Destructor(interrupt)
-    this._destructor.addDestructor('mark', this._destroyed.bind(this))
-    this._destructor.addDestructor('shutdown', this._shutdown.bind(this))
+    this._output = new Staccato.Writable(output)
+    this.read = new Procession
+    this.write = new Procession
+    this.write.pump(this)
+    this._record = new Jacket
+    this._destructor = new Destructor
+    this._destructor.markDestroyed(this, 'destroyed')
 }
 
-Multiplexer.prototype.listen = cadence(function (async, buffer) {
-    async([function () {
+Conduit.prototype.enqueue = cadence(function (async, envelope) {
+    if (this.destroyed) {
+        return []
+    }
+    async(function () {
+        if (envelope == null) {
+            // TODO And then destroy the conduit.
+            this._output.write(JSON.stringify({
+                module: 'conduit',
+                method: 'trailer',
+                body: null
+            }) + '\n', async())
+        } else {
+            var e = envelope
+            while (e.body != null && typeof e.body == 'object' && !Buffer.isBuffer(e.body)) {
+                e = e.body
+            }
+            if (Buffer.isBuffer(e.body)) {
+                var body = e.body
+                e.body = null
+                var packet = JSON.stringify({
+                    module: 'conduit',
+                    method: 'chunk',
+                    length: body.length,
+                    body: envelope
+                }) + '\n'
+                e.body = body
+                this._output.write(packet, async())
+                this._output.write(e.body, async())
+            } else {
+                this._output.write(JSON.stringify({
+                    module: 'conduit',
+                    method: 'envelope',
+                    body: envelope
+                }) + '\n', async())
+            }
+        }
+    }, function () {
+        return []
+    })
+})
+
+Conduit.prototype.listen = cadence(function (async, buffer) {
+    this._destructor.addDestructor('shutdown', { object: this, method: '_shutdown' })
+    this._destructor.async(async, 'listen')(function () {
         async(function () {
             this._parse(coalesce(buffer, new Buffer(0)), async())
         }, function () {
             this._read(async())
         })
-    }, function (error) {
-        this._destructor.destroy(error)
-        throw error
-    }])
+    })
 })
 
-Multiplexer.prototype._destroyed = function () {
-    this.destroyed = true
-}
-
-Multiplexer.prototype._shutdown = function () {
+Conduit.prototype._shutdown = function () {
     this._output.destroy()
     this._input.destroy()
     for (var key in this._sockets) {
@@ -73,40 +93,26 @@ Multiplexer.prototype._shutdown = function () {
     }
 }
 
-Multiplexer.prototype.destroy = function () {
+Conduit.prototype.destroy = function () {
     this._destructor.destroy()
 }
 
-Multiplexer.prototype.connect = cadence(function (async, envelope) {
-    var id = this._identifier = Monotonic.increment(this._identifier, 0)
-    var socket = new Socket(this, id, false)
-    this._sockets[socket._clientKey] = socket
-    async(function () {
-        this._output.write(JSON.stringify({
-            module: 'conduit',
-            method: 'header',
-            to: id,
-            body: coalesce(envelope)
-        }) + '\n', async())
-    }, function () {
-        return [ socket ]
-    })
-})
-
-Multiplexer.prototype._buffer = cadence(function (async, buffer, start, end) {
+Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {
     async(function () {
         var length = Math.min(buffer.length, this._chunk.length)
         var slice = buffer.slice(start, start + length)
         start += length
         this._chunk.length -= length
-        var socket = this._sockets[this._chunk.to]
-        var queue = this._chunk.outlet == 'spigot' ? socket.spigot.requests : socket.basin.responses
         var envelope = this._chunk.body
         if (this._chunk.length != 0) {
             envelope = JSON.parse(JSON.stringify(envelope))
         }
-        envelope.body = slice
-        queue.enqueue(envelope, async())
+        var e = envelope
+        while (e.body != null) {
+            e = e.body
+        }
+        e.body = slice
+        this.read.enqueue(envelope, async())
     }, function () {
         if (this._chunk.length == 0) {
             this._chunk = null
@@ -116,7 +122,7 @@ Multiplexer.prototype._buffer = cadence(function (async, buffer, start, end) {
     })
 })
 
-Multiplexer.prototype._json = cadence(function (async, buffer, start, end) {
+Conduit.prototype._json = cadence(function (async, buffer, start, end) {
     start = this._record.parse(buffer, start, end)
     async(function () {
         if (this._record.object != null) {
@@ -130,17 +136,14 @@ Multiplexer.prototype._json = cadence(function (async, buffer, start, end) {
                 this._connect.call(null, socket, envelope.body)
                 break
             case 'envelope':
-                var socket = this._sockets[envelope.to]
-                var queue = envelope.outlet == 'spigot' ? socket.spigot.requests : socket.basin.responses
-                queue.enqueue(envelope.body, async())
+                this.read.enqueue(envelope.body, async())
                 break
             case 'chunk':
                 this._chunk = this._record.object
                 break
             case 'trailer':
                 var socket = this._sockets[envelope.to]
-                var queue = envelope.outlet == 'spigot' ? socket.spigot.requests : socket.basin.responses
-                queue.enqueue(null, async())
+                this.read.enqueue(null, async())
                 delete this._sockets[envelope.to]
                 break
             }
@@ -151,7 +154,7 @@ Multiplexer.prototype._json = cadence(function (async, buffer, start, end) {
     })
 })
 
-Multiplexer.prototype._parse = cadence(function (async, buffer) {
+Conduit.prototype._parse = cadence(function (async, buffer) {
     var parse = async(function (start) {
         if (start == buffer.length) {
             return [ parse.break ]
@@ -164,7 +167,7 @@ Multiplexer.prototype._parse = cadence(function (async, buffer) {
     })(0)
 })
 
-Multiplexer.prototype._read = cadence(function (async) {
+Conduit.prototype._read = cadence(function (async) {
     var read = async(function () {
         this._input.read(async())
     }, function (buffer) {
@@ -175,4 +178,4 @@ Multiplexer.prototype._read = cadence(function (async) {
     })()
 })
 
-module.exports = Multiplexer
+module.exports = Conduit

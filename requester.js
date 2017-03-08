@@ -8,21 +8,20 @@ var Cliffhanger = require('cliffhanger')
 
 var interrupt = require('interrupt').createInterrupter('conduit')
 
-var Basin = require('./basin')
-var Spigot = require('./spigot')
-
-function Requester (qualifier) {
+function Requester (qualifier, read, write) {
     this._qualifier = qualifier
     this._cliffhanger = new Cliffhanger
-    this.basin = new Basin(this)
-    this.spigot = new Spigot(this)
+    this.write = new Procession
+    this.read = new Procession
+    read.pump(this)
+    this.write.pump(write)
 }
 
 Requester.prototype.request = cadence(function (async, qualifier, body) {
-    if (this.spigot.requests.endOfStream) {
+    if (this.write.endOfStream || this.read.endOfStream) {
         throw interrupt('endOfStream')
     } else {
-        this.spigot.requests.enqueue({
+        this.write.enqueue({
             module: 'conduit',
             to: qualifier,
             from: this._qualifier,
@@ -32,22 +31,17 @@ Requester.prototype.request = cadence(function (async, qualifier, body) {
     }
 })
 
-Requester.prototype.fromSpigot = cadence(function (async, envelope) {
+Requester.prototype.enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
         this._cliffhanger.cancel(interrupt('endOfStream'))
-        this.basin.responses.enqueue(envelope, async())
-        this.spigot.requests.enqueue(envelope, async())
+        this.read.enqueue(envelope, async())
     } else {
         if (envelope.module == 'conduit' && envelope.to == this._qualifier) {
             this._cliffhanger.resolve(envelope.cookie, [ null, envelope.body ])
         } else {
-            this.basin.responses.enqueue(envelope, async())
+            this.read.enqueue(envelope, async())
         }
     }
 })
-
-Requester.prototype.fromBasin = function (envelope, callback) {
-    this.spigot.requests.enqueue(envelope, callback)
-}
 
 module.exports = Requester

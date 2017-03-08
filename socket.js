@@ -1,70 +1,50 @@
 var cadence = require('cadence')
-var Spigot = require('./spigot')
-var Basin = require('./basin')
+var Procession = require('procession')
+var Destructor = require('destructible')
 
-function Contextualizer (socket) {
-    this._socket = socket
+function Socket (controller, identifier) {
+    this._identifier = identifier
+    this._controller = controller
+    this.destroyed = false
+    this.read = new Procession
+    this.write = new Procession
+    this.write.pump(this)
+    this._destructor = new Destructor('socket ' + identifier)
+    this._destructor.markDestroyed(this, 'destroyed')
+    this._destructor.addDestructor('destroy', { object: this, method: '_destroy' })
 }
 
-Contextualizer.prototype.fromSpigot = function (envelope, callback) {
-    this._socket._enqueue(envelope, 'basin', callback)
+Socket.prototype.destroy = function () {
+    this._destructor.destroy()
 }
 
-Contextualizer.prototype.fromBasin = function (envelope, callback) {
-    this._socket._enqueue(envelope, 'spigot', callback)
+// TODO Would really have to think hard about how to cancel pumping, possible,
+// but probably no more complicated that what we have here.
+Socket.prototype._destroy = function () {
+    this.read.push(null)
+    delete this._controller._sockets[this._identifier]
 }
 
-function Socket (multiplexer, id, serverSide) {
-    this._serverSide = serverSide
-    this._serverKey = '[server](' + id + ')'
-    this._clientKey = '[client](' + id + ')'
-    this._multiplexer = multiplexer
-    this._id = id
-    this.spigot = new Spigot(new Contextualizer(this))
-    this.basin = new Basin(new Contextualizer(this))
-}
-
-Socket.prototype._enqueue = cadence(function (async, envelope, outlet) {
-    if (this._multiplexer.destroyed) {
+Socket.prototype.enqueue = cadence(function (async, envelope) {
+    if (this.destroyed) {
         return []
     }
-    var from = this._serverSide ? this._serverKey : this._clientKey
-    var to = this._serverSide ? this._clientKey : this._serverKey
     async(function () {
-        if (envelope == null) {
-            this._multiplexer._output.write(JSON.stringify({
+        this._controller.write.enqueue({
+            module: 'conduit',
+            method: 'socket',
+            to: this._controller._qualifier,
+            body: {
                 module: 'conduit',
-                method: 'trailer',
-                to: to,
-                outlet: outlet,
-                body: null
-            }) + '\n', async())
-        } else {
-            if (Buffer.isBuffer(envelope.body)) {
-                var body = envelope.body
-                envelope.body = null
-                var packet = JSON.stringify({
-                    module: 'conduit',
-                    method: 'chunk',
-                    to: to,
-                    outlet: outlet,
-                    length: body.length,
-                    body: envelope
-                }) + '\n'
-                envelope.body = body
-                this._multiplexer._output.write(packet, async())
-                this._multiplexer._output.write(envelope.body, async())
-            } else {
-                this._multiplexer._output.write(JSON.stringify({
-                    module: 'conduit',
-                    method: 'envelope',
-                    to: to,
-                    outlet: outlet,
-                    body: envelope
-                }) + '\n', async())
+                method: 'envelope',
+                to: this._identifier,
+                body: envelope
             }
-        }
+        }, async())
     }, function () {
+        if (this.write.endOfStream && this.read.endOfStream) {
+            this.destroy()
+        }
         return []
     })
 })

@@ -1,7 +1,7 @@
 require('proof/redux')(11, require('cadence')(prove))
 
 function prove (async, assert) {
-    var Conduit = require('../conduit')
+    var Conduit = require('..')
     var Client = require('../client')
     var Server = require('../server')
 

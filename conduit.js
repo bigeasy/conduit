@@ -16,6 +16,8 @@ var Monotonic = require('monotonic').asString
 // Orderly destruction of complicated objects.
 var Destructor = require('destructible')
 
+var Signal = require('signal')
+
 function Conduit (input, output) {
     this.destroyed = false
     this._input = new Staccato.Readable(input)
@@ -24,8 +26,10 @@ function Conduit (input, output) {
     this.write = new Procession
     this.write.pump(this)
     this._record = new Jacket
+    this._closed = new Signal
     this._destructor = new Destructor
     this._destructor.markDestroyed(this, 'destroyed')
+    this._destructor.addDestructor('closed', { object: this._closed, method: 'unlatch' })
 }
 
 Conduit.prototype.enqueue = cadence(function (async, envelope) {
@@ -40,6 +44,7 @@ Conduit.prototype.enqueue = cadence(function (async, envelope) {
                 method: 'trailer',
                 body: null
             }) + '\n', async())
+            this._closed.unlatch()
         } else {
             var e = envelope
             while (e.body != null && typeof e.body == 'object' && !Buffer.isBuffer(e.body)) {
@@ -77,6 +82,8 @@ Conduit.prototype.listen = cadence(function (async, buffer) {
             this._parse(coalesce(buffer, new Buffer(0)), async())
         }, function () {
             this._read(async())
+        }, function () {
+            this._closed.wait(async())
         })
     })
 })

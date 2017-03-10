@@ -8,6 +8,7 @@ function Socket (controller, identifier) {
     this.destroyed = false
     this.read = new Procession
     this.write = new Procession
+    this.wrote = new Procession
     this.write.pump(this)
     this._destructor = new Destructor('socket ' + identifier)
     this._destructor.markDestroyed(this, 'destroyed')
@@ -41,6 +42,8 @@ Socket.prototype.enqueue = cadence(function (async, envelope) {
                 body: envelope
             }
         }, async())
+    }, function () {
+        this.wrote.enqueue(envelope, async())
     }, function () {
         if (this.write.endOfStream && this.read.endOfStream) {
             this.destroy()

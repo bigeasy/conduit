@@ -24,6 +24,7 @@ function Conduit (input, output) {
     this._output = new Staccato.Writable(output)
     this.read = new Procession
     this.write = new Procession
+    this.wrote = new Procession
     this.write.pump(this)
     this._record = new Jacket
     this._closed = new Signal
@@ -70,6 +71,8 @@ Conduit.prototype.enqueue = cadence(function (async, envelope) {
                 }) + '\n', async())
             }
         }
+    }, function () {
+        this.wrote.enqueue(envelope, async())
     }, function () {
         return []
     })

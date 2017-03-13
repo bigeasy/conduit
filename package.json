@@ -30,6 +30,7 @@
                             "nascent.jacket":               "0.0.0",
                             "operation":                    "1.2.x",
                             "procession":                   "0.2.1",
+                            "signal":                       "1.8.x",
                             "staccato":                     "3.0.x"
     },
     "devDependencies":

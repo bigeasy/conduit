@@ -32,15 +32,11 @@ Socket.prototype.enqueue = cadence(function (async, envelope) {
     }
     async(function () {
         this._controller.write.enqueue({
-            module: 'conduit',
+            module: 'conduit/socket',
             method: 'socket',
             to: this._controller._qualifier,
-            body: {
-                module: 'conduit',
-                method: 'envelope',
-                to: this._identifier,
-                body: envelope
-            }
+            socket: this._identifier,
+            body: envelope
         }, async())
     }, function () {
         this.wrote.enqueue(envelope, async())

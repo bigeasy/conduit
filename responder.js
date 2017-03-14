@@ -18,12 +18,15 @@ Responder.prototype.enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
         this.read.push(null)
     } else {
-        if (envelope.module == 'conduit' && envelope.to == this._qualifier) {
+        if (
+            envelope.module == 'conduit/requester' &&
+            envelope.to == this._qualifier
+        ) {
             async(function () {
                 this._delegate.request(envelope.body, async())
             }, function (response) {
                 this.write.enqueue({
-                    module: 'conduit',
+                    module: 'conduit/responder',
                     to: envelope.from,
                     from: this._qualifier,
                     cookie: envelope.cookie,

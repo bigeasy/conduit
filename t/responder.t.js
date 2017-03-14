@@ -15,7 +15,7 @@ function prove (async, assert) {
     }
     async(function () {
         conduit.read.enqueue({
-            module: 'conduit',
+            module: 'conduit/requester',
             to: 'responder',
             from: 'requester',
             cookie: '1',
@@ -23,7 +23,7 @@ function prove (async, assert) {
         }, async())
     }, function () {
         assert(read.conduit.shift(), {
-            module: 'conduit',
+            module: 'conduit/responder',
             to: 'requester',
             from: 'responder',
             cookie: '1',

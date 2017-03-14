@@ -19,27 +19,24 @@ Server.prototype.enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
         this.read.enqueue(envelope, async())
     } else if (
-        envelope.module == 'conduit' &&
-        envelope.method == 'socket' &&
+        envelope.module == 'conduit/client' &&
         envelope.to == this._qualifier
     ) {
-        envelope = envelope.body
-        switch (envelope.method) {
-        case 'header':
-            var socket = new Socket(this, envelope.to)
-            this._sockets[envelope.to] = socket
-            this._connect.call(null, socket, envelope.body)
-            break
-        case 'envelope':
-            var socket = this._sockets[envelope.to]
-            async(function () {
-                socket.read.enqueue(envelope.body, async())
-            }, function () {
-                if (socket.write.endOfStream && socket.read.endOfStream) {
-                    socket.destroy()
-                }
-            })
-        }
+        var socket = new Socket(this, envelope.socket)
+        this._sockets[envelope.socket] = socket
+        this._connect.call(null, socket, envelope.body)
+    } else if (
+        envelope.module == 'conduit/socket' &&
+        envelope.to == this._qualifier
+    ) {
+        var socket = this._sockets[envelope.socket]
+        async(function () {
+            socket.read.enqueue(envelope.body, async())
+        }, function () {
+            if (socket.write.endOfStream && socket.read.endOfStream) {
+                socket.destroy()
+            }
+        })
     } else {
         this.read.enqueue(envelope, async())
     }

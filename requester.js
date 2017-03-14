@@ -22,7 +22,7 @@ Requester.prototype.request = cadence(function (async, qualifier, body) {
         throw interrupt('endOfStream')
     } else {
         this.write.enqueue({
-            module: 'conduit',
+            module: 'conduit/requester',
             to: qualifier,
             from: this._qualifier,
             cookie: this._cliffhanger.invoke(async()),
@@ -36,7 +36,10 @@ Requester.prototype.enqueue = cadence(function (async, envelope) {
         this._cliffhanger.cancel(interrupt('endOfStream'))
         this.read.enqueue(envelope, async())
     } else {
-        if (envelope.module == 'conduit' && envelope.to == this._qualifier) {
+        if (
+            envelope.module == 'conduit/responder' &&
+            envelope.to == this._qualifier
+        ) {
             this._cliffhanger.resolve(envelope.cookie, [ null, envelope.body ])
         } else {
             this.read.enqueue(envelope, async())

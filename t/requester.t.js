@@ -12,7 +12,7 @@ function prove (async, assert) {
             write.dequeue(async())
         }, function (envelope) {
             conduit.read.enqueue({
-                module: 'conduit',
+                module: 'conduit/responder',
                 to: envelope.from,
                 from: 'responder',
                 cookie: envelope.cookie,

@@ -25,15 +25,10 @@ Client.prototype.connect = function (header, callback) {
     var identifier = this._identifier = Monotonic.increment(this._identifier, 0)
     var socket = this._sockets[identifier] = new Socket(this, identifier)
     var envelope = {
-        module: 'conduit',
-        method: 'socket',
+        module: 'conduit/client',
         to: this._qualifier,
-        body: {
-            module: 'conduit',
-            method: 'header',
-            to: identifier,
-            body: header
-        }
+        socket: identifier,
+        body: header
     }
     if (arguments.length == 1) {
         this.write.push(envelope)
@@ -46,12 +41,10 @@ Client.prototype.enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
         this.read.enqueue(envelope, async())
     } else if (
-        envelope.module == 'conduit' &&
-        envelope.method == 'socket' &&
+        envelope.module == 'conduit/socket' &&
         envelope.to == this._qualifier
     ) {
-        envelope = envelope.body
-        var socket = this._sockets[envelope.to]
+        var socket = this._sockets[envelope.socket]
         async(function () {
             socket.read.enqueue(envelope.body, async())
         }, function () {

@@ -3,7 +3,7 @@ var cadence = require('cadence')
 
 // Evented message queue.
 var Procession = require('procession')
-var coalesce = require('nascent.coalesce')
+var coalesce = require('extant')
 
 function Responder (delegate, qualifier, read, write) {
     this._qualifier = qualifier

@@ -2,7 +2,7 @@ var cadence = require('cadence')
 var Procession = require('procession')
 
 // Utilities.
-var coalesce = require('nascent.coalesce')
+var coalesce = require('extant')
 
 // Evented stream reading and writing.
 var Staccato = require('staccato')

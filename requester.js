@@ -35,15 +35,13 @@ Requester.prototype.enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
         this._cliffhanger.cancel(interrupt('endOfStream'))
         this.read.enqueue(envelope, async())
+    } else if (
+        envelope.module == 'conduit/responder' &&
+        envelope.to == this._qualifier
+    ) {
+        this._cliffhanger.resolve(envelope.cookie, [ null, envelope.body ])
     } else {
-        if (
-            envelope.module == 'conduit/responder' &&
-            envelope.to == this._qualifier
-        ) {
-            this._cliffhanger.resolve(envelope.cookie, [ null, envelope.body ])
-        } else {
-            this.read.enqueue(envelope, async())
-        }
+        this.read.enqueue(envelope, async())
     }
 })
 

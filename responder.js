@@ -17,25 +17,23 @@ function Responder (delegate, qualifier, read, write) {
 Responder.prototype.enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
         this.read.push(null)
+    } else if (
+        envelope.module == 'conduit/requester' &&
+        envelope.to == this._qualifier
+    ) {
+        async(function () {
+            this._delegate.request(envelope.body, async())
+        }, function (response) {
+            this.write.enqueue({
+                module: 'conduit/responder',
+                to: envelope.from,
+                from: this._qualifier,
+                cookie: envelope.cookie,
+                body: coalesce(response)
+            }, async())
+        })
     } else {
-        if (
-            envelope.module == 'conduit/requester' &&
-            envelope.to == this._qualifier
-        ) {
-            async(function () {
-                this._delegate.request(envelope.body, async())
-            }, function (response) {
-                this.write.enqueue({
-                    module: 'conduit/responder',
-                    to: envelope.from,
-                    from: this._qualifier,
-                    cookie: envelope.cookie,
-                    body: coalesce(response)
-                }, async())
-            })
-        } else {
-            this.read.enqueue(envelope, async())
-        }
+        this.read.enqueue(envelope, async())
     }
 })
 

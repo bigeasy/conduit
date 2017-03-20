@@ -152,9 +152,9 @@ Conduit.prototype._json = cadence(function (async, buffer, start, end) {
                 this._chunk = this._record.object
                 break
             case 'trailer':
-                var socket = this._sockets[envelope.to]
+                // var socket = this._sockets[envelope.to]
                 this.read.enqueue(null, async())
-                delete this._sockets[envelope.to]
+                // delete this._sockets[envelope.to]
                 break
             }
             this._record = new Jacket

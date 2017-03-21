@@ -95,15 +95,15 @@ Consumer.prototype._flush = cadence(function (async) {
             this._windows.pop()
             continue
         }
-        if (this._window.length != 2) {
+        if (this._windows.length != 2) {
             break
         }
-        var difference = Monotonic.difference(window.greatest, window.start)
+        var difference = Monotonic.difference(window.greatest, window.start, 0) + 1
         if (window.count == difference) {
-            window.start = Monotonic.add(window.greatest, 1)
             sequence = window.greatest
             break
         }
+        break
     }
     if (sequence != null) {
         this.write.enqueue({

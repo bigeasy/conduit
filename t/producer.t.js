@@ -1,4 +1,4 @@
-require('proof/redux')(7, require('cadence')(prove))
+require('proof/redux')(9, require('cadence')(prove))
 
 function prove (async, assert) {
     var Conduit = require('..')
@@ -32,7 +32,7 @@ function prove (async, assert) {
             assert(envelope.body, count, 'work ' + count)
             count++
             envelope.started.call(null)
-            if (count == 3) {
+            if (count == 2 || count == 5) {
                 setTimeout(function () {
                     envelope.completed.call(null)
                 }, 200)
@@ -44,7 +44,7 @@ function prove (async, assert) {
     var producer = new Producer('messages')
     var pump = producer.pump(conduit.client.read, conduit.client.write)
     var consumer = new Consumer(turnstile, 'messages', conduit.server.read, conduit.server.write, {
-        window: 3,
+        window: 5,
         timeout: 100
     })
     consumer.scheduler.events.pump(new Timer(consumer.scheduler))
@@ -55,9 +55,12 @@ function prove (async, assert) {
     async(function () {
         producer.queue.push(1)
         producer.queue.push(2)
+        setTimeout(async(), 500)
+    }, function () {
         producer.queue.push(3)
         producer.queue.push(4)
-    }, function () {
+        producer.queue.push(5)
+        producer.queue.push(6)
     }, function () {
         pump.read.shifter().dequeue(async())
         consumer.write.enqueue({ module: 'ignore' }, async())

@@ -24,7 +24,7 @@
                             "cliffhanger":                  "1.4.x",
                             "delta":                        "1.2.x",
                             "destructible":                 "0.1.x",
-                            "extant":                       "0.0.x",
+                            "extant":                       "1.0.x",
                             "happenstance":                 "3.0.x",
                             "interrupt":                    "5.0.x",
                             "monotonic":                    "2.1.1",

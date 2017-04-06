@@ -1,4 +1,4 @@
-require('proof/redux')(11, require('cadence')(prove))
+require('proof')(11, require('cadence')(prove))
 
 function prove (async, assert) {
     var Conduit = require('..')

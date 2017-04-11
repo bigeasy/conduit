@@ -14,7 +14,7 @@ var Jacket = require('nascent.jacket')
 var Monotonic = require('monotonic').asString
 
 // Orderly destruction of complicated objects.
-var Destructor = require('destructible')
+var Destructible = require('destructible')
 
 var Signal = require('signal')
 
@@ -28,9 +28,9 @@ function Conduit (input, output) {
     this.write.pump(this)
     this._record = new Jacket
     this._closed = new Signal
-    this._destructor = new Destructor
-    this._destructor.markDestroyed(this, 'destroyed')
-    this._destructor.addDestructor('closed', { object: this._closed, method: 'unlatch' })
+    this._destructible = new Destructible
+    this._destructible.markDestroyed(this)
+    this._destructible.addDestructor('closed', this, 'unlatch')
 }
 
 Conduit.prototype.enqueue = cadence(function (async, envelope) {
@@ -79,8 +79,9 @@ Conduit.prototype.enqueue = cadence(function (async, envelope) {
 })
 
 Conduit.prototype.listen = cadence(function (async, buffer) {
-    this._destructor.addDestructor('shutdown', { object: this, method: '_shutdown' })
-    this._destructor.async(async, 'listen')(function () {
+    this._destructible.addDestructor('shutdown', this, '_shutdown')
+    this._destructible.async(async, 'listen')(function (ready) {
+        ready.unlatch()
         async(function () {
             this._parse(coalesce(buffer, new Buffer(0)), async())
         }, function () {
@@ -104,7 +105,7 @@ Conduit.prototype._shutdown = function () {
 }
 
 Conduit.prototype.destroy = function () {
-    this._destructor.destroy()
+    this._destructible.destroy()
 }
 
 Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {

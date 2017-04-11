@@ -1,6 +1,6 @@
 var cadence = require('cadence')
 var Procession = require('procession')
-var Destructor = require('destructible')
+var Destructible = require('destructible')
 
 function Socket (controller, identifier) {
     this._identifier = identifier
@@ -10,13 +10,13 @@ function Socket (controller, identifier) {
     this.write = new Procession
     this.wrote = new Procession
     this.write.pump(this)
-    this._destructor = new Destructor('socket ' + identifier)
-    this._destructor.markDestroyed(this, 'destroyed')
-    this._destructor.addDestructor('destroy', { object: this, method: '_destroy' })
+    this._destructible = new Destructible([ 'socket', identifier ])
+    this._destructible.markDestroyed(this)
+    this._destructible.addDestructor('destroy', this, '_destroy')
 }
 
 Socket.prototype.destroy = function () {
-    this._destructor.destroy()
+    this._destructible.destroy()
 }
 
 // TODO Would really have to think hard about how to cancel pumping, possible,

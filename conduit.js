@@ -30,7 +30,7 @@ function Conduit (input, output) {
     this._closed = new Signal
     this._destructible = new Destructible
     this._destructible.markDestroyed(this)
-    this._destructible.addDestructor('closed', this, 'unlatch')
+    this._destructible.addDestructor('closed', this._closed, 'unlatch')
 }
 
 Conduit.prototype.enqueue = cadence(function (async, envelope) {

@@ -25,7 +25,7 @@ function Conduit (input, output) {
     this.read = new Procession
     this.write = new Procession
     this.wrote = new Procession
-    this.write.pump(this)
+    this.write.pump(this, 'enqueue')
     this._record = new Jacket
     this._closed = new Signal
     this._destructible = new Destructible

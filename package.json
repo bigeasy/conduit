@@ -29,7 +29,7 @@
                             "interrupt":                    "5.0.x",
                             "monotonic":                    "3.0.x",
                             "nascent.jacket":               "0.0.x",
-                            "operation":                    "1.2.x",
+                            "operation":                    "1.4.x",
                             "procession":                   "0.4.x",
                             "signal":                       "1.8.x",
                             "staccato":                     "3.0.x",

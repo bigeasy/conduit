@@ -9,8 +9,8 @@ function Client (qualifier, read, write) {
     this._qualifier = qualifier
     this.write = new Procession
     this.read = new Procession
-    read.pump(this)
-    this.write.pump(write)
+    read.pump(this, '_enqueue')
+    this.write.pump(write, 'enqueue')
 }
 
 Client.prototype._connect = cadence(function (async, socket, envelope) {
@@ -37,7 +37,7 @@ Client.prototype.connect = function (header, callback) {
     this._connect(socket, envelope, callback)
 }
 
-Client.prototype.enqueue = cadence(function (async, envelope) {
+Client.prototype._enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
         this.read.enqueue(envelope, async())
     } else if (

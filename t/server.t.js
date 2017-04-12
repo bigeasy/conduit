@@ -47,7 +47,7 @@ function prove (async, assert) {
     var server = new Server(function (_socket, header) {
         assert(header, 'x', 'header')
         socket.server = _socket
-        socket.server.read.pump(object)
+        socket.server.read.pump(object, 'enqueue')
     }, 'service', conduit.server.read, conduit.server.write)
 
     async(function () {

@@ -9,7 +9,7 @@ function Socket (controller, identifier) {
     this.read = new Procession
     this.write = new Procession
     this.wrote = new Procession
-    this.write.pump(this)
+    this.write.pump(this, '_enqueue')
     this._destructible = new Destructible([ 'socket', identifier ])
     this._destructible.markDestroyed(this)
     this._destructible.addDestructor('destroy', this, '_destroy')
@@ -26,7 +26,7 @@ Socket.prototype._destroy = function () {
     delete this._controller._sockets[this._identifier]
 }
 
-Socket.prototype.enqueue = cadence(function (async, envelope) {
+Socket.prototype._enqueue = cadence(function (async, envelope) {
     if (this.destroyed) {
         return []
     }

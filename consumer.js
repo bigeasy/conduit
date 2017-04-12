@@ -16,7 +16,7 @@ function Consumer (turnstile, qualifier, read, write, options) {
     this._qualifier = qualifier
     this.read = new Procession
     this.write = new Procession
-    this.write.pump(write)
+    this.write.pump(write, 'enqueue')
     this._windows = [{ end: '1', count: this._window }]
     read.pump(this, '_produced')
 }

@@ -10,11 +10,11 @@ function Responder (delegate, qualifier, read, write) {
     this._delegate = delegate
     this.write = new Procession
     this.read = new Procession
-    this.write.pump(write)
-    read.pump(this)
+    this.write.pump(write, 'enqueue')
+    read.pump(this, '_enqueue')
 }
 
-Responder.prototype.enqueue = cadence(function (async, envelope) {
+Responder.prototype._enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
         this.read.push(null)
     } else if (

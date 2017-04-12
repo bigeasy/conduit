@@ -11,11 +11,11 @@ function Server (connect, qualifier, read, write) {
     this._connect = Operation(connect)
     this.read = new Procession
     this.write = new Procession
-    read.pump(this)
-    this.write.pump(write)
+    read.pump(this, '_enqueue')
+    this.write.pump(write, 'enqueue')
 }
 
-Server.prototype.enqueue = cadence(function (async, envelope) {
+Server.prototype._enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
         this.read.enqueue(envelope, async())
     } else if (

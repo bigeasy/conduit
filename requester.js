@@ -13,8 +13,8 @@ function Requester (qualifier, read, write) {
     this._cliffhanger = new Cliffhanger
     this.write = new Procession
     this.read = new Procession
-    read.pump(this)
-    this.write.pump(write)
+    read.pump(this, '_enqueue')
+    this.write.pump(write, 'enqueue')
 }
 
 Requester.prototype.request = cadence(function (async, qualifier, body) {
@@ -31,7 +31,7 @@ Requester.prototype.request = cadence(function (async, qualifier, body) {
     }
 })
 
-Requester.prototype.enqueue = cadence(function (async, envelope) {
+Requester.prototype._enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
         this._cliffhanger.cancel(interrupt('endOfStream'))
         this.read.enqueue(envelope, async())

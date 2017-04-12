@@ -7,7 +7,7 @@ function Pump (producer, read, write) {
     this.read = new Procession
     this.write = new Procession
     read.pump(this, '_consumed')
-    this.write.pump(write)
+    this.write.pump(write, 'enqueue')
     this._shifter = producer._follower.shifter()
     this._shifter.pump(this, '_enqueue')
 }

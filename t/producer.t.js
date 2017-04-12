@@ -47,7 +47,7 @@ function prove (async, assert) {
         window: 5,
         timeout: 100
     })
-    consumer.scheduler.events.pump(new Timer(consumer.scheduler), 'push')
+    consumer.scheduler.events.pump(new Timer(consumer.scheduler), 'enqueue')
 
     conduit.server.listen(async())
     conduit.client.listen(async())

@@ -32,6 +32,7 @@ function Conduit (input, output) {
     this._destructible.markDestroyed(this)
     this._destructible.addDestructor('closed', this._closed, 'unlatch')
     this.ready = new Signal
+    this._destructible.addDestructor('ready', this.ready, 'unlatch')
 }
 
 Conduit.prototype.enqueue = cadence(function (async, envelope) {
@@ -81,7 +82,8 @@ Conduit.prototype.enqueue = cadence(function (async, envelope) {
 
 Conduit.prototype.listen = cadence(function (async, buffer) {
     this._destructible.addDestructor('shutdown', this, '_shutdown')
-    this._destructible.async(async, 'listen')(function (ready) {
+    console.log('here')
+    this._destructible.stack(async, 'listen')(function (ready) {
         ready.unlatch()
         async(function () {
             this._parse(coalesce(buffer, new Buffer(0)), async())
@@ -91,7 +93,7 @@ Conduit.prototype.listen = cadence(function (async, buffer) {
             this._closed.wait(async())
         })
     })
-    this._destructible.ready.wait(this.ready.unlatch.bind(this.ready))
+    this._destructible.ready.wait(this.ready, 'unlatch')
 })
 
 Conduit.prototype._shutdown = function () {

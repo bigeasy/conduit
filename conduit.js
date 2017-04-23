@@ -82,7 +82,6 @@ Conduit.prototype.enqueue = cadence(function (async, envelope) {
 
 Conduit.prototype.listen = cadence(function (async, buffer) {
     this._destructible.addDestructor('shutdown', this, '_shutdown')
-    console.log('here')
     this._destructible.stack(async, 'listen')(function (ready) {
         ready.unlatch()
         async(function () {

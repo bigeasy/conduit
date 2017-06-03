@@ -80,19 +80,21 @@ Conduit.prototype.enqueue = cadence(function (async, envelope) {
     })
 })
 
+Conduit.prototype._listen = cadence(function (async, buffer) {
+    async(function () {
+        this._parse(coalesce(buffer, new Buffer(0)), async())
+        this.ready.unlatch()
+    }, function () {
+        this._read(async())
+    }, function () {
+        this._closed.wait(async())
+    })
+})
+
 Conduit.prototype.listen = cadence(function (async, buffer) {
     this._destructible.addDestructor('shutdown', this, '_shutdown')
-    this._destructible.stack(async, 'listen')(function (ready) {
-        ready.unlatch()
-        async(function () {
-            this._parse(coalesce(buffer, new Buffer(0)), async())
-        }, function () {
-            this._read(async())
-        }, function () {
-            this._closed.wait(async())
-        })
-    })
-    this._destructible.ready.wait(this.ready, 'unlatch')
+    this._listen(buffer, this._destructible.monitor('listen'))
+    this._destructible.completed(async())
 })
 
 Conduit.prototype._shutdown = function () {

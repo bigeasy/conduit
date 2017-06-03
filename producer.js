@@ -35,7 +35,6 @@ Pump.prototype._consumed = cadence(function (async, envelope) {
     ) {
         for (;;) {
             var peek = this._producer._follower.peek()
-            console.log(peek, envelope)
             if (peek == null || Monotonic.compare(envelope.sequence, peek.sequence) < 0) {
                 break
             }

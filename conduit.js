@@ -28,7 +28,7 @@ function Conduit (input, output) {
     this.write.pump(this, 'enqueue')
     this._record = new Jacket
     this._closed = new Signal
-    this._destructible = new Destructible
+    this._destructible = new Destructible('conduit')
     this._destructible.markDestroyed(this)
     this._destructible.addDestructor('closed', this._closed, 'unlatch')
     this.ready = new Signal

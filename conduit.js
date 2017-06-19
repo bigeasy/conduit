@@ -100,13 +100,6 @@ Conduit.prototype.listen = cadence(function (async, buffer) {
 Conduit.prototype._shutdown = function () {
     this._output.destroy()
     this._input.destroy()
-    for (var key in this._sockets) {
-        var socket = this._sockets[key]
-        socket.basin.requests.push(null)
-        socket.spigot.responses.push(null)
-        socket.basin.responses.push(null)
-        socket.spigot.requests.push(null)
-    }
 }
 
 Conduit.prototype.destroy = function () {
@@ -144,13 +137,6 @@ Conduit.prototype._json = cadence(function (async, buffer, start, end) {
         if (this._record.object != null) {
             var envelope = this._record.object
             switch (envelope.method) {
-            case 'header':
-                var socket = new Socket(this, envelope.to, true)
-                this._sockets[socket._serverKey] = socket
-                // Not sure what to do in the case of these errors, no sockets
-                // to send them through, so maybe we do just crash.
-                this._connect.call(null, socket, envelope.body)
-                break
             case 'envelope':
                 this.read.enqueue(envelope.body, async())
                 break

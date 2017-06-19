@@ -19,17 +19,19 @@ var Destructible = require('destructible')
 var Signal = require('signal')
 
 function Conduit (input, output) {
+    this._destructible = new Destructible('conduit')
+    this._destructible.markDestroyed(this)
     this.destroyed = false
     this._input = new Staccato.Readable(input)
+    this._destructible.addDestructor('input', this._input, 'destroy')
     this._output = new Staccato.Writable(output)
+    this._destructible.addDestructor('output', this._output, 'destroy')
     this.read = new Procession
     this.write = new Procession
     this.wrote = new Procession
     this.write.pump(this, 'enqueue')
     this._record = new Jacket
     this._closed = new Signal
-    this._destructible = new Destructible('conduit')
-    this._destructible.markDestroyed(this)
     this._destructible.addDestructor('closed', this._closed, 'unlatch')
     this.ready = new Signal
     this._destructible.addDestructor('ready', this.ready, 'unlatch')
@@ -98,8 +100,7 @@ Conduit.prototype.listen = cadence(function (async, buffer) {
 })
 
 Conduit.prototype._shutdown = function () {
-    this._output.destroy()
-    this._input.destroy()
+    this.read.push(null)
 }
 
 Conduit.prototype.destroy = function () {

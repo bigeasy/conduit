@@ -50,6 +50,8 @@ function prove (async, assert) {
         socket.server.read.pump(object, 'enqueue')
     }, 'service', conduit.server.read, conduit.server.write)
 
+    conduit.client.write.push({})
+
     async(function () {
         conduit.client.listen(async())
         conduit.server.listen(async())

@@ -35,6 +35,7 @@ function Conduit (input, output) {
     this._destructible.addDestructor('closed', this._closed, 'unlatch')
     this.ready = new Signal
     this._destructible.addDestructor('ready', this.ready, 'unlatch')
+    this._slices = []
 }
 
 Conduit.prototype.enqueue = cadence(function (async, envelope) {
@@ -109,25 +110,31 @@ Conduit.prototype.destroy = function () {
 
 Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {
     async(function () {
-        var length = Math.min(buffer.length, this._chunk.length)
+        var length = Math.min(buffer.length - start, this._chunk.length)
         var slice = buffer.slice(start, start + length)
         start += length
         this._chunk.length -= length
-        var envelope = this._chunk.body
-        if (this._chunk.length != 0) {
-            envelope = JSON.parse(JSON.stringify(envelope))
-        }
-        var e = envelope
-        while (e.body != null) {
-            e = e.body
-        }
-        e.body = slice
-        this.read.enqueue(envelope, async())
-    }, function () {
         if (this._chunk.length == 0) {
+            if (this._slices.length) {
+                this._slices.push(slice)
+                slice = Buffer.concat(this._slices)
+                this._slices.length = 0
+            } else {
+                slice = new Buffer(slice)
+            }
+            var envelope = this._chunk.body
+            var e = envelope
+            while (e.body != null) {
+                e = e.body
+            }
+            e.body = slice
             this._chunk = null
             this._record = new Jacket
+            this.read.enqueue(envelope, async())
+        } else {
+            this._slices.push(new Buffer(slice))
         }
+    }, function () {
         return start
     })
 })

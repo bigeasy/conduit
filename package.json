@@ -33,7 +33,7 @@
                             "procession":                   "0.4.x",
                             "signal":                       "1.10.x",
                             "staccato":                     "3.6.x",
-                            "turnstile":                    "2.5.x"
+                            "turnstile":                    "3.0.x"
     },
     "devDependencies":
     {

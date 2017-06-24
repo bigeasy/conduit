@@ -18,11 +18,18 @@ var Destructible = require('destructible')
 
 var Signal = require('signal')
 
+var Turnstile = require('turnstile/redux')
+
+Turnstile.Queue = require('turnstile/queue')
+
 function Conduit (input, output) {
     this._destructible = new Destructible('conduit')
     this._destructible.markDestroyed(this)
+    this._turnstile = new Turnstile
+    this._queue = new Turnstile.Queue(this, '_write', this._turnstile)
     this.destroyed = false
     this._input = new Staccato.Readable(input)
+    this._destructible.addDestructor('turnstile', this._turnstile, 'pause')
     this._destructible.addDestructor('input', this._input, 'destroy')
     this._output = new Staccato.Writable(output)
     this._destructible.addDestructor('output', this._output, 'destroy')
@@ -38,10 +45,11 @@ function Conduit (input, output) {
     this._slices = []
 }
 
-Conduit.prototype.enqueue = cadence(function (async, envelope) {
+Conduit.prototype._write = cadence(function (async, envelope) {
     if (this.destroyed) {
         return []
     }
+    envelope = envelope.body
     async(function () {
         if (envelope == null) {
             // TODO And then destroy the conduit.
@@ -83,7 +91,11 @@ Conduit.prototype.enqueue = cadence(function (async, envelope) {
     })
 })
 
-Conduit.prototype._listen = cadence(function (async, buffer) {
+Conduit.prototype.enqueue = function (envelope, callback) {
+    this._queue.enqueue(envelope, callback)
+}
+
+Conduit.prototype._pump = cadence(function (async, buffer) {
     async(function () {
         this._parse(coalesce(buffer, new Buffer(0)), async())
         this.ready.unlatch()
@@ -96,7 +108,8 @@ Conduit.prototype._listen = cadence(function (async, buffer) {
 
 Conduit.prototype.listen = cadence(function (async, buffer) {
     this._destructible.addDestructor('shutdown', this, '_shutdown')
-    this._listen(buffer, this._destructible.monitor('listen'))
+    this._queue.turnstile.listen(this._destructible.monitor('turnstile'))
+    this._pump(buffer, this._destructible.monitor('pump'))
     this._destructible.completed(async())
 })
 
@@ -105,7 +118,7 @@ Conduit.prototype._shutdown = function () {
 }
 
 Conduit.prototype.destroy = function () {
-    this._destructible.destroy()
+    this._turnstile.close()
 }
 
 Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {

@@ -46,9 +46,6 @@ function Conduit (input, output) {
 }
 
 Conduit.prototype._write = cadence(function (async, envelope) {
-    if (this.destroyed) {
-        return []
-    }
     envelope = envelope.body
     async(function () {
         if (envelope == null) {

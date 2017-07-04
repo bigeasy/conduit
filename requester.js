@@ -8,26 +8,25 @@ var Cliffhanger = require('cliffhanger')
 
 var interrupt = require('interrupt').createInterrupter('conduit')
 
-function Requester (qualifier, read, write) {
-    this._qualifier = qualifier
-    this._cliffhanger = new Cliffhanger
+function Requester () {
     this.write = new Procession
     this.read = new Procession
-    read.pump(this, '_enqueue')
-    this.write.pump(write, 'enqueue')
+
+    this.write.shifter().pump(this, '_enqueue')
+
+    this._cliffhanger = new Cliffhanger
 }
 
-Requester.prototype.request = cadence(function (async, qualifier, body) {
+Requester.prototype.request = cadence(function (async, body) {
     if (this.write.endOfStream || this.read.endOfStream) {
         throw interrupt('endOfStream')
     } else {
-        this.write.enqueue({
+        this.read.push({
             module: 'conduit/requester',
-            to: qualifier,
-            from: this._qualifier,
+            method: 'request',
             cookie: this._cliffhanger.invoke(async()),
             body: body
-        }, async())
+        })
     }
 })
 

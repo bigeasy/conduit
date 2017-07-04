@@ -1,50 +1,37 @@
+// Control-flow utilities.
 var cadence = require('cadence')
-var Procession = require('procession')
-var Destructible = require('destructible')
 
-function Socket (controller, identifier) {
+// An evented message queue.
+var Procession = require('procession')
+
+function Socket (controller, identifier, receiver) {
     this._identifier = identifier
     this._controller = controller
-    this.destroyed = false
-    this.read = new Procession
-    this.write = new Procession
-    this.wrote = new Procession
-    this.write.pump(this, '_enqueue')
-    this._destructible = new Destructible([ 'socket', identifier ])
-    this._destructible.markDestroyed(this)
-    this._destructible.addDestructor('destroy', this, '_destroy')
+
+    this._receiver = receiver
+    this._receiver.read.shifter().pump(this, '_send')
 }
 
-Socket.prototype.destroy = function () {
-    this._destructible.destroy()
-}
-
-// TODO Would really have to think hard about how to cancel pumping, possible,
-// but probably no more complicated that what we have here.
-Socket.prototype._destroy = function () {
-    this.read.push(null)
-    delete this._controller._sockets[this._identifier]
-}
-
-Socket.prototype._enqueue = cadence(function (async, envelope) {
-    if (this.destroyed) {
-        return []
+Socket.prototype._checkEndOfStream = function () {
+    if (this._receiver.write.endOfStream && this._receiver.read.endOfStream) {
+        delete this._controller._sockets[this._identifier]
     }
+}
+
+Socket.prototype._receive = cadence(function (async, envelope) {
     async(function () {
-        this._controller.write.enqueue({
-            module: 'conduit/socket',
-            method: 'socket',
-            to: this._controller._qualifier,
-            socket: this._identifier,
-            body: envelope
-        }, async())
+        this._receiver.write.enqueue(envelope, async())
     }, function () {
-        this.wrote.enqueue(envelope, async())
-    }, function () {
-        if (this.write.endOfStream && this.read.endOfStream) {
-            this.destroy()
-        }
-        return []
+        this._checkEndOfStream()
+    })
+})
+
+Socket.prototype._send = cadence(function (async, envelope) {
+    this._controller.read.push({
+        module: 'conduit/socket',
+        method: 'envelope',
+        identifier: this._identifier,
+        body: envelope
     })
 })
 

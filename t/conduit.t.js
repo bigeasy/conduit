@@ -1,18 +1,21 @@
-require('proof')(1, require('cadence')(prove))
+require('proof')(5, require('cadence')(prove))
 
-function prove (async, assert) {
+function prove (async, okay) {
     var Conduit = require('..')
     var stream = require('stream')
     var abend = require('abend')
+    var Procession = require('procession')
 
     function createConduit () {
+        var receiver = { read: new Procession, write: new Procession }
         var input = new stream.PassThrough
         var output = new stream.PassThrough
-        var conduit = new Conduit(input, output)
+        var conduit = new Conduit(input, output, receiver)
         return {
             input: input,
             output: output,
-            conduit: conduit
+            conduit: conduit,
+            receiver: receiver
         }
     }
 
@@ -24,13 +27,13 @@ function prove (async, assert) {
 
     var buffer = new Buffer('qwertyuiop')
 
-    first.conduit.write.push({
+    first.conduit.receiver.read.push({
         module: 'conduit', method: 'example',
         body: { body: buffer }
     })
     var buffer = first.output.read()
 
-    var shifter = second.conduit.read.shifter()
+    var shifter = second.conduit.receiver.write.shifter()
 
     second.input.write(buffer.slice(0, 10))
     second.input.write(buffer.slice(10, 120))
@@ -38,12 +41,30 @@ function prove (async, assert) {
 
     var shifted = shifter.shift()
     shifted.body.body = shifted.body.body.toString()
-    assert(shifted, {
+    okay(shifted, {
         module: 'conduit', method: 'example',
         body: { body: 'qwertyuiop' }
     }, 'piecemeal')
 
+    okay(shifter.shift(), null, 'empty')
+    second.input.write(buffer)
+
+    var shifted = shifter.shift()
+    shifted.body.body = shifted.body.body.toString()
+    okay(shifted, {
+        module: 'conduit', method: 'example',
+        body: { body: 'qwertyuiop' }
+    }, 'full buffer')
+
+    first.conduit.receiver.read.push(1)
+    second.input.write(first.output.read())
+    okay(shifter.shift(), 1, 'envelope')
+
+    first.conduit.receiver.read.push(null)
+    second.input.write(first.output.read())
+    okay(second.conduit.receiver.write.endOfStream, 'eos')
+
     first.conduit.destroy()
 
-    first.conduit.write.push({})
+    first.conduit.receiver.read.push({})
 }

@@ -1,55 +1,39 @@
-require('proof')(5, require('cadence')(prove))
+require('proof')(4, require('cadence')(prove))
 
 function prove (async, assert) {
     var Requester = require('../requester')
     var Procession = require('procession')
-    var conduit = { write: new Procession, read: new Procession }
-    var requester = new Requester('requester', conduit.read, conduit.write)
-    var write = conduit.write.shifter()
-    var read = requester.read.shifter()
-    async(function () {
-        async(function () {
-            write.dequeue(async())
-        }, function (envelope) {
-            conduit.read.enqueue({
-                module: 'conduit/responder',
-                to: envelope.from,
-                from: 'responder',
-                cookie: envelope.cookie,
-                body: envelope.body + 1
-            }, async())
-        })
-        async(function () {
-            requester.request('responder', 1, async())
-        }, function (value) {
-            assert(value, 2, 'requested')
-        })
-    }, function () {
-        async(function () {
-            conduit.read.enqueue('to basin', async())
-        }, function () {
-            assert(read.shift(), 'to basin', 'forwarded')
-        })
-    }, function () {
-        async(function () {
-            requester.write.enqueue('from spigot', async())
-        }, function () {
-            assert(write.shift(), 'from spigot', 'backwarded')
-        })
-    }, function () {
-        async(function () {
-            write.dequeue(async())
-        }, function (value) {
-            conduit.read.enqueue(null, async())
-        })
-        async([function () {
-            requester.request('responder', 1, async())
-        }, function (error) {
-            assert(error.interrupt, 'conduit#endOfStream', 'closed')
-        }])
-    }, [function () {
-        requester.request('responder', 1, async())
-    }, function (error) {
-        assert(error.interrupt, 'conduit#endOfStream', 'still closed')
-    }])
+
+    var requester = new Requester
+
+    var shifter = requester.read.shifter()
+
+    requester.request(1, function (error, result) {
+        assert(result, 2, 'request')
+    })
+
+    assert(shifter.shift(), {
+        module: 'conduit/requester',
+        method: 'request',
+        cookie: '1',
+        body: 1
+    }, 'request envelope')
+
+    requester.write.push({})
+    requester.write.push({
+        module: 'conduit/responder',
+        method: 'response',
+        cookie: '1',
+        body: 2
+    })
+
+    requester.request(1, function (error) {
+        assert(/^conduit#endOfStream$/m.test(error.message), 'response eos')
+    })
+
+    requester.write.push(null)
+
+    requester.request(1, function (error) {
+        assert(/^conduit#endOfStream$/m.test(error.message), 'request eos')
+    })
 }

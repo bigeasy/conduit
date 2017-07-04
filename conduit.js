@@ -1,8 +1,8 @@
+// Control-flow utilities.
 var cadence = require('cadence')
-var Procession = require('procession')
 
-// Utilities.
-var coalesce = require('extant')
+// An evented message queue.
+var Procession = require('procession')
 
 // Evented stream reading and writing.
 var Staccato = require('staccato')
@@ -10,19 +10,20 @@ var Staccato = require('staccato')
 // JSON for use in packets.
 var Jacket = require('nascent.jacket')
 
-// Ever increasing serial value with no maximum value.
-var Monotonic = require('monotonic').asString
-
 // Orderly destruction of complicated objects.
 var Destructible = require('destructible')
 
+// Evented semaphore.
 var Signal = require('signal')
 
-var Turnstile = require('turnstile/redux')
+// Return the first not null-like value.
+var coalesce = require('extant')
 
+// An error-frist callback work queue.
+var Turnstile = require('turnstile/redux')
 Turnstile.Queue = require('turnstile/queue')
 
-function Conduit (input, output) {
+function Conduit (input, output, receiver) {
     this._destructible = new Destructible('conduit')
     this._destructible.markDestroyed(this)
     this._turnstile = new Turnstile
@@ -33,10 +34,8 @@ function Conduit (input, output) {
     this._destructible.addDestructor('input', this._input, 'destroy')
     this._output = new Staccato.Writable(output)
     this._destructible.addDestructor('output', this._output, 'destroy')
-    this.read = new Procession
-    this.write = new Procession
-    this.wrote = new Procession
-    this.write.pump(this, 'enqueue')
+    this.receiver = receiver
+    this.receiver.read.shifter().pump(this, 'enqueue')
     this._record = new Jacket
     this._closed = new Signal
     this._destructible.addDestructor('closed', this._closed, 'unlatch')
@@ -82,8 +81,6 @@ Conduit.prototype._write = cadence(function (async, envelope) {
             }
         }
     }, function () {
-        this.wrote.enqueue(envelope, async())
-    }, function () {
         return []
     })
 })
@@ -111,7 +108,7 @@ Conduit.prototype.listen = cadence(function (async, buffer) {
 })
 
 Conduit.prototype._shutdown = function () {
-    this.read.push(null)
+    this.receiver.write.push(null)
 }
 
 Conduit.prototype.destroy = function () {
@@ -140,7 +137,7 @@ Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {
             e.body = slice
             this._chunk = null
             this._record = new Jacket
-            this.read.enqueue(envelope, async())
+            this.receiver.write.enqueue(envelope, async())
         } else {
             this._slices.push(new Buffer(slice))
         }
@@ -156,14 +153,14 @@ Conduit.prototype._json = cadence(function (async, buffer, start, end) {
             var envelope = this._record.object
             switch (envelope.method) {
             case 'envelope':
-                this.read.enqueue(envelope.body, async())
+                this.receiver.write.enqueue(envelope.body, async())
                 break
             case 'chunk':
                 this._chunk = this._record.object
                 break
             case 'trailer':
                 // var socket = this._sockets[envelope.to]
-                this.read.enqueue(null, async())
+                this.receiver.write.enqueue(null, async())
                 // delete this._sockets[envelope.to]
                 break
             }

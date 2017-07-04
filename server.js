@@ -1,44 +1,40 @@
+// Control-flow utilities.
 var cadence = require('cadence')
-var Monotonic = require('monotonic').asString
-var Socket = require('./socket')
-var Procession = require('procession')
-var Operation = require('operation/redux')
 
-function Server (connect, qualifier, read, write) {
-    this._identifier = '0'
+// An evented message queue.
+var Procession = require('procession')
+
+// Contextualized callbacks and event handlers.
+var Operation = require('operation/variadic')
+
+var Socket = require('./socket')
+
+function Server () {
+    this._connect = Operation(Array.prototype.slice.call(arguments))
+
     this._sockets = {}
-    this._qualifier = qualifier
-    this._connect = Operation(connect)
+
     this.read = new Procession
     this.write = new Procession
-    read.pump(this, '_enqueue')
-    this.write.pump(write, 'enqueue')
+
+    this.write.shifter().pump(this, '_write')
 }
 
-Server.prototype._enqueue = cadence(function (async, envelope) {
+Server.prototype._write = cadence(function (async, envelope) {
     if (envelope == null) {
-        this.read.enqueue(envelope, async())
+        async.forEach(function (identifier) {
+            this._sockets[identifier]._receive(null, async())
+        })(Object.keys(this._sockets))
     } else if (
         envelope.module == 'conduit/client' &&
-        envelope.to == this._qualifier
+        envelope.method == 'connect'
     ) {
-        var socket = new Socket(this, envelope.socket)
-        this._sockets[envelope.socket] = socket
-        this._connect.call(null, socket, envelope.body)
+        this._sockets[envelope.identifier] = new Socket(this, envelope.identifier, this._connect.call(null, envelope.body))
     } else if (
         envelope.module == 'conduit/socket' &&
-        envelope.to == this._qualifier
+        envelope.method == 'envelope'
     ) {
-        var socket = this._sockets[envelope.socket]
-        async(function () {
-            socket.read.enqueue(envelope.body, async())
-        }, function () {
-            if (socket.write.endOfStream && socket.read.endOfStream) {
-                socket.destroy()
-            }
-        })
-    } else {
-        this.read.enqueue(envelope, async())
+        this._sockets[envelope.identifier]._receive(envelope.body, async())
     }
 })
 

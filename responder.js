@@ -5,35 +5,31 @@ var cadence = require('cadence')
 var Procession = require('procession')
 var coalesce = require('extant')
 
-function Responder (delegate, qualifier, read, write) {
-    this._qualifier = qualifier
+function Responder (delegate) {
     this._delegate = delegate
+
     this.write = new Procession
     this.read = new Procession
-    this.write.pump(write, 'enqueue')
-    read.pump(this, '_enqueue')
+
+    this.write.shifter().pump(this, '_enqueue')
 }
 
 Responder.prototype._enqueue = cadence(function (async, envelope) {
-    if (envelope == null) {
-        this.read.push(null)
-    } else if (
+    if (
+        envelope != null &&
         envelope.module == 'conduit/requester' &&
-        envelope.to == this._qualifier
+        envelope.method == 'request'
     ) {
         async(function () {
             this._delegate.request(envelope.body, async())
         }, function (response) {
-            this.write.enqueue({
+            this.read.enqueue({
                 module: 'conduit/responder',
-                to: envelope.from,
-                from: this._qualifier,
+                method: 'response',
                 cookie: envelope.cookie,
                 body: coalesce(response)
             }, async())
         })
-    } else {
-        this.read.enqueue(envelope, async())
     }
 })
 

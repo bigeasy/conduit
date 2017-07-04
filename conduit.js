@@ -24,24 +24,33 @@ var Turnstile = require('turnstile/redux')
 Turnstile.Queue = require('turnstile/queue')
 
 function Conduit (input, output, receiver) {
+    this.destroyed = false
+
     this._destructible = new Destructible('conduit')
     this._destructible.markDestroyed(this)
+
     this._turnstile = new Turnstile
-    this._queue = new Turnstile.Queue(this, '_write', this._turnstile)
-    this.destroyed = false
-    this._input = new Staccato.Readable(input)
     this._destructible.addDestructor('turnstile', this._turnstile, 'pause')
+    this._queue = new Turnstile.Queue(this, '_write', this._turnstile)
+
+    this._input = new Staccato.Readable(input)
     this._destructible.addDestructor('input', this._input, 'destroy')
+
     this._output = new Staccato.Writable(output)
     this._destructible.addDestructor('output', this._output, 'destroy')
+
     this.receiver = receiver
     this.receiver.read.shifter().pump(this, 'enqueue')
+
+    this._slices = []
+
     this._record = new Jacket
+
     this._closed = new Signal
     this._destructible.addDestructor('closed', this._closed, 'unlatch')
+
     this.ready = new Signal
     this._destructible.addDestructor('ready', this.ready, 'unlatch')
-    this._slices = []
 }
 
 Conduit.prototype._write = cadence(function (async, envelope) {

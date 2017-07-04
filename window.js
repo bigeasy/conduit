@@ -55,8 +55,13 @@ Window.prototype._read = cadence(function (async, envelope) {
             if (Monotonic.compare(this._received, envelope.sequence) >= 0) {
                 return
             }
-            // We assume that we never actually lose envelopes.
-            assert(this._received == envelope.previous, 'sequence break')
+            // We might lose an envelope. We're going to count on this being a
+            // break where a conduit reconnect causes the messages to be resent
+            // but we could probably request a replay ourselves.
+            if (this._received != envelope.previous) {
+                // We maybe could use the sequence we're at as a version number.
+                return
+            }
             // Note the last received sequence.
             this._received = envelope.sequence
             // Send a flush if we've reached the end of a window.

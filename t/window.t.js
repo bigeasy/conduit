@@ -27,6 +27,12 @@ function prove (assert) {
     nested.first.read.push(4)
 
     first.write.push({})
+    first.write.push({
+        module: 'conduit/window',
+        method: 'envelope',
+        sequence: 'a',
+        previous: '9'
+    })
 
     nested.first.read.push(null)
 }

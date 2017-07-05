@@ -10,7 +10,7 @@ function prove (async, okay) {
         var receiver = { read: new Procession, write: new Procession }
         var input = new stream.PassThrough
         var output = new stream.PassThrough
-        var conduit = new Conduit(input, output, receiver)
+        var conduit = new Conduit(receiver)
         return {
             input: input,
             output: output,
@@ -22,8 +22,8 @@ function prove (async, okay) {
     var first = createConduit()
     var second = createConduit()
 
-    first.conduit.listen(abend)
-    second.conduit.listen(abend)
+    first.conduit.listen(first.input, first.output, abend)
+    second.conduit.listen(second.input, second.output, abend)
 
     var buffer = new Buffer('qwertyuiop')
 

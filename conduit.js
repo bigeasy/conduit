@@ -24,7 +24,7 @@ var coalesce = require('extant')
 var Turnstile = require('turnstile/redux')
 Turnstile.Queue = require('turnstile/queue')
 
-function Connection (input, output, receiver) {
+function Conduit (input, output, receiver) {
     this.destroyed = false
 
     this._destructible = new Destructible('conduit/connection')
@@ -40,8 +40,8 @@ function Connection (input, output, receiver) {
     this._queue = new Turnstile.Queue(this, '_write', this._turnstile)
     this._destructible.addDestructor('turnstile', this._turnstile, 'pause')
 
-    this._receiver = receiver
-    var pump = this._receiver.read.shifter().pump(this._queue, 'push')
+    this.receiver = receiver
+    var pump = this.receiver.read.shifter().pump(this._queue, 'push')
     this._destructible.addDestructor('pump', pump, 'cancel')
 
     this._slices = []
@@ -55,7 +55,7 @@ function Connection (input, output, receiver) {
     this._destructible.addDestructor('ready', this.ready, 'unlatch')
 }
 
-Connection.prototype._pump = cadence(function (async, buffer) {
+Conduit.prototype._pump = cadence(function (async, buffer) {
     async(function () {
         this._parse(coalesce(buffer, new Buffer(0)), async())
         this.ready.unlatch()
@@ -66,7 +66,7 @@ Connection.prototype._pump = cadence(function (async, buffer) {
     })
 })
 
-Connection.prototype._buffer = cadence(function (async, buffer, start, end) {
+Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {
     async(function () {
         var length = Math.min(buffer.length - start, this._chunk.length)
         var slice = buffer.slice(start, start + length)
@@ -88,7 +88,7 @@ Connection.prototype._buffer = cadence(function (async, buffer, start, end) {
             e.body = slice
             this._chunk = null
             this._record = new Jacket
-            this._receiver.write.enqueue(envelope, async())
+            this.receiver.write.enqueue(envelope, async())
         } else {
             this._slices.push(new Buffer(slice))
         }
@@ -97,21 +97,21 @@ Connection.prototype._buffer = cadence(function (async, buffer, start, end) {
     })
 })
 
-Connection.prototype._json = cadence(function (async, buffer, start, end) {
+Conduit.prototype._json = cadence(function (async, buffer, start, end) {
     start = this._record.parse(buffer, start, end)
     async(function () {
         if (this._record.object != null) {
             var envelope = this._record.object
             switch (envelope.method) {
             case 'envelope':
-                this._receiver.write.enqueue(envelope.body, async())
+                this.receiver.write.enqueue(envelope.body, async())
                 break
             case 'chunk':
                 this._chunk = this._record.object
                 break
             case 'trailer':
                 // var socket = this._sockets[envelope.to]
-                this._receiver.write.enqueue(null, async())
+                this.receiver.write.enqueue(null, async())
                 // delete this._sockets[envelope.to]
                 break
             }
@@ -122,7 +122,7 @@ Connection.prototype._json = cadence(function (async, buffer, start, end) {
     })
 })
 
-Connection.prototype._parse = cadence(function (async, buffer) {
+Conduit.prototype._parse = cadence(function (async, buffer) {
     var parse = async(function (start) {
         if (start == buffer.length) {
             return [ parse.break ]
@@ -135,7 +135,7 @@ Connection.prototype._parse = cadence(function (async, buffer) {
     })(0)
 })
 
-Connection.prototype._read = cadence(function (async) {
+Conduit.prototype._read = cadence(function (async) {
     var read = async(function () {
         this._input.read(async())
     }, function (buffer) {
@@ -146,7 +146,7 @@ Connection.prototype._read = cadence(function (async) {
     })()
 })
 
-Connection.prototype._write = cadence(function (async, envelope) {
+Conduit.prototype._write = cadence(function (async, envelope) {
     envelope = envelope.body
     async(function () {
         if (envelope == null) {
@@ -187,34 +187,11 @@ Connection.prototype._write = cadence(function (async, envelope) {
     })
 })
 
-Connection.prototype.listen = function (buffer, callback) {
+Conduit.prototype.listen = function (buffer, callback) {
     this._queue.turnstile.listen(this._destructible.monitor('turnstile'))
     this._pump(buffer, this._destructible.monitor('pump'))
     this._destructible.completed(callback)
 }
-
-Connection.prototype.destroy = function () {
-    this._destructible.destroy()
-}
-
-function Conduit (receiver) {
-    this.destroyed = false
-
-    this._destructible = new Destructible('conduit')
-    this._destructible.markDestroyed(this)
-
-    this.receiver = receiver
-}
-
-Conduit.prototype.listen = cadence(function (async, input, output, buffer) {
-    this._connection = new Connection(input, output, this.receiver)
-    this._destructible.addDestructor('connection', this._connection, 'destroy')
-    async([function () {
-        this._destructible.removeDestructor('connection')
-    }], function () {
-        this._connection.listen(buffer, async())
-    })
-})
 
 Conduit.prototype.destroy = function () {
     this._destructible.destroy()

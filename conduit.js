@@ -188,6 +188,7 @@ Conduit.prototype._write = cadence(function (async, envelope) {
 })
 
 Conduit.prototype.listen = function (buffer, callback) {
+    this.receiver.write.push({ module: 'conduit', method: 'connect' })
     this._queue.turnstile.listen(this._destructible.monitor('turnstile'))
     this._pump(buffer, this._destructible.monitor('pump'))
     this._destructible.completed(callback)

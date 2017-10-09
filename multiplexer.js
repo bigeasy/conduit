@@ -4,16 +4,20 @@ var cadence = require('cadence')
 // An evented message queue.
 var Procession = require('procession')
 
-function Multiplexer () {
+function Multiplexer (routes) {
     this.read = new Procession
     this.write = new Procession
 
     this.write.shifter().pump(this, '_dispatch')
 
     this._routes = {}
+
+    for (var qualifier in routes) {
+        this._route(qualifier, routes[qualifier])
+    }
 }
 
-Multiplexer.prototype.route = function (qualifier, receiver) {
+Multiplexer.prototype._route = function (qualifier, receiver) {
     this._routes[qualifier] = {
         receiver: receiver,
         pump: receiver.read.shifter().pump(this, function (envelope) {

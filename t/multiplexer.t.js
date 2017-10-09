@@ -7,10 +7,9 @@ function prove (okay) {
 
     okay(Multiplexer, 'require')
 
-    var multiplexer = new Multiplexer
-
     var receiver = { read: new Procession, write: new Procession }
-    multiplexer.route('x', receiver)
+    var multiplexer = new Multiplexer({ x: receiver })
+
     var read = receiver.write.shifter()
     multiplexer.write.push({
         module: 'conduit/multiplexer',

@@ -8,7 +8,7 @@ var Cliffhanger = require('cliffhanger')
 
 var interrupt = require('interrupt').createInterrupter('conduit')
 
-function Requester () {
+function Caller () {
     this.write = new Procession
     this.read = new Procession
 
@@ -17,26 +17,26 @@ function Requester () {
     this._cliffhanger = new Cliffhanger
 }
 
-Requester.prototype.request = cadence(function (async, body) {
+Caller.prototype.invoke = cadence(function (async, body) {
     if (this.write.endOfStream || this.read.endOfStream) {
         throw interrupt('endOfStream')
     } else {
         this.read.push({
-            module: 'conduit/requester',
-            method: 'request',
+            module: 'conduit/caller',
+            method: 'invoke',
             cookie: this._cliffhanger.invoke(async()),
             body: body
         })
     }
 })
 
-Requester.prototype._enqueue = cadence(function (async, envelope) {
+Caller.prototype._enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
         this._cliffhanger.cancel(interrupt('endOfStream'))
         this.read.enqueue(envelope, async())
     } else if (
-        envelope.module == 'conduit/responder' &&
-        envelope.to == this._qualifier
+        envelope.module == 'conduit/procedure' &&
+        envelope.method == 'invocation'
     ) {
         this._cliffhanger.resolve(envelope.cookie, [ null, envelope.body ])
     } else {
@@ -44,4 +44,4 @@ Requester.prototype._enqueue = cadence(function (async, envelope) {
     }
 })
 
-module.exports = Requester
+module.exports = Caller

@@ -38,7 +38,8 @@
     },
     "devDependencies":
     {
-                            "proof":                        "3.0.x"
+                            "proof":                        "3.0.x",
+                            "vizsla":                       "9.0.x"
     },
     "main":                 "conduit",
     "scripts":

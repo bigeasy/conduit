@@ -9,7 +9,7 @@
     [
                             "evented", "queue", "http"
     ],
-    "author":               "Alan Gutierrez",
+    "author":               "Alan Gutierrez <alan@prettyrobots.com>",
     "homepage":             "https://github.com/bigeasy/conduit",
     "license":              "MIT",
     "repository":

@@ -33,7 +33,7 @@ var Consumer = require('./consumer')
 // amend the HTTP headers before the request is proxied.
 
 //
-function Request () {
+function Requester () {
     var vargs = Array.prototype.slice.call(arguments)
     var timeout = Timeout(15000, vargs)
     this._client = vargs.shift()
@@ -42,7 +42,7 @@ function Request () {
 }
 
 // http://stackoverflow.com/a/5426648
-Request.prototype.middleware = cadence(function (async, request, response) {
+Requester.prototype.middleware = cadence(function (async, request, response) {
     var receiver = { read: new Procession, write: new Procession }
     var responder = new Consumer(response, 'conduit/middleware')
     receiver.write.shifter().pump(responder, 'enqueue')
@@ -56,4 +56,31 @@ Request.prototype.middleware = cadence(function (async, request, response) {
     Sender(request, receiver.read, 'conduit/requester', async())
 })
 
-module.exports = Request
+// TODO Could probably express the middleware proxy as a utility that operates
+// on a Node.js HTTP client like object.
+Requester.prototype.request = function (options) {
+    options = coalece(options, {})
+    var receiver = { read: new Procession, write: new Procession }
+    var request = new Request(receiver.read)
+    var response = new Response(request)
+    var responder = new Consumer(response, 'conduit/middleware')
+    receiver.write.shifter().pump(responder, 'enqueue')
+    var header = {
+        httpVersion: coalesce(options.httpVersion, '1.1'),
+        method: coalesce(options.method, 'GET'),
+        url: coalesce(options.path, '/'),
+        headers: JSON.parse(JSON.stringify(headers)),
+        rawHeaders: coalesce(options.rawHeaders, this._rawHeaders(headers))
+    }
+    if (!('transfer-encoding' in header.headers) && !('content-length' in header.headers)) {
+        header.headers['transfer-encoding'] = 'chunked'
+    }
+    this._client.connect({
+        module: 'conduit/requester',
+        method: 'header',
+        body: header
+    }, receiver)
+    return request
+}
+
+module.exports = Requester

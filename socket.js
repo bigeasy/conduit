@@ -27,11 +27,15 @@ Socket.prototype._receive = cadence(function (async, envelope) {
 })
 
 Socket.prototype._send = cadence(function (async, envelope) {
-    this._controller.read.push({
-        module: 'conduit/socket',
-        method: 'envelope',
-        identifier: this._identifier,
-        body: envelope
+    async(function () {
+        this._controller.read.enqueue({
+            module: 'conduit/socket',
+            method: 'envelope',
+            identifier: this._identifier,
+            body: envelope
+        }, async())
+    }, function() {
+        this._checkEndOfStream()
     })
 })
 

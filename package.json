@@ -1,6 +1,6 @@
 {
     "name":                 "conduit",
-    "version":              "0.16.6",
+    "version":              "0.16.8",
     "description":
 
       "Evented pipelines.",
@@ -39,7 +39,7 @@
     "devDependencies":
     {
                             "proof":                        "3.0.x",
-                            "vizsla":                       "10.6.x"
+                            "vizsla":                       "10.7.x"
     },
     "main":                 "conduit",
     "scripts":

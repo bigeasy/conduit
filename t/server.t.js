@@ -1,4 +1,4 @@
-require('proof')(4, require('cadence')(prove))
+require('proof')(6, require('cadence')(prove))
 
 function prove (async, okay) {
     var Procession = require('procession')
@@ -36,6 +36,14 @@ function prove (async, okay) {
 
     okay(receiver.read.endOfStream && receiver.write.endOfStream, 'done')
 
+    okay({
+        client: Object.keys(client._sockets).length,
+        server: Object.keys(server._sockets).length
+    }, {
+        client: 0,
+        server: 0
+    }, 'sockets gone')
+
     var server = new Server(function (header) {
         return { read: new Procession, write: new Procession }
     })
@@ -49,4 +57,12 @@ function prove (async, okay) {
 
     client.write.push(null)
     server.write.push(null)
+
+    okay({
+        client: Object.keys(client._sockets).length,
+        server: Object.keys(server._sockets).length
+    }, {
+        client: 0,
+        server: 0
+    }, 'sockets gone on null')
 }

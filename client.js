@@ -32,8 +32,10 @@ Client.prototype.connect = function (header, receiver) {
 
 Client.prototype._enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
+        this.read = new Procession // acts as a null sink for any writes
         async.forEach(function (identifier) {
             this._sockets[identifier]._receive(null, async())
+            delete this._sockets[identifier]
         })(Object.keys(this._sockets))
     } else if (
         envelope.module == 'conduit/socket' &&

@@ -15,7 +15,7 @@
     "repository":
     {
                             "type": "git",
-                            "url": "http://github.com/bigeasy/conduit.git"
+                            "url": "bigeasy/conduit"
     },
     "dependencies":
     {

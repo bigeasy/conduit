@@ -34,6 +34,10 @@ function Middleware () {
     this._instance = 0
 }
 
+// TODO Implement rescue as a method that takes an argument the way you've
+// implemented `monitor`. Ensure that you manage to somehow remove the rescue
+// from the waiting callbacks. (Of course you do.) Maybe the response is a
+// separate object.
 Middleware.prototype.socket = function (envelope) {
     var receiver = { read: new Procession, write: new Procession }
     var request = this._interlocutor.request({

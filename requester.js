@@ -16,9 +16,6 @@ var Header = require('./header')
 // An evented message queue.
 var Procession = require('procession')
 
-// Controlled demolition of asynchronous operations.
-var Destructible = require('destructible')
-
 // Pluck a shutdown timeout if it is the first argument to a constructor.
 var Timeout = require('./timeout')
 
@@ -38,7 +35,6 @@ function Request () {
     var timeout = Timeout(15000, vargs)
     this._client = vargs.shift()
     this._rewrite = coalesce(vargs.shift(), nop)
-    this._destructible = new Destructible(timeout, 'conduit/request')
 }
 
 // http://stackoverflow.com/a/5426648

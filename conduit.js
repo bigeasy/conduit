@@ -27,38 +27,34 @@ Turnstile.Queue = require('turnstile/queue')
 function Conduit (input, output, receiver) {
     this.destroyed = false
 
-    this._destructible = new Destructible('conduit/connection')
+    this._destructible = new Destructible('conduit')
     this._destructible.markDestroyed(this)
 
     this._input = new Staccato.Readable(input)
-    this._destructible.addDestructor('input', this._input, 'destroy')
+    this._destructible.destruct.wait(this._input, 'destroy')
 
     this._output = new Staccato.Writable(output)
-    this._destructible.addDestructor('output', this._output, 'destroy')
+    this._destructible.destruct.wait(this._output, 'destroy')
 
     this._turnstile = new Turnstile
     this._queue = new Turnstile.Queue(this, '_write', this._turnstile)
-    this._destructible.addDestructor('turnstile', this._turnstile, 'pause')
+    this._destructible.destruct.wait(this._turnstile, 'pause')
 
     this.receiver = receiver
     var pump = this.receiver.read.shifter().pump(this._queue, 'push')
-    this._destructible.addDestructor('pump', pump, 'cancel')
+    this._destructible.destruct.wait(pump, 'cancel')
 
     this._slices = []
 
     this._record = new Jacket
 
     this._closed = new Signal
-    this._destructible.addDestructor('closed', this._closed, 'unlatch')
-
-    this.ready = new Signal
-    this._destructible.addDestructor('ready', this.ready, 'unlatch')
+    this._destructible.destruct.wait(this._closed, 'unlatch')
 }
 
 Conduit.prototype._pump = cadence(function (async, buffer) {
     async(function () {
         this._parse(coalesce(buffer, new Buffer(0)), async())
-        this.ready.unlatch()
     }, function () {
         this._read(async())
     }, function () {
@@ -187,12 +183,12 @@ Conduit.prototype._write = cadence(function (async, envelope) {
     })
 })
 
-Conduit.prototype.listen = function (buffer, callback) {
+Conduit.prototype.listen = cadence(function (async, buffer) {
     this.receiver.write.push({ module: 'conduit', method: 'connect' })
     this._queue.turnstile.listen(this._destructible.monitor('turnstile'))
     this._pump(buffer, this._destructible.monitor('pump'))
-    this._destructible.completed.wait(callback)
-}
+    this._destructible.completed.wait(async())
+})
 
 Conduit.prototype.destroy = function () {
     this._destructible.destroy()

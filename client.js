@@ -9,19 +9,27 @@ var Procession = require('procession')
 
 var Socket = require('./socket')
 
+var util = require('util')
+var Pumpable = require('./pumpable')
+
 function Client () {
+    Pumpable.call(this, 'client')
+
     this._identifier = '0'
     this._sockets = {}
 
     this.write = new Procession
     this.read = new Procession
 
-    this.write.shifter().pump(this, '_enqueue')
+    this._pump(false, 'enqueue', this.write, this, '_enqueue')
 }
+util.inherits(Client, Pumpable)
 
 Client.prototype.connect = function (header, receiver) {
     var identifier = this._identifier = Monotonic.increment(this._identifier, 0)
-    this._sockets[identifier] = new Socket(this, identifier, receiver)
+    var socket = this._sockets[identifier] = new Socket(this, identifier, receiver)
+    socket.cookie = this._destructible.destruct.wait(socket, 'destroy')
+    socket.listen(this._destructible.rescue([ 'socket', identifier ]))
     this.read.push({
         module: 'conduit/client',
         method: 'connect',

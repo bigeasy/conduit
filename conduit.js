@@ -24,11 +24,11 @@ var coalesce = require('extant')
 var Turnstile = require('turnstile/redux')
 Turnstile.Queue = require('turnstile/queue')
 
-function Conduit (input, output, receiver) {
-    this.destroyed = false
+var util = require('util')
+var Pumpable = require('./pumpable')
 
-    this._destructible = new Destructible('conduit')
-    this._destructible.markDestroyed(this)
+function Conduit (input, output, receiver) {
+    Pumpable.call(this, 'conduit')
 
     this._input = new Staccato.Readable(input)
     this._destructible.destruct.wait(this._input, 'destroy')
@@ -41,8 +41,7 @@ function Conduit (input, output, receiver) {
     this._destructible.destruct.wait(this._turnstile, 'pause')
 
     this.receiver = receiver
-    var pump = this.receiver.read.shifter().pump(this._queue, 'push')
-    this._destructible.destruct.wait(pump, 'cancel')
+    this._pump(false, 'receiver', this.receiver.read, this._queue, 'push')
 
     this._slices = []
 
@@ -51,8 +50,9 @@ function Conduit (input, output, receiver) {
     this._closed = new Signal
     this._destructible.destruct.wait(this._closed, 'unlatch')
 }
+util.inherits(Conduit, Pumpable)
 
-Conduit.prototype._pump = cadence(function (async, buffer) {
+Conduit.prototype._consume = cadence(function (async, buffer) {
     async(function () {
         this._parse(coalesce(buffer, new Buffer(0)), async())
     }, function () {
@@ -186,7 +186,7 @@ Conduit.prototype._write = cadence(function (async, envelope) {
 Conduit.prototype.listen = cadence(function (async, buffer) {
     this.receiver.write.push({ module: 'conduit', method: 'connect' })
     this._queue.turnstile.listen(this._destructible.monitor('turnstile'))
-    this._pump(buffer, this._destructible.monitor('pump'))
+    this._consume(buffer, this._destructible.monitor('pump'))
     this._destructible.completed.wait(async())
 })
 

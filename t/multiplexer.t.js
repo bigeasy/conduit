@@ -1,4 +1,4 @@
-require('proof')(4, prove)
+require('proof')(5, prove)
 
 function prove (okay) {
     var Procession = require('procession')
@@ -9,6 +9,9 @@ function prove (okay) {
 
     var receiver = { read: new Procession, write: new Procession }
     var multiplexer = new Multiplexer({ x: receiver })
+    multiplexer.listen(function (error) {
+        okay(error == null, 'done')
+    })
 
     var read = receiver.write.shifter()
     multiplexer.write.push({

@@ -16,21 +16,27 @@ var coalesce = require('extant')
 // Do nothing.
 var noop = require('nop')
 
+var util = require('util')
+var Pumpable = require('./pumpable')
+
 function Window (receiver, options) {
+    Pumpable.call(this, 'caller')
+
     options = coalesce(options, {})
 
     this.read = new Procession
     this.write = new Procession
 
-    this.write.shifter().pump(this, '_read')
+    this._pump(false, 'read', this.write, this, '_read')
 
     this._receiver = receiver
-    this._receiver.read.shifter().pump(this, '_write')
+    this._pump(false, 'write', this._receiver.read, this, '_write')
 
     this._queue = new Procession
     this._reservoir = this._queue.shifter()
 
-    this._pumper = this._queue.shifter().pump(this.read, 'enqueue')
+    this.restarts = 0
+    this._cookie = this._pump(true, [ 'enqueue', this.restarts ], this._queue, this.read, 'enqueue')
 
     this._received = '0'
     this._sequence = '0'
@@ -39,6 +45,7 @@ function Window (receiver, options) {
 
     this._flush = Monotonic.add('0', this._window)
 }
+util.inherits(Window, Pumpable)
 
 // Input into window from outside.
 
@@ -91,10 +98,10 @@ Window.prototype._read = cadence(function (async, envelope) {
         envelope.module == 'conduit' &&
         envelope.method == 'connect'
     ) {
-        this._pumper.cancel()
-        this._pumper = this._reservoir
-        this._reservoir = this._pumper.shifter()
-        this._pumper.pump(this.read, 'enqueue')
+        this._destructible.destruct.cancel(this._cookie)()
+        var pumper = this._reservoir
+        this._reservoir = pumper.shifter()
+        this._cookie = this._pump(true, [ 'enqueue', ++this.restarts ], pumper, this.read, 'enqueue')
     }
 })
 

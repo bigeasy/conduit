@@ -6,22 +6,31 @@ function prove (async, okay) {
     var Client = require('../client')
     var Server = require('../server')
 
+    var abend = require('abend')
+
+    var Pump = require('procession/pump')
+
     var server = new Server(function (header) {
         okay(header, 1, 'header')
         var receiver = { read: new Procession, write: new Procession }
-        var pump = receiver.write.shifter().pump(function (envelope) {
+        var shifter = receiver.write.shifter()
+        var pump = new Pump(shifter, function (envelope) {
             okay(envelope, 2, 'envelope')
             receiver.read.push(1)
             receiver.read.push(null)
-            pump.cancel()
+            shifter.destroy()
         })
+        pump.pump(abend)
+
         return receiver
     })
+    server.listen(abend)
 
     var client = new Client
+    client.listen(abend)
 
-    client.read.shifter().pump(server.write, 'enqueue')
-    server.read.shifter().pump(client.write, 'enqueue')
+    new Pump(client.read.shifter(), server.write, 'enqueue').pump(abend)
+    new Pump(server.read.shifter(), client.write, 'enqueue').pump(abend)
 
     var receiver = { read: new Procession, write: new Procession }
     var write = receiver.write.shifter()
@@ -50,8 +59,8 @@ function prove (async, okay) {
 
     var client = new Client
 
-    client.read.shifter().pump(server.write, 'enqueue')
-    server.read.shifter().pump(client.write, 'enqueue')
+    new Pump(client.read.shifter(), server.write, 'enqueue').pump(abend)
+    new Pump(server.read.shifter(), client.write, 'enqueue').pump(abend)
 
     client.connect(null, { read: new Procession, write: new Procession })
 

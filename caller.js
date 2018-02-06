@@ -8,14 +8,22 @@ var Cliffhanger = require('cliffhanger')
 
 var interrupt = require('interrupt').createInterrupter('conduit')
 
+var util = require('util')
+var Pumpable = require('./pumpable')
+
 function Caller () {
+    Pumpable.call(this, 'caller')
+
     this.write = new Procession
     this.read = new Procession
 
-    this.write.shifter().pump(this, '_enqueue')
+    this._shifter = this.write.shifter()
 
     this._cliffhanger = new Cliffhanger
+
+    this._pump(false, 'enqueue', this.write, this, '_enqueue')
 }
+util.inherits(Caller, Pumpable)
 
 Caller.prototype.invoke = cadence(function (async, body) {
     if (this.write.endOfStream || this.read.endOfStream) {

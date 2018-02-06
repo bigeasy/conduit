@@ -9,7 +9,12 @@ var Operation = require('operation/variadic')
 
 var Socket = require('./socket')
 
+var util = require('util')
+var Pumpable = require('./pumpable')
+
 function Server () {
+    Pumpable.call(this, 'server')
+
     this._connect = Operation(Array.prototype.slice.call(arguments))
 
     this._sockets = {}
@@ -17,8 +22,9 @@ function Server () {
     this.read = new Procession
     this.write = new Procession
 
-    this.write.shifter().pump(this, '_write')
+    this._pump(false, 'write', this.write, this, '_write')
 }
+util.inherits(Server, Pumpable)
 
 Server.prototype._write = cadence(function (async, envelope) {
     if (envelope == null) {
@@ -31,7 +37,10 @@ Server.prototype._write = cadence(function (async, envelope) {
         envelope.module == 'conduit/client' &&
         envelope.method == 'connect'
     ) {
-        this._sockets[envelope.identifier] = new Socket(this, envelope.identifier, this._connect.call(null, envelope.body))
+        var receiver = this._connect.call(null, envelope.body)
+        var socket = this._sockets[envelope.identifier] = new Socket(this, envelope.identifier, receiver)
+        socket.cookie = this._destructible.destruct.wait(socket, 'destroy')
+        socket.listen(this._destructible.rescue([ 'socket', envelope.identifier ]))
     } else if (
         envelope.module == 'conduit/socket' &&
         envelope.method == 'envelope'

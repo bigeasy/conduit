@@ -23,16 +23,22 @@ var Destructible = require('destructible')
 // Pluck a shutdown timeout if it is the first argument to a constructor.
 var Timeout = require('./timeout')
 
+var util = require('util')
+var Pumpable = require('./pumpable')
+
 function Middleware () {
+    Pumpable.call(this, 'middleware')
+
     var vargs = Array.prototype.slice.call(arguments)
     var timeout = Timeout(15000, vargs)
     var server = vargs.shift()
     var middleware = vargs.shift()
     this._interlocutor = new Interlocutor(middleware)
-    this._destructible = new Destructible(timeout, 'conduit/middleware')
+    this._destructible = new Destructible(1000, timeout, 'conduit/middleware')
     this._destructible.markDestroyed(this, 'destroyed')
     this._instance = 0
 }
+util.inherits(Middleware, Pumpable)
 
 // TODO Implement rescue as a method that takes an argument the way you've
 // implemented `monitor`. Ensure that you manage to somehow remove the rescue
@@ -49,7 +55,7 @@ Middleware.prototype.socket = function (envelope) {
     })
     this._respond(request, receiver.read, this._destructible.rescue([ 'request', 'send', this._instance++ ]))
     var consumer = new Consumer(request, 'conduit/requester')
-    receiver.write.shifter().pump(consumer, 'enqueue')
+    this._pump(true, [ 'socket', this._instance++ ], receiver.write, consumer, 'enqueue')
     return receiver
 }
 

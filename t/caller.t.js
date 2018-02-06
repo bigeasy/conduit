@@ -1,10 +1,14 @@
-require('proof')(4, require('cadence')(prove))
+require('proof')(5, prove)
 
-function prove (async, assert) {
+function prove (assert) {
     var Caller = require('../caller')
     var Procession = require('procession')
+    var abend = require('abend')
 
     var caller = new Caller
+    caller.listen(function (error) {
+        assert(error == null, 'done')
+    })
 
     var shifter = caller.read.shifter()
 
@@ -36,4 +40,6 @@ function prove (async, assert) {
     caller.invoke(1, function (error) {
         assert(/^conduit#endOfStream$/m.test(error.message), 'invoke eos')
     })
+
+    caller.destroy()
 }

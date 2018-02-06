@@ -5,10 +5,12 @@ function prove (async, okay) {
 
     var Procedure = require('../procedure')
 
+    var abend = require('abend')
 
     var procedure = new Procedure(function (value, callback) {
         callback(null, value + 1)
     })
+    procedure.listen(abend)
 
     var shifter = procedure.read.shifter()
 

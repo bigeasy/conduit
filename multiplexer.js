@@ -3,52 +3,49 @@ var cadence = require('cadence')
 
 // An evented message queue.
 var Procession = require('procession')
+var Pump = require('procession/pump')
 
 var assert = require('assert')
 
+var Destructible = require('destructible')
+
+var util = require('util')
+var Pumpable = require('./pumpable')
+
 function Multiplexer (routes) {
+    Pumpable.call(this, 'multiplexer')
+
     this.read = new Procession
     this.write = new Procession
 
-    this._shifter = this.write.shifter()
+    this._pump(false, 'dispatch', this.write, this, '_dispatch')
 
-    this._routes = {}
+    this._receivers = {}
 
     for (var qualifier in routes) {
         this._route(qualifier, routes[qualifier])
     }
 }
-
-Multiplexer.prototype.listen = function (callback) {
-    assert(this._shifter != null, 'shifter')
-    new Pump(this._shifter, this, '_dispatch').pump(callback)
-}
-
-Multiplexer.prototype.destroy = function () {
-    this._shifter.destroy()
-    this._shifter = null
-}
+util.inherits(Multiplexer, Pumpable)
 
 Multiplexer.prototype._route = function (qualifier, receiver) {
-    this._routes[qualifier] = {
-        receiver: receiver,
-        pump: receiver.read.shifter().pump(this, function (envelope) {
-            this._envelop(qualifier, envelope)
-        })
-    }
+    this._receivers[qualifier] = receiver
+    this._pump(false, [ 'receiver', qualifier ], receiver.read, this, function (envelope) {
+        this._envelop(qualifier, envelope)
+    })
 }
 
 Multiplexer.prototype._dispatch = cadence(function (async, envelope) {
     if (envelope == null) {
         async.forEach(function (qualifier) {
-            this._routes[qualifier].receiver.write.enqueue(null, async())
-        })(Object.keys(this._routes))
+            this._receivers[qualifier].write.enqueue(null, async())
+        })(Object.keys(this._receivers))
     } else if (
         envelope.module == 'conduit/multiplexer' &&
         envelope.method == 'envelope' &&
-        this._routes[envelope.qualifier] != null
+        this._receivers[envelope.qualifier] != null
     ) {
-        this._routes[envelope.qualifier].receiver.write.enqueue(envelope.body, async())
+        this._receivers[envelope.qualifier].write.enqueue(envelope.body, async())
     }
 })
 

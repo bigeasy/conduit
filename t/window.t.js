@@ -10,12 +10,16 @@ function prove (assert) {
         first: { read: nested.first.read.shifter(), write: nested.first.write.shifter() },
         second: { read: nested.second.read.shifter(), write: nested.second.write.shifter() }
     }
+    var Pump = require('procession/pump')
+    var abend = require('abend')
     var Window = require('../window')
     var first = new Window(nested.first)
+    first.listen(abend)
     var second = new Window(nested.second, { window: 4 })
+    second.listen(abend)
 
-    first.read.shifter().pump(second.write, 'enqueue')
-    second.read.shifter().pump(first.write, 'enqueue')
+    new Pump(first.read.shifter(), second.write, 'enqueue').pump(abend)
+    new Pump(second.read.shifter(), first.write, 'enqueue').pump(abend)
 
     nested.first.read.push(1)
     assert(shifters.second.write.shift(), 1, 'first')

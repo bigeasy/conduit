@@ -8,15 +8,21 @@ var coalesce = require('extant')
 // Contextualized callbacks and event handlers.
 var Operation = require('operation/variadic')
 
+var util = require('util')
+var Pumpable = require('./pumpable')
+
 function Procedure () {
+    Pumpable.call(this, 'procedure')
+
     var vargs = Array.prototype.slice.call(arguments)
     this._operation = new Operation(vargs)
 
     this.write = new Procession
     this.read = new Procession
 
-    this.write.shifter().pump(this, '_enqueue')
+    this._pump(false, 'enqueue', this.write, this, '_enqueue')
 }
+util.inherits(Procedure, Pumpable)
 
 Procedure.prototype._enqueue = cadence(function (async, envelope) {
     if (

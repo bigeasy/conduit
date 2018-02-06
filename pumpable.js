@@ -25,8 +25,10 @@ Pumpable.prototype.stack = function (initializer, callback) {
 Pumpable.prototype._pump = function (terminates, key, queue, object, method) {
     require('assert')(typeof terminates == 'boolean')
     var shifter = queue.shifter()
-    var callback = terminates ? this._destructible.rescue(key) : this._destructible.monitor(key)
-    new Pump(shifter, object, method).pump(callback)
+    var callback = this._destructible.monitor(key, terminates)
+    new Pump(shifter, object, method).pump(function () {
+        callback()
+    })
     return this._destructible.destruct.wait(shifter, 'destroy')
 }
 

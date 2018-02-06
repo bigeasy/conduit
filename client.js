@@ -29,7 +29,7 @@ Client.prototype.connect = function (header, receiver) {
     var identifier = this._identifier = Monotonic.increment(this._identifier, 0)
     var socket = this._sockets[identifier] = new Socket(this, identifier, receiver)
     socket.cookie = this._destructible.destruct.wait(socket, 'destroy')
-    socket.listen(this._destructible.rescue([ 'socket', identifier ]))
+    socket.listen(this._destructible.monitor([ 'socket', identifier ], true))
     this.read.push({
         module: 'conduit/client',
         method: 'connect',

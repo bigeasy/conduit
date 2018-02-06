@@ -40,7 +40,7 @@ Server.prototype._write = cadence(function (async, envelope) {
         var receiver = this._connect.call(null, envelope.body)
         var socket = this._sockets[envelope.identifier] = new Socket(this, envelope.identifier, receiver)
         socket.cookie = this._destructible.destruct.wait(socket, 'destroy')
-        socket.listen(this._destructible.rescue([ 'socket', envelope.identifier ]))
+        socket.listen(this._destructible.monitor([ 'socket', envelope.identifier ], true))
     } else if (
         envelope.module == 'conduit/socket' &&
         envelope.method == 'envelope'

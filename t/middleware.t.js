@@ -32,7 +32,7 @@ function prove (async, okay) {
     var destructible = new Destructible(1000, 't/middleware')
 
     var server = http.createServer(function (request, response) {
-        requester.middleware(request, response, destructible.rescue('request'))
+        requester.middleware(request, response, destructible.monitor('request', true))
     })
 
     destructible.completed.wait(async())

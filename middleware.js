@@ -53,7 +53,7 @@ Middleware.prototype.socket = function (envelope) {
         headers: envelope.body.headers,
         rawHeaders: envelope.body.rawHeaders
     })
-    this._respond(request, receiver.read, this._destructible.rescue([ 'request', 'send', this._instance++ ]))
+    this._respond(request, receiver.read, this._destructible.monitor([ 'request', 'send', this._instance++ ]))
     var consumer = new Consumer(request, 'conduit/requester')
     this._pump(true, [ 'socket', this._instance++ ], receiver.write, consumer, 'enqueue')
     return receiver

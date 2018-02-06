@@ -16,6 +16,12 @@ Pumpable.prototype.destroy = function () {
     this._destructible.destroy()
 }
 
+Pumpable.prototype.stack = function (initializer, callback) {
+    initializer.destructor(this, 'destroy')
+    this._destructible.completed.wait(callback)
+    initializer.ready()
+}
+
 Pumpable.prototype._pump = function (terminates, key, queue, object, method) {
     require('assert')(typeof terminates == 'boolean')
     var shifter = queue.shifter()

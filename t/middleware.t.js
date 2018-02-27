@@ -38,7 +38,7 @@ function prove (async, okay) {
     destructible.completed.wait(async())
 
     middleware.listen(destructible.monitor('middleware'))
-    destructible.addDestructor('middleware', middleware, 'destroy')
+    destructible.destruct.wait(middleware, 'destroy')
 
     var delta = require('delta')
 
@@ -48,7 +48,7 @@ function prove (async, okay) {
         server.listen(8888, '127.0.0.1', async())
     }, function () {
         delta(destructible.monitor('server')).ee(server).on('close')
-        destructible.addDestructor('server', server, 'close')
+        destructible.destruct.wait(server, 'close')
         ua.fetch({
             url: 'http://127.0.0.1:8888',
             timeout: 1000

@@ -1,4 +1,5 @@
 var Destructible = require('destructible')
+var cadence = require('cadence')
 
 var Pump = require('procession/pump')
 
@@ -16,11 +17,10 @@ Pumpable.prototype.destroy = function () {
     this._destructible.destroy()
 }
 
-Pumpable.prototype.stack = function (initializer, callback) {
-    initializer.destructor(this, 'destroy')
-    this._destructible.completed.wait(callback)
-    initializer.ready()
-}
+Pumpable.prototype.stack = cadence(function (async, destructible) {
+    destructible.destruct.wait(this, 'destroy')
+    this._destructible.completed.wait(destructible.monitor('pump'))
+})
 
 Pumpable.prototype._pump = function (terminates, key, queue, object, method) {
     require('assert')(typeof terminates == 'boolean')

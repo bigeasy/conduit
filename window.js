@@ -36,6 +36,7 @@ function Window (receiver, options) {
     this._reservoir = this._queue.shifter()
 
     this.restarts = 0
+    // TODO This needs to be `Shifter.pumpify` and not use our `Destructible`.
     this._cookie = this._pump(true, [ 'enqueue', this.restarts ], this._queue, this.read, 'enqueue')
 
     this._received = '0'

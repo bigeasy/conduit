@@ -41,6 +41,11 @@ function Conduit (input, output, receiver) {
     this._destructible.destruct.wait(this._turnstile, 'pause')
 
     this.receiver = receiver
+    // TODO Should Turnstile have some sort of synchronous push that is agreed
+    // upon by Procession?
+    //
+    // TODO Curious that we're not just leaving things on the receiver's queue.
+    // Why do we have to copy it over to a Turnstile?
     this._pump(false, 'receiver', this.receiver.read, this._queue, 'push')
 
     this._slices = []

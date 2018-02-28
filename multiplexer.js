@@ -30,7 +30,9 @@ util.inherits(Multiplexer, Pumpable)
 
 Multiplexer.prototype._route = function (qualifier, receiver) {
     this._receivers[qualifier] = receiver
-    this._pump(false, [ 'receiver', qualifier ], receiver.read, this, function (envelope) {
+    this._destructible.destruct.wait(receiver, 'destroy')
+    receiver.listen(this._destructible.monitor([ 'receiver', 'pump', qualifier ]))
+    this._pump(false, [ 'receiver', 'write', qualifier ], receiver.read, this, function (envelope) {
         this._envelop(qualifier, envelope)
     })
 }

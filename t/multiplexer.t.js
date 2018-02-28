@@ -7,7 +7,16 @@ function prove (okay) {
 
     okay(Multiplexer, 'require')
 
-    var receiver = { read: new Procession, write: new Procession }
+    var receiver = {
+        read: new Procession,
+        write: new Procession,
+        destroy: function () {
+            this._callback.call()
+        },
+        listen: function (callback) {
+            this._callback = callback
+        }
+    }
     var multiplexer = new Multiplexer({ x: receiver })
     multiplexer.listen(function (error) {
         okay(error == null, 'done')

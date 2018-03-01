@@ -9,20 +9,19 @@ function prove (async, okay) {
     var Middleware = require('../middleware')
     var Requester = require('../requester')
 
-    var Pump = require('procession/pump')
     var abend = require('abend')
 
     var client = new Client
     var requester = new Requester(client)
-    var middleware = new Middleware(server, function (request, response) {
+    var middleware = new Middleware(function (request, response) {
         response.writeHead(200, { 'content-type': 'text/plain', connection: 'close' })
         response.end('hello, world')
     })
     var server = new Server(middleware, 'socket')
     server.listen(abend)
 
-    new Pump(client.read.shifter(), server.write, 'enqueue').pump(abend)
-    new Pump(server.read.shifter(), client.write, 'enqueue').pump(abend)
+    client.read.shifter().pumpify(server.write)
+    server.read.shifter().pumpify(client.write)
 
     var http = require('http')
     var Destructible = require('destructible')

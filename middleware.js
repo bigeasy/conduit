@@ -31,7 +31,6 @@ function Middleware () {
 
     var vargs = Array.prototype.slice.call(arguments)
     var timeout = Timeout(15000, vargs)
-    var server = vargs.shift()
     var middleware = vargs.shift()
     this._interlocutor = new Interlocutor(middleware)
     this._destructible = new Destructible(1000, timeout, 'conduit/middleware')

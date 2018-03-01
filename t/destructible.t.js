@@ -10,7 +10,7 @@ function prove (async, okay) {
 
     var caller = new Caller
     async(function () {
-        destructible.monitor('destructible', caller, 'stack', async())
+        destructible.monitor('destructible', caller, 'monitor', async())
     }, function (cookie) {
         var shifter = caller.read.shifter()
 

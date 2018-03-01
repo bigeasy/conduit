@@ -17,7 +17,7 @@ Pumpable.prototype.destroy = function () {
     this._destructible.destroy()
 }
 
-Pumpable.prototype.stack = cadence(function (async, destructible) {
+Pumpable.prototype.monitor = cadence(function (async, destructible) {
     destructible.destruct.wait(this, 'destroy')
     this._destructible.completed.wait(destructible.monitor('pump'))
 })

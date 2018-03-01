@@ -20,7 +20,7 @@ function prove (async, okay) {
             receiver.read.push(null)
             shifter.destroy()
         })
-        pump.pump(abend)
+        pump.pumpify(abend)
 
         return receiver
     })
@@ -29,8 +29,8 @@ function prove (async, okay) {
     var client = new Client
     client.listen(abend)
 
-    new Pump(client.read.shifter(), server.write, 'enqueue').pump(abend)
-    new Pump(server.read.shifter(), client.write, 'enqueue').pump(abend)
+    client.read.shifter().pumpify(server.write)
+    server.read.shifter().pumpify(client.write)
 
     var receiver = { read: new Procession, write: new Procession }
     var write = receiver.write.shifter()
@@ -59,8 +59,8 @@ function prove (async, okay) {
 
     var client = new Client
 
-    new Pump(client.read.shifter(), server.write, 'enqueue').pump(abend)
-    new Pump(server.read.shifter(), client.write, 'enqueue').pump(abend)
+    client.read.shifter().pumpify(server.write)
+    server.read.shifter().pumpify(client.write)
 
     client.connect(null, { read: new Procession, write: new Procession })
 

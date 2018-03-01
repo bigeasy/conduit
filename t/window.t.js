@@ -18,8 +18,8 @@ function prove (assert) {
     var second = new Window(nested.second, { window: 4 })
     second.listen(abend)
 
-    new Pump(first.read.shifter(), second.write, 'enqueue').pump(abend)
-    new Pump(second.read.shifter(), first.write, 'enqueue').pump(abend)
+    first.read.shifter().pumpify(second.write)
+    second.read.shifter().pumpify(first.write)
 
     nested.first.read.push(1)
     assert(shifters.second.write.shift(), 1, 'first')

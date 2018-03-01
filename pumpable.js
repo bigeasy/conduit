@@ -25,10 +25,7 @@ Pumpable.prototype.stack = cadence(function (async, destructible) {
 Pumpable.prototype._pump = function (terminates, key, queue, object, method) {
     require('assert')(typeof terminates == 'boolean')
     var shifter = queue.shifter()
-    var callback = this._destructible.monitor(key, terminates)
-    new Pump(shifter, object, method).pump(function () {
-        callback()
-    })
+    new Pump(shifter, object, method).pumpify(this._destructible.monitor(key, terminates))
     return this._destructible.destruct.wait(shifter, 'destroy')
 }
 

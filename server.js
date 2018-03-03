@@ -9,22 +9,23 @@ var Operation = require('operation/variadic')
 
 var Socket = require('./socket')
 
-var util = require('util')
-var Pumpable = require('./pumpable')
+var Pump = require('procession/pump')
 
-function Server () {
-    Pumpable.call(this, 'server')
+var assert = require('assert')
+var abend = require('abend')
 
-    this._connect = Operation(Array.prototype.slice.call(arguments))
+function Server (destructible, connect) {
+    this._connect = connect
 
     this._sockets = {}
 
     this.read = new Procession
     this.write = new Procession
 
-    this._pump(false, 'write', this.write, this, '_write')
+    new Pump(this.write.shifter(), this, '_write').pumpify(destructible.monitor('read'))
+
+    this._destructible = destructible
 }
-util.inherits(Server, Pumpable)
 
 Server.prototype._write = cadence(function (async, envelope) {
     if (envelope == null) {
@@ -37,10 +38,13 @@ Server.prototype._write = cadence(function (async, envelope) {
         envelope.module == 'conduit/client' &&
         envelope.method == 'connect'
     ) {
-        var receiver = this._connect.call(null, envelope.body)
-        var socket = this._sockets[envelope.identifier] = new Socket(this, envelope.identifier, receiver)
-        socket.cookie = this._destructible.destruct.wait(socket, 'destroy')
-        socket.listen(this._destructible.monitor([ 'socket', envelope.identifier ], true))
+        async(function () {
+            this._connect.call(null, envelope.body, async())
+        }, function (receiver) {
+            var socket = this._sockets[envelope.identifier] = new Socket(this, envelope.identifier, receiver)
+
+            this._destructible.monitor([ 'socket', envelope.identifier ], true, socket, 'monitor', async())
+        })
     } else if (
         envelope.module == 'conduit/socket' &&
         envelope.method == 'envelope'
@@ -49,4 +53,6 @@ Server.prototype._write = cadence(function (async, envelope) {
     }
 })
 
-module.exports = Server
+module.exports = cadence(function (async, destructible) {
+    return new Server(destructible, Operation(Array.prototype.slice.call(arguments, 2)))
+})

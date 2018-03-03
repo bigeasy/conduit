@@ -7,22 +7,19 @@ var coalesce = require('extant')
 
 // Contextualized callbacks and event handlers.
 var Operation = require('operation/variadic')
+var Pump = require('procession/pump')
 
-var util = require('util')
-var Pumpable = require('./pumpable')
+function Procedure (destructible, vargs) {
+    this.destroyed = false
+    destructible.markDestroyed(this)
 
-function Procedure () {
-    Pumpable.call(this, 'procedure')
-
-    var vargs = Array.prototype.slice.call(arguments)
     this._operation = new Operation(vargs)
 
     this.write = new Procession
     this.read = new Procession
 
-    this._pump(false, 'enqueue', this.write, this, '_enqueue')
+    new Pump(this.write.shifter(), this, '_enqueue').pumpify(destructible.monitor('pump'))
 }
-util.inherits(Procedure, Pumpable)
 
 Procedure.prototype._enqueue = cadence(function (async, envelope) {
     if (
@@ -43,4 +40,6 @@ Procedure.prototype._enqueue = cadence(function (async, envelope) {
     }
 })
 
-module.exports = Procedure
+module.exports = cadence(function (async, destructible) {
+    return new Procedure(destructible, Array.prototype.slice.call(arguments, 2))
+})

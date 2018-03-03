@@ -4,24 +4,26 @@ var cadence = require('cadence')
 // An evented message queue.
 var Procession = require('procession')
 
-var util = require('util')
-var Pumpable = require('./pumpable')
+var Pump = require('procession/pump')
+
+var assert = require('assert')
 
 function Socket (controller, identifier, receiver) {
-    Pumpable.call(this, 'socket')
-
     this._identifier = identifier
     this._controller = controller
 
-    this._receiver = receiver
+    this.destroyed = false
+    this.monitoring = false
 
-    this._pump(false, 'send', this._receiver.read, this, '_send')
+    this._receiver = receiver
 }
-util.inherits(Socket, Pumpable)
+
+Socket.prototype.monitor = cadence(function (async, destructible) {
+    destructible.monitor('send', new Pump(this._receiver.read.shifter(), this, '_send'), 'monitor', async())
+})
 
 Socket.prototype._checkEndOfStream = function () {
     if (this._receiver.write.endOfStream && this._receiver.read.endOfStream) {
-        this._controller._destructible.destruct.cancel(this.cookie)
         delete this._controller._sockets[this._identifier]
     }
 }

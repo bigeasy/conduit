@@ -9,45 +9,41 @@ var assert = require('assert')
 
 var Destructible = require('destructible')
 
-var util = require('util')
-var Pumpable = require('./pumpable')
+var Pump = require('procession/pump')
 
 function Multiplexer (routes) {
-    Pumpable.call(this, 'multiplexer')
-
     this.read = new Procession
     this.write = new Procession
-
-    this._pump(false, 'dispatch', this.write, this, '_dispatch')
-
-    this._receivers = {}
-
-    for (var qualifier in routes) {
-        this._route(qualifier, routes[qualifier])
-    }
+    this._routes = {}
 }
-util.inherits(Multiplexer, Pumpable)
 
-Multiplexer.prototype._route = function (qualifier, receiver) {
-    this._receivers[qualifier] = receiver
-    this._destructible.destruct.wait(receiver, 'destroy')
-    receiver.listen(this._destructible.monitor([ 'receiver', 'pump', qualifier ]))
-    this._pump(false, [ 'receiver', 'write', qualifier ], receiver.read, this, function (envelope) {
-        this._envelop(qualifier, envelope)
+Multiplexer.prototype._monitor = cadence(function (async, destructible, routes) {
+    async(function () {
+        new Pump(this.write.shifter(), this, '_dispatch').pumpify(destructible.monitor('dispatch'))
+        async.forEach(function (qualifier) {
+            var receiver = this._routes[qualifier] = routes[qualifier]
+            var pump = new Pump(receiver.read.shifter(), this, function (envelope) {
+                this._envelop(qualifier, envelope)
+            })
+            destructible.destruct.wait(pump.shifter, 'destroy')
+            pump.pumpify(destructible.monitor([ 'receiver', 'envelop', qualifier ]))
+        })(Object.keys(routes))
+    }, function () {
+        return [ this ]
     })
-}
+})
 
 Multiplexer.prototype._dispatch = cadence(function (async, envelope) {
     if (envelope == null) {
         async.forEach(function (qualifier) {
-            this._receivers[qualifier].write.enqueue(null, async())
-        })(Object.keys(this._receivers))
+            this._routes[qualifier].write.enqueue(null, async())
+        })(Object.keys(this._routes))
     } else if (
         envelope.module == 'conduit/multiplexer' &&
         envelope.method == 'envelope' &&
-        this._receivers[envelope.qualifier] != null
+        this._routes[envelope.qualifier] != null
     ) {
-        this._receivers[envelope.qualifier].write.enqueue(envelope.body, async())
+        this._routes[envelope.qualifier].write.enqueue(envelope.body, async())
     }
 })
 
@@ -60,4 +56,6 @@ Multiplexer.prototype._envelop = function (qualifier, envelope) {
     })
 }
 
-module.exports = Multiplexer
+module.exports = cadence(function (async, destructible, routes) {
+    new Multiplexer()._monitor(destructible, routes, async())
+})

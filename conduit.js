@@ -24,38 +24,27 @@ var coalesce = require('extant')
 var Turnstile = require('turnstile/redux')
 Turnstile.Queue = require('turnstile/queue')
 
-var util = require('util')
-var Pumpable = require('./pumpable')
+var Pump = require('procession/pump')
+var abend = require('abend')
 
 function Conduit (input, output, receiver) {
-    Pumpable.call(this, 'conduit')
-
     this._input = new Staccato.Readable(input)
-    this._destructible.destruct.wait(this._input, 'destroy')
+
+    this.destroyed = false
 
     this._output = new Staccato.Writable(output)
-    this._destructible.destruct.wait(this._output, 'destroy')
 
     this._turnstile = new Turnstile
     this._queue = new Turnstile.Queue(this, '_write', this._turnstile)
-    this._destructible.destruct.wait(this._turnstile, 'pause')
 
     this.receiver = receiver
-    // TODO Should Turnstile have some sort of synchronous push that is agreed
-    // upon by Procession?
-    //
-    // TODO Curious that we're not just leaving things on the receiver's queue.
-    // Why do we have to copy it over to a Turnstile?
-    this._pump(false, 'receiver', this.receiver.read, this._queue, 'push')
 
     this._slices = []
 
     this._record = new Jacket
 
     this._closed = new Signal
-    this._destructible.destruct.wait(this._closed, 'unlatch')
 }
-util.inherits(Conduit, Pumpable)
 
 Conduit.prototype._consume = cadence(function (async, buffer) {
     async(function () {
@@ -151,13 +140,17 @@ Conduit.prototype._write = cadence(function (async, envelope) {
     envelope = envelope.body
     async(function () {
         if (envelope == null) {
-            // TODO And then destroy the conduit.
-            this._output.write(JSON.stringify({
-                module: 'conduit',
-                method: 'trailer',
-                body: null
-            }) + '\n', async())
-            this._closed.unlatch()
+            async(function () {
+                // TODO And then destroy the conduit.
+                this._output.write(JSON.stringify({
+                    module: 'conduit',
+                    method: 'trailer',
+                    body: null
+                }) + '\n', async())
+            }, function () {
+                this._output.destroy()
+                this._closed.unlatch()
+            })
         } else {
             var e = envelope
             while (e.body != null && typeof e.body == 'object' && !Buffer.isBuffer(e.body)) {
@@ -188,15 +181,30 @@ Conduit.prototype._write = cadence(function (async, envelope) {
     })
 })
 
-Conduit.prototype.listen = cadence(function (async, buffer) {
-    this.receiver.write.push({ module: 'conduit', method: 'connect' })
-    this._queue.turnstile.listen(this._destructible.monitor('turnstile'))
-    this._consume(buffer, this._destructible.monitor('pump'))
-    this._destructible.completed.wait(async())
+Conduit.prototype._monitor = cadence(function (async, destructible, buffer) {
+    destructible.markDestroyed(this)
+
+    destructible.destruct.wait(this._turnstile, 'pause')
+    destructible.destruct.wait(this._closed, 'unlatch')
+    destructible.destruct.wait(this._input, 'destroy')
+
+    this._queue.turnstile.listen(destructible.monitor('turnstile'))
+
+    async(function () {
+        // TODO Should Turnstile have some sort of synchronous push that is
+        // agreed upon by Procession?
+        //
+        // TODO Curious that we're not just leaving things on the receiver's
+        // queue. Why do we have to copy it over to a Turnstile?
+       // destructible.monitor('pump', 'monitor', async())
+        new Pump(this.receiver.read.shifter(), this._queue, 'push').pumpify(abend)
+    }, function () {
+        this._consume(buffer, destructible.monitor('pump'))
+        this.receiver.write.push({ module: 'conduit', method: 'connect' })
+        return [ this ]
+    })
 })
 
-Conduit.prototype.destroy = function () {
-    this._destructible.destroy()
-}
-
-module.exports = Conduit
+module.exports = cadence(function (async, destructible, input, output, receiver, buffer) {
+    new Conduit(input, output, receiver)._monitor(destructible, coalesce(buffer), async())
+})

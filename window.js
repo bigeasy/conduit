@@ -16,28 +16,19 @@ var coalesce = require('extant')
 // Do nothing.
 var noop = require('nop')
 
-var util = require('util')
-var Pumpable = require('./pumpable')
+var Pump = require('procession/pump')
 
-function Window (receiver, options) {
-    Pumpable.call(this, 'caller')
-
-    options = coalesce(options, {})
-
+function Window (destructible, receiver, options) {
     this.read = new Procession
     this.write = new Procession
 
-    this._pump(false, 'read', this.write, this, '_read')
-
     this._receiver = receiver
-    this._pump(false, 'write', this._receiver.read, this, '_write')
 
     this._queue = new Procession
     this._reservoir = this._queue.shifter()
 
     this.restarts = 0
-    // TODO This needs to be `Shifter.pumpify` and not use our `Destructible`.
-    this._cookie = this._pump(true, [ 'enqueue', this.restarts ], this._queue, this.read, 'enqueue')
+    this._pump = this._queue.shifter().pumpify(this.read)
 
     this._received = '0'
     this._sequence = '0'
@@ -45,8 +36,13 @@ function Window (receiver, options) {
     this._window = coalesce(options.window, 64)
 
     this._flush = Monotonic.add('0', this._window)
+
+    this.destroyed = false
+    destructible.markDestroyed(this)
+
+    new Pump(this.write.shifter(), this, '_read').pumpify(destructible.monitor('read'))
+    new Pump(this._receiver.read.shifter(), this, '_write').pumpify(destructible.monitor('write'))
 }
-util.inherits(Window, Pumpable)
 
 // Input into window from outside.
 
@@ -99,10 +95,10 @@ Window.prototype._read = cadence(function (async, envelope) {
         envelope.module == 'conduit' &&
         envelope.method == 'connect'
     ) {
-        this._destructible.destruct.cancel(this._cookie)()
+        this._pump.shifter.destroy()
         var pumper = this._reservoir
         this._reservoir = pumper.shifter()
-        this._cookie = this._pump(true, [ 'enqueue', ++this.restarts ], pumper, this.read, 'enqueue')
+        this._pump = pumper.pumpify(this.read)
     }
 })
 
@@ -124,4 +120,6 @@ Window.prototype._write = function (envelope) {
     }
 }
 
-module.exports = Window
+module.exports = cadence(function (async, destructible, receiver, options) {
+    return new Window(destructible, receiver, coalesce(options, {}))
+})

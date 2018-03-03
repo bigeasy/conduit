@@ -8,22 +8,25 @@ var Cliffhanger = require('cliffhanger')
 
 var interrupt = require('interrupt').createInterrupter('conduit')
 
-var util = require('util')
-var Pumpable = require('./pumpable')
+var Pump = require('procession/pump')
+var Destructible = require('destructible')
 
-function Caller () {
-    Pumpable.call(this, 'caller')
+var cadence = require('cadence')
 
+function Caller (destructible) {
+    this.destroyed = false
     this.write = new Procession
     this.read = new Procession
-
     this._shifter = this.write.shifter()
-
     this._cliffhanger = new Cliffhanger
-
-    this._pump(false, 'enqueue', this.write, this, '_enqueue')
+    this._destructible = destructible
+    this._destructible.markDestroyed(this)
 }
-util.inherits(Caller, Pumpable)
+
+Caller.prototype.monitor = cadence(function (async) {
+    new Pump(this.write.shifter(), this, '_enqueue').pumpify(this._destructible.monitor('pump'))
+    return [ this ]
+})
 
 Caller.prototype.invoke = cadence(function (async, body) {
     if (this.write.endOfStream || this.read.endOfStream) {
@@ -52,4 +55,6 @@ Caller.prototype._enqueue = cadence(function (async, envelope) {
     }
 })
 
-module.exports = Caller
+module.exports = cadence(function (async, destructible) {
+    new Caller(destructible).monitor(async())
+})

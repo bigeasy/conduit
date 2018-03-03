@@ -10,10 +10,13 @@ var Procession = require('procession')
 var Socket = require('./socket')
 
 var util = require('util')
-var Pumpable = require('./pumpable')
+var Pump = require('procession/pump')
 
-function Client () {
-    Pumpable.call(this, 'client')
+var assert = require('assert')
+
+function Client (destructible) {
+    this.monitoring = false
+    this.destroyed = false
 
     this._identifier = '0'
     this._sockets = {}
@@ -21,22 +24,28 @@ function Client () {
     this.write = new Procession
     this.read = new Procession
 
-    this._pump(false, 'enqueue', this.write, this, '_enqueue')
-}
-util.inherits(Client, Pumpable)
+    new Pump(this.write.shifter(), this, '_enqueue').pumpify(destructible.monitor('read'))
 
-Client.prototype.connect = function (header, receiver) {
-    var identifier = this._identifier = Monotonic.increment(this._identifier, 0)
-    var socket = this._sockets[identifier] = new Socket(this, identifier, receiver)
-    socket.cookie = this._destructible.destruct.wait(socket, 'destroy')
-    socket.listen(this._destructible.monitor([ 'socket', identifier ], true))
-    this.read.push({
-        module: 'conduit/client',
-        method: 'connect',
-        identifier: identifier,
-        body: header
-    })
+    this._destructible = destructible
 }
+
+Client.prototype.connect = cadence(function (async, receiver, header) {
+    var vargs = Array.prototype.slice.call(arguments, 1)
+    var identifier = this._identifier = Monotonic.increment(this._identifier, 0)
+    async(function () {
+        var socket = this._sockets[identifier] = new Socket(this, identifier, receiver)
+        async(function () {
+            this._destructible.monitor([ 'socket', identifier ], true, socket, 'monitor', async())
+        }, function () {
+            this.read.push({
+                module: 'conduit/client',
+                method: 'connect',
+                identifier: identifier,
+                body: header
+            })
+        })
+    })
+})
 
 Client.prototype._enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
@@ -53,4 +62,6 @@ Client.prototype._enqueue = cadence(function (async, envelope) {
     }
 })
 
-module.exports = Client
+module.exports = cadence(function (async, destructible) {
+    return new Client(destructible)
+})

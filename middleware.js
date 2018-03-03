@@ -23,28 +23,30 @@ var Destructible = require('destructible')
 // Pluck a shutdown timeout if it is the first argument to a constructor.
 var Timeout = require('./timeout')
 
-var util = require('util')
-var Pumpable = require('./pumpable')
+var Pump = require('procession/pump')
 
-function Middleware () {
-    Pumpable.call(this, 'middleware')
-
-    var vargs = Array.prototype.slice.call(arguments)
+function Middleware (destructible, vargs) {
     var timeout = Timeout(15000, vargs)
     var middleware = vargs.shift()
     this._interlocutor = new Interlocutor(middleware)
-    this._destructible = new Destructible(1000, timeout, 'conduit/middleware')
-    this._destructible.markDestroyed(this, 'destroyed')
     this._instance = 0
+    this._destructible = destructible
 }
-util.inherits(Middleware, Pumpable)
 
 // TODO Implement rescue as a method that takes an argument the way you've
 // implemented `monitor`. Ensure that you manage to somehow remove the rescue
 // from the waiting callbacks. (Of course you do.) Maybe the response is a
 // separate object.
-Middleware.prototype.socket = function (envelope) {
+Middleware.prototype.socket = cadence(function (async, envelope) {
     var receiver = { read: new Procession, write: new Procession }
+    async(function () {
+        this._destructible.monitor([ 'request', this._instance++ ], this, '_respond', envelope, receiver, async())
+    }, function () {
+        return receiver
+    })
+})
+
+Middleware.prototype._respond = cadence(function (async, destructible, envelope, receiver) {
     var request = this._interlocutor.request({
         httpVersion: envelope.body.httpVersion,
         method: envelope.body.method,
@@ -52,18 +54,18 @@ Middleware.prototype.socket = function (envelope) {
         headers: envelope.body.headers,
         rawHeaders: envelope.body.rawHeaders
     })
-    this._respond(request, receiver.read, this._destructible.monitor([ 'request', 'send', this._instance++ ]))
-    var consumer = new Consumer(request, 'conduit/requester')
-    this._pump(true, [ 'socket', this._instance++ ], receiver.write, consumer, 'enqueue')
-    return receiver
-}
+    var consumer = new Consumer(request, 'conduit/middleware')
+    var pump = new Pump(receiver.write.shifter(), consumer, 'enqueue')
+    pump.pumpify(destructible.monitor('consumer'))
+    this._request(receiver, request, destructible.monitor('request'))
+})
 
-Middleware.prototype._respond = cadence(function (async, request, read) {
+Middleware.prototype._request = cadence(function (async, receiver, request) {
     async(function () {
         delta(async()).ee(request).on('response')
     }, function (response) {
         async(function () {
-            read.enqueue({
+            receiver.read.enqueue({
                 module: 'conduit/middleware',
                 method: 'header',
                 body: {
@@ -73,17 +75,11 @@ Middleware.prototype._respond = cadence(function (async, request, read) {
                 }
             }, async())
         }, function () {
-            Sender(response, read, 'conduit/middleware', async())
+            Sender(response, receiver.read, 'conduit/middleware', async())
         })
     })
 })
 
-Middleware.prototype.listen = function (callback) {
-    this._destructible.completed.wait(callback)
-}
-
-Middleware.prototype.destroy = function () {
-    this._destructible.destroy()
-}
-
-module.exports = Middleware
+module.exports = cadence(function (async, destructible) {
+    return new Middleware(destructible, Array.prototype.slice.call(arguments, 2))
+})

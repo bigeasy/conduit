@@ -7,9 +7,6 @@ var Staccato = require('staccato')
 // Return the first not null-like value.
 var coalesce = require('extant')
 
-// Do nothing.
-var nop = require('nop')
-
 // Proxied header constructor.
 var Header = require('./header')
 
@@ -25,38 +22,49 @@ var Sender = require('./sender')
 // Convert a Conduit event stream into an HTTP write.
 var Consumer = require('./consumer')
 
-var util = require('util')
-var Pumpable = require('./pumpable')
+var Pump = require('procession/pump')
+
+var Operation = require('operation/variadic')
+
+var abend = require('abend')
 
 // Create a new request that proxies the given Node.js HTTP request and response
 // through the given Conduit client. An optional rewrite function can be used to
 // amend the HTTP headers before the request is proxied.
 
 //
-function Request () {
-    Pumpable.call(this, 'request')
-
-    var vargs = Array.prototype.slice.call(arguments)
+function Requester (destructible, vargs) {
     var timeout = Timeout(15000, vargs)
     this._client = vargs.shift()
-    this._rewrite = coalesce(vargs.shift(), nop)
+    this._rewrite = Operation(vargs)
     this._instance = 0
+    this._destructible = destructible
 }
-util.inherits(Request, Pumpable)
 
 // http://stackoverflow.com/a/5426648
-Request.prototype.middleware = cadence(function (async, request, response) {
+Requester.prototype.request = function (request, response) {
+    this._destructible.monitor([ 'request', this._instance++ ], true, this, '_request', request, response, null)
+}
+
+Requester.prototype._request = cadence(function (async, destructible, request, response) {
     var receiver = { read: new Procession, write: new Procession }
-    var responder = new Consumer(response, 'conduit/middleware')
-    this._pump(true, [ 'request', this._instance++ ], receiver.write, responder, 'enqueue')
     var header = new Header(request)
     this._rewrite.call(null, header)
-    this._client.connect({
-        module: 'conduit/requester',
-        method: 'header',
-        body: header
-    }, receiver)
-    Sender(request, receiver.read, 'conduit/requester', async())
+    var receiver = { read: new Procession, write: new Procession }
+    var consumer = new Consumer(response, 'conduit/middleware')
+    var pump = new Pump(receiver.write.shifter(), consumer, 'enqueue')
+    pump.pumpify(destructible.monitor('consumer'))
+    async(function () {
+        this._client.connect(receiver, {
+            module: 'conduit/requester',
+            method: 'header',
+            body: header
+        }, async())
+    }, function () {
+        Sender(request, receiver.read, 'conduit/requester', async())
+    })
 })
 
-module.exports = Request
+module.exports = cadence(function (async, destructible) {
+    return new Requester(destructible, Array.prototype.slice.call(arguments, 2))
+})

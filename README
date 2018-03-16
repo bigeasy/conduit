@@ -1,6 +1,6 @@
 Conduit
 
-Multiplex an Node.js stream into evented pipelines.
+Multiplex an Node.js stream into evented pipelines of JSON data.
 
     Discussion:     https://github.com/bigeasy/conduit/issues/1
 

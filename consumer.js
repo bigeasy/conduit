@@ -6,9 +6,6 @@ function Consumer (delegate, module) {
 }
 
 Consumer.prototype.enqueue = cadence(function (async, envelope) {
-    if (envelope != null) {
-        console.log('>>>', envelope, envelope.module, this._module)
-    }
     if (envelope == null || envelope.module != this._module) {
         return []
     }

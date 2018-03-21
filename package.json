@@ -36,7 +36,7 @@
           "devDependencies": {
                     "proof": "3.0.x",
                     "server-destroy": "1.0.1",
-                    "vizsla": "10.7.x"
+                    "vizsla": "11.0.x"
           },
           "main": "conduit",
           "scripts": {

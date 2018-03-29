@@ -34,6 +34,7 @@ var abend = require('abend')
 
 //
 function Requester (destructible, vargs) {
+    destructible.destruct.wait(destructible.monitor('terminator'))
     var timeout = Timeout(15000, vargs)
     this._client = vargs.shift()
     this._rewrite = Operation(vargs)

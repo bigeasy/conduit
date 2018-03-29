@@ -26,6 +26,7 @@ var Timeout = require('./timeout')
 var Pump = require('procession/pump')
 
 function Middleware (destructible, vargs) {
+    destructible.destruct.wait(destructible.monitor('terminator'))
     var timeout = Timeout(15000, vargs)
     var middleware = vargs.shift()
     this._interlocutor = new Interlocutor(middleware)

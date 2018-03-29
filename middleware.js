@@ -40,7 +40,7 @@ function Middleware (destructible, vargs) {
 Middleware.prototype.socket = cadence(function (async, envelope) {
     var receiver = { read: new Procession, write: new Procession }
     async(function () {
-        this._destructible.monitor([ 'request', this._instance++ ], this, '_respond', envelope, receiver, async())
+        this._destructible.monitor([ 'request', this._instance++ ], true, this, '_respond', envelope, receiver, async())
     }, function () {
         return receiver
     })

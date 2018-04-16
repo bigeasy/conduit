@@ -10,7 +10,6 @@ var Procession = require('procession')
 var Socket = require('./socket')
 
 var util = require('util')
-var Pump = require('procession/pump')
 
 var assert = require('assert')
 
@@ -24,7 +23,7 @@ function Client (destructible) {
     this.write = new Procession
     this.read = new Procession
 
-    new Pump(this.write.shifter(), this, '_enqueue').pumpify(destructible.monitor('read'))
+    this.write.shifter().pump(this, '_enqueue', destructible.monitor('read'))
 
     this._destructible = destructible
 }

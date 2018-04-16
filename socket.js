@@ -4,8 +4,6 @@ var cadence = require('cadence')
 // An evented message queue.
 var Procession = require('procession')
 
-var Pump = require('procession/pump')
-
 var assert = require('assert')
 
 function Socket (controller, identifier, receiver) {
@@ -19,20 +17,17 @@ function Socket (controller, identifier, receiver) {
 }
 
 Socket.prototype.monitor = cadence(function (async, destructible) {
-    destructible.monitor('send', new Pump(this._receiver.read.shifter(), this, '_send'), 'monitor', async())
+    destructible.destruct.wait(this, function () { this._receiver.read.push(null) })
+    this._receiver.read.shifter().pump(this, '_send', destructible.monitor('send'))
 })
-
-Socket.prototype._checkEndOfStream = function () {
-    if (this._receiver.write.endOfStream && this._receiver.read.endOfStream) {
-        delete this._controller._sockets[this._identifier]
-    }
-}
 
 Socket.prototype._receive = cadence(function (async, envelope) {
     async(function () {
         this._receiver.write.enqueue(envelope, async())
     }, function () {
-        this._checkEndOfStream()
+        if (envelope == null) {
+            delete this._controller._sockets[this._identifier]
+        }
     })
 })
 
@@ -45,7 +40,11 @@ Socket.prototype._send = cadence(function (async, envelope) {
             body: envelope
         }, async())
     }, function() {
-        this._checkEndOfStream()
+        // TODO No longer certain that sockets are not leaking.
+        // if (envelope == null) {
+        //     delete this._controller._sockets[this._identifier]
+        // }
+        // this._checkEndOfStream()
     })
 })
 

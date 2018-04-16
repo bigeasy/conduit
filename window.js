@@ -16,8 +16,6 @@ var coalesce = require('extant')
 // Do nothing.
 var noop = require('nop')
 
-var Pump = require('procession/pump')
-
 function Window (destructible, receiver, options) {
     this.read = new Procession
     this.write = new Procession
@@ -28,7 +26,8 @@ function Window (destructible, receiver, options) {
     this._reservoir = this._queue.shifter()
 
     this.restarts = 0
-    this._pump = this._queue.shifter().pumpify(this.read)
+    this._pumper = this._queue.shifter()
+    this._pumper.pump(this.read)
 
     this._received = '0'
     this._sequence = '0'
@@ -40,8 +39,8 @@ function Window (destructible, receiver, options) {
     this.destroyed = false
     destructible.markDestroyed(this)
 
-    new Pump(this.write.shifter(), this, '_read').pumpify(destructible.monitor('read'))
-    new Pump(this._receiver.read.shifter(), this, '_write').pumpify(destructible.monitor('write'))
+    this.write.shifter().pump(this, '_read', destructible.monitor('read'))
+    this._receiver.read.shifter().pump(this, '_write', destructible.monitor('write'))
 }
 
 // Input into window from outside.
@@ -95,10 +94,10 @@ Window.prototype._read = cadence(function (async, envelope) {
         envelope.module == 'conduit' &&
         envelope.method == 'connect'
     ) {
-        this._pump.shifter.destroy()
-        var pumper = this._reservoir
-        this._reservoir = pumper.shifter()
-        this._pump = pumper.pumpify(this.read)
+        this._pumper.destroy()
+        this._pumper = this._reservoir
+        this._reservoir = this._pumper.shifter()
+        this._pumper.pump(this.read)
     }
 })
 

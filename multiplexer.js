@@ -3,13 +3,10 @@ var cadence = require('cadence')
 
 // An evented message queue.
 var Procession = require('procession')
-var Pump = require('procession/pump')
 
 var assert = require('assert')
 
 var Destructible = require('destructible')
-
-var Pump = require('procession/pump')
 
 function Multiplexer (routes) {
     this.read = new Procession
@@ -19,14 +16,14 @@ function Multiplexer (routes) {
 
 Multiplexer.prototype._monitor = cadence(function (async, destructible, routes) {
     async(function () {
-        new Pump(this.write.shifter(), this, '_dispatch').pumpify(destructible.monitor('dispatch'))
+        this.write.shifter().pump(this, '_dispatch', destructible.monitor('dispatch'))
         async.forEach(function (qualifier) {
             var receiver = this._routes[qualifier] = routes[qualifier]
-            var pump = new Pump(receiver.read.shifter(), this, function (envelope) {
+            var shifter = receiver.read.shifter()
+            destructible.destruct.wait(shifter, 'destroy')
+            shifter.pump(this, function (envelope) {
                 this._envelop(qualifier, envelope)
-            })
-            destructible.destruct.wait(pump.shifter, 'destroy')
-            pump.pumpify(destructible.monitor([ 'receiver', 'envelop', qualifier ]))
+            }, destructible.monitor([ 'receiver', 'envelop', qualifier ]))
         })(Object.keys(routes))
     }, function () {
         return [ this ]

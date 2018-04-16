@@ -9,8 +9,6 @@ var Operation = require('operation/variadic')
 
 var Socket = require('./socket')
 
-var Pump = require('procession/pump')
-
 var assert = require('assert')
 var abend = require('abend')
 
@@ -22,7 +20,7 @@ function Server (destructible, connect) {
     this.read = new Procession
     this.write = new Procession
 
-    new Pump(this.write.shifter(), this, '_write').pumpify(destructible.monitor('read'))
+    this.write.shifter().pump(this, '_write', destructible.monitor('read'))
 
     this._destructible = destructible
 }

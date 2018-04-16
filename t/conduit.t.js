@@ -1,4 +1,4 @@
-require('proof')(5, require('cadence')(prove))
+require('proof')(4, require('cadence')(prove))
 
 function prove (async, okay) {
     var Conduit = require('..')
@@ -68,7 +68,6 @@ function prove (async, okay) {
         first.conduit.receiver.read.push(null)
         var input = first.output.read()
         second.input.write(input)
-        okay(second.conduit.receiver.write.endOfStream, 'eos')
 
 
         first.conduit.receiver.read.push({})

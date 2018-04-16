@@ -23,8 +23,6 @@ var Destructible = require('destructible')
 // Pluck a shutdown timeout if it is the first argument to a constructor.
 var Timeout = require('./timeout')
 
-var Pump = require('procession/pump')
-
 function Middleware (destructible, vargs) {
     destructible.destruct.wait(destructible.monitor('terminator'))
     var timeout = Timeout(15000, vargs)
@@ -56,8 +54,7 @@ Middleware.prototype._respond = cadence(function (async, destructible, envelope,
         rawHeaders: envelope.body.rawHeaders
     })
     var consumer = new Consumer(request, 'conduit/requester')
-    var pump = new Pump(receiver.write.shifter(), consumer, 'enqueue')
-    pump.pumpify(destructible.monitor('consumer'))
+    receiver.write.shifter().pump(consumer, 'enqueue', destructible.monitor('consumer'))
     this._request(receiver, request, destructible.monitor('request'))
 })
 

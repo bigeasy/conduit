@@ -22,8 +22,6 @@ var Sender = require('./sender')
 // Convert a Conduit event stream into an HTTP write.
 var Consumer = require('./consumer')
 
-var Pump = require('procession/pump')
-
 var Operation = require('operation/variadic')
 
 var abend = require('abend')
@@ -53,8 +51,7 @@ Requester.prototype._request = cadence(function (async, destructible, request, r
     this._rewrite.call(null, header)
     var receiver = { read: new Procession, write: new Procession }
     var consumer = new Consumer(response, 'conduit/middleware')
-    var pump = new Pump(receiver.write.shifter(), consumer, 'enqueue')
-    pump.pumpify(destructible.monitor('consumer'))
+    receiver.write.shifter().pump(consumer, 'enqueue', destructible.monitor('consumer'))
     async(function () {
         this._client.connect(receiver, {
             module: 'conduit/requester',

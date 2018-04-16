@@ -7,7 +7,6 @@ var coalesce = require('extant')
 
 // Contextualized callbacks and event handlers.
 var Operation = require('operation/variadic')
-var Pump = require('procession/pump')
 
 function Procedure (destructible, vargs) {
     this.destroyed = false
@@ -18,7 +17,7 @@ function Procedure (destructible, vargs) {
     this.write = new Procession
     this.read = new Procession
 
-    new Pump(this.write.shifter(), this, '_enqueue').pumpify(destructible.monitor('pump'))
+    this.write.shifter().pump(this, '_enqueue', destructible.monitor('pump'))
 }
 
 Procedure.prototype._enqueue = cadence(function (async, envelope) {

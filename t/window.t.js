@@ -16,12 +16,16 @@ function prove (async, okay) {
     }
     var Window = require('../window')
 
-    async(function () {
+    destructible.completed.wait(async())
+
+    async([function () {
+        destructible.destroy()
+    }], function () {
         destructible.monitor('first', Window, nested.first, async())
         destructible.monitor('second', Window, nested.second, { window: 4 }, async())
     }, function (first, second) {
-        first.read.shifter().pumpify(second.write)
-        second.read.shifter().pumpify(first.write)
+        first.read.shifter().pump(second.write)
+        second.read.shifter().pump(first.write)
 
         nested.first.read.push(1)
         okay(shifters.second.write.shift(), 1, 'first')
@@ -42,8 +46,5 @@ function prove (async, okay) {
 
         nested.first.read.push(null)
         nested.second.read.push(null)
-
-        destructible.completed.wait(async())
-        destructible.destroy()
     })
 }

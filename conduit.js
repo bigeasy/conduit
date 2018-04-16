@@ -24,7 +24,6 @@ var coalesce = require('extant')
 var Turnstile = require('turnstile/redux')
 Turnstile.Queue = require('turnstile/queue')
 
-var Pump = require('procession/pump')
 var abend = require('abend')
 
 function Conduit (input, output, receiver) {
@@ -196,8 +195,8 @@ Conduit.prototype._monitor = cadence(function (async, destructible, buffer) {
         //
         // TODO Curious that we're not just leaving things on the receiver's
         // queue. Why do we have to copy it over to a Turnstile?
-       // destructible.monitor('pump', 'monitor', async())
-        new Pump(this.receiver.read.shifter(), this._queue, 'push').pumpify(abend)
+        // destructible.monitor('pump', 'monitor', async())
+        this.receiver.read.shifter().pump(this._queue, 'push', abend)
     }, function () {
         this._consume(buffer, destructible.monitor('pump'))
         this.receiver.write.push({ module: 'conduit', method: 'connect' })

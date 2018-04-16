@@ -1,4 +1,4 @@
-require('proof')(6, require('cadence')(prove))
+require('proof')(5, require('cadence')(prove))
 
 function prove (async, okay) {
     var Procession = require('procession')
@@ -11,8 +11,6 @@ function prove (async, okay) {
 
     var abend = require('abend')
 
-    var Pump = require('procession/pump')
-
     var visited = false
 
     async([function () {
@@ -24,24 +22,22 @@ function prove (async, okay) {
                 visited = true
                 okay(header, 1, 'header')
                 var shifter = receiver.write.shifter()
-                var pump = new Pump(shifter, function (envelope) {
+                shifter.pump(function (envelope) {
                     okay(envelope, 2, 'envelope')
                     receiver.read.push(1)
                     receiver.read.push(null)
                     shifter.destroy()
-                })
-                pump.pumpify(abend)
+                }, abend)
             }
             callback(null, receiver)
         }, async())
         destructible.monitor('client', Client, async())
     }, function (server, client) {
-        client.read.shifter().pumpify(server.write)
-        server.read.shifter().pumpify(client.write)
-        var Pump = require('procession/pump')
-        new Pump(server.write.shifter(), function (envelope) {
+        client.read.shifter().pump(server.write)
+        server.read.shifter().pump(client.write)
+        server.write.shifter().pump(function (envelope) {
             console.log('zz', envelope)
-        }).pumpify(function () {})
+        }, abend)
 
         var receiver = { read: new Procession, write: new Procession }
         var write = receiver.write.shifter()
@@ -55,8 +51,6 @@ function prove (async, okay) {
 
             okay(write.shift(), 1, 'server to client')
             receiver.read.push(null)
-
-            okay(receiver.read.endOfStream && receiver.write.endOfStream, 'done')
 
             okay({
                 client: Object.keys(client._sockets).length,

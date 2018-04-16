@@ -8,7 +8,6 @@ var Cliffhanger = require('cliffhanger')
 
 var interrupt = require('interrupt').createInterrupter('conduit')
 
-var Pump = require('procession/pump')
 var Destructible = require('destructible')
 
 var cadence = require('cadence')
@@ -24,7 +23,7 @@ function Caller (destructible) {
 }
 
 Caller.prototype.monitor = cadence(function (async) {
-    new Pump(this.write.shifter(), this, '_enqueue').pumpify(this._destructible.monitor('pump'))
+    this.write.shifter().pump(this, '_enqueue', this._destructible.monitor('pump'))
     return [ this ]
 })
 

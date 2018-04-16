@@ -17,8 +17,8 @@ var coalesce = require('extant')
 var noop = require('nop')
 
 function Window (destructible, receiver, options) {
-    this.read = new Procession
-    this.write = new Procession
+    this.outbox = new Procession
+    this.inbox = new Procession
 
     this._receiver = receiver
 
@@ -27,7 +27,7 @@ function Window (destructible, receiver, options) {
 
     this.restarts = 0
     this._pumper = this._queue.shifter()
-    this._pumper.pump(this.read)
+    this._pumper.pump(this.outbox)
 
     this._received = '0'
     this._sequence = '0'
@@ -39,8 +39,8 @@ function Window (destructible, receiver, options) {
     this.destroyed = false
     destructible.markDestroyed(this)
 
-    this.write.shifter().pump(this, '_read', destructible.monitor('read'))
-    this._receiver.read.shifter().pump(this, '_write', destructible.monitor('write'))
+    this.inbox.shifter().pump(this, '_read', destructible.monitor('read'))
+    this._receiver.outbox.shifter().pump(this, '_write', destructible.monitor('write'))
 }
 
 // Input into window from outside.
@@ -48,7 +48,7 @@ function Window (destructible, receiver, options) {
 //
 Window.prototype._read = cadence(function (async, envelope) {
     if (envelope == null) {
-        this._receiver.write.push(null)
+        this._receiver.inbox.push(null)
     } else if (
         envelope.module == 'conduit/window'
     ) {
@@ -69,7 +69,7 @@ Window.prototype._read = cadence(function (async, envelope) {
             this._received = envelope.sequence
             // Send a flush if we've reached the end of a window.
             if (this._received == this._flush) {
-                this.read.push({
+                this.outbox.push({
                     module: 'conduit/window',
                     method: 'flush',
                     sequence: this._window
@@ -77,7 +77,7 @@ Window.prototype._read = cadence(function (async, envelope) {
                 this._flush = Monotonic.add(this._flush, this._window)
             }
             // Forward the body.
-            this._receiver.write.enqueue(envelope.body, async())
+            this._receiver.inbox.enqueue(envelope.body, async())
             break
         case 'flush':
             // Shift the messages that we've received off of the reservoir.
@@ -97,7 +97,7 @@ Window.prototype._read = cadence(function (async, envelope) {
         this._pumper.destroy()
         this._pumper = this._reservoir
         this._reservoir = this._pumper.shifter()
-        this._pumper.pump(this.read)
+        this._pumper.pump(this.outbox)
     }
 })
 

@@ -7,12 +7,12 @@ function prove (async, okay) {
     var destructible = new Destructible('t/window.t.js')
 
     var nested = {
-        first: { read: new Procession, write: new Procession },
-        second: { read: new Procession, write: new Procession }
+        first: { outbox: new Procession, inbox: new Procession },
+        second: { outbox: new Procession, inbox: new Procession }
     }
     var shifters = {
-        first: { read: nested.first.read.shifter(), write: nested.first.write.shifter() },
-        second: { read: nested.second.read.shifter(), write: nested.second.write.shifter() }
+        first: { outbox: nested.first.outbox.shifter(), inbox: nested.first.inbox.shifter() },
+        second: { outbox: nested.second.outbox.shifter(), inbox: nested.second.inbox.shifter() }
     }
     var Window = require('../window')
 
@@ -24,27 +24,27 @@ function prove (async, okay) {
         destructible.monitor('first', Window, nested.first, async())
         destructible.monitor('second', Window, nested.second, { window: 4 }, async())
     }, function (first, second) {
-        first.read.shifter().pump(second.write)
-        second.read.shifter().pump(first.write)
+        first.outbox.shifter().pump(second.inbox)
+        second.outbox.shifter().pump(first.inbox)
 
-        nested.first.read.push(1)
-        okay(shifters.second.write.shift(), 1, 'first')
+        nested.first.outbox.push(1)
+        okay(shifters.second.inbox.shift(), 1, 'first')
 
-        first.write.push({ module: 'conduit', method: 'connect' })
+        first.inbox.push({ module: 'conduit', method: 'connect' })
 
-        nested.first.read.push(2)
-        nested.first.read.push(3)
-        nested.first.read.push(4)
+        nested.first.outbox.push(2)
+        nested.first.outbox.push(3)
+        nested.first.outbox.push(4)
 
-        first.write.push({})
-        first.write.push({
+        first.inbox.push({})
+        first.inbox.push({
             module: 'conduit/window',
             method: 'envelope',
             sequence: 'a',
             previous: '9'
         })
 
-        nested.first.read.push(null)
-        nested.second.read.push(null)
+        nested.first.outbox.push(null)
+        nested.second.outbox.push(null)
     })
 }

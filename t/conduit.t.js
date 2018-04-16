@@ -10,12 +10,12 @@ function prove (async, okay) {
     var destructible = new Destructible('t/conduit.t.js')
 
     var first = {
-        receiver: { read: new Procession, write: new Procession },
+        receiver: { outbox: new Procession, inbox: new Procession },
         input: new stream.PassThrough,
         output: new stream.PassThrough
     }
     var second = {
-        receiver: { read: new Procession, write: new Procession },
+        receiver: { outbox: new Procession, inbox: new Procession },
         input: new stream.PassThrough,
         output: new stream.PassThrough
     }
@@ -31,14 +31,14 @@ function prove (async, okay) {
     }, function () {
         var buffer = new Buffer('qwertyuiop')
 
-        first.conduit.receiver.read.push({
+        first.conduit.receiver.outbox.push({
             module: 'conduit',
             method: 'example',
             body: { body: buffer }
         })
         var buffer = first.output.read()
 
-        var shifter = second.conduit.receiver.write.shifter()
+        var shifter = second.conduit.receiver.inbox.shifter()
 
         second.input.write(buffer.slice(0, 10))
         second.input.write(buffer.slice(10, 120))
@@ -61,16 +61,16 @@ function prove (async, okay) {
             body: { body: 'qwertyuiop' }
         }, 'full buffer')
 
-        first.conduit.receiver.read.push(1)
+        first.conduit.receiver.outbox.push(1)
         second.input.write(first.output.read())
         okay(shifter.shift(), 1, 'envelope')
 
-        first.conduit.receiver.read.push(null)
+        first.conduit.receiver.outbox.push(null)
         var input = first.output.read()
         second.input.write(input)
 
 
-        first.conduit.receiver.read.push({})
+        first.conduit.receiver.outbox.push({})
 
         destructible.destruct.wait(async())
         destructible.destroy()

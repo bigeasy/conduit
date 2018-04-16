@@ -17,15 +17,15 @@ function prove (async, okay) {
         destructible.destroy()
     }], function () {
         destructible.monitor('server', Server, function (header, callback) {
-            var receiver = { read: new Procession, write: new Procession }
+            var receiver = { outbox: new Procession, inbox: new Procession }
             if (!visited) {
                 visited = true
                 okay(header, 1, 'header')
-                var shifter = receiver.write.shifter()
+                var shifter = receiver.inbox.shifter()
                 shifter.pump(function (envelope) {
                     okay(envelope, 2, 'envelope')
-                    receiver.read.push(1)
-                    receiver.read.push(null)
+                    receiver.outbox.push(1)
+                    receiver.outbox.push(null)
                     shifter.destroy()
                 }, abend)
             }
@@ -33,24 +33,24 @@ function prove (async, okay) {
         }, async())
         destructible.monitor('client', Client, async())
     }, function (server, client) {
-        client.read.shifter().pump(server.write)
-        server.read.shifter().pump(client.write)
-        server.write.shifter().pump(function (envelope) {
+        client.outbox.shifter().pump(server.inbox)
+        server.outbox.shifter().pump(client.inbox)
+        server.inbox.shifter().pump(function (envelope) {
             console.log('zz', envelope)
         }, abend)
 
-        var receiver = { read: new Procession, write: new Procession }
-        var write = receiver.write.shifter()
+        var receiver = { outbox: new Procession, inbox: new Procession }
+        var inbox = receiver.inbox.shifter()
         async(function () {
             client.connect(receiver, 1, async())
         }, function () {
-            receiver.read.push(2)
+            receiver.outbox.push(2)
 
-            client.write.push({})
-            server.write.push({})
+            client.inbox.push({})
+            server.inbox.push({})
 
-            okay(write.shift(), 1, 'server to client')
-            receiver.read.push(null)
+            okay(inbox.shift(), 1, 'server to client')
+            receiver.outbox.push(null)
 
             okay({
                 client: Object.keys(client._sockets).length,
@@ -62,11 +62,11 @@ function prove (async, okay) {
         }, function () {
             async(function () {
                 console.log('connecting again')
-                client.connect({ read: new Procession, write: new Procession }, null, async())
+                client.connect({ outbox: new Procession, inbox: new Procession }, null, async())
             }, function () {
                 console.log('connected again')
-                client.write.push(null)
-                server.write.push(null)
+                client.inbox.push(null)
+                server.inbox.push(null)
 
                 okay({
                     client: Object.keys(client._sockets).length,

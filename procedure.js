@@ -14,10 +14,10 @@ function Procedure (destructible, vargs) {
 
     this._operation = new Operation(vargs)
 
-    this.write = new Procession
-    this.read = new Procession
+    this.inbox = new Procession
+    this.outbox = new Procession
 
-    this.write.shifter().pump(this, '_enqueue', destructible.monitor('pump'))
+    this.inbox.shifter().pump(this, '_enqueue', destructible.monitor('pump'))
 }
 
 Procedure.prototype._enqueue = cadence(function (async, envelope) {
@@ -29,7 +29,7 @@ Procedure.prototype._enqueue = cadence(function (async, envelope) {
         async(function () {
             this._operation.call(null, envelope.body, async())
         }, function (response) {
-            this.read.enqueue({
+            this.outbox.enqueue({
                 module: 'conduit/procedure',
                 method: 'invocation',
                 cookie: envelope.cookie,

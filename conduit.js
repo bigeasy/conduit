@@ -77,7 +77,7 @@ Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {
             e.body = slice
             this._chunk = null
             this._record = new Jacket
-            this.receiver.write.enqueue(envelope, async())
+            this.receiver.inbox.enqueue(envelope, async())
         } else {
             this._slices.push(new Buffer(slice))
         }
@@ -93,14 +93,14 @@ Conduit.prototype._json = cadence(function (async, buffer, start, end) {
             var envelope = this._record.object
             switch (envelope.method) {
             case 'envelope':
-                this.receiver.write.enqueue(envelope.body, async())
+                this.receiver.inbox.enqueue(envelope.body, async())
                 break
             case 'chunk':
                 this._chunk = this._record.object
                 break
             case 'trailer':
                 // var socket = this._sockets[envelope.to]
-                this.receiver.write.enqueue(null, async())
+                this.receiver.inbox.enqueue(null, async())
                 // delete this._sockets[envelope.to]
                 break
             }
@@ -196,10 +196,10 @@ Conduit.prototype._monitor = cadence(function (async, destructible, buffer) {
         // TODO Curious that we're not just leaving things on the receiver's
         // queue. Why do we have to copy it over to a Turnstile?
         // destructible.monitor('pump', 'monitor', async())
-        this.receiver.read.shifter().pump(this._queue, 'push', abend)
+        this.receiver.outbox.shifter().pump(this._queue, 'push', abend)
     }, function () {
         this._consume(buffer, destructible.monitor('pump'))
-        this.receiver.write.push({ module: 'conduit', method: 'connect' })
+        this.receiver.inbox.push({ module: 'conduit', method: 'connect' })
         return [ this ]
     })
 })

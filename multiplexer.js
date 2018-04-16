@@ -9,17 +9,17 @@ var assert = require('assert')
 var Destructible = require('destructible')
 
 function Multiplexer (routes) {
-    this.read = new Procession
-    this.write = new Procession
+    this.outbox = new Procession
+    this.inbox = new Procession
     this._routes = {}
 }
 
 Multiplexer.prototype._monitor = cadence(function (async, destructible, routes) {
     async(function () {
-        this.write.shifter().pump(this, '_dispatch', destructible.monitor('dispatch'))
+        this.inbox.shifter().pump(this, '_dispatch', destructible.monitor('dispatch'))
         async.forEach(function (qualifier) {
             var receiver = this._routes[qualifier] = routes[qualifier]
-            var shifter = receiver.read.shifter()
+            var shifter = receiver.outbox.shifter()
             destructible.destruct.wait(shifter, 'destroy')
             shifter.pump(this, function (envelope) {
                 this._envelop(qualifier, envelope)
@@ -33,19 +33,19 @@ Multiplexer.prototype._monitor = cadence(function (async, destructible, routes) 
 Multiplexer.prototype._dispatch = cadence(function (async, envelope) {
     if (envelope == null) {
         async.forEach(function (qualifier) {
-            this._routes[qualifier].write.enqueue(null, async())
+            this._routes[qualifier].inbox.enqueue(null, async())
         })(Object.keys(this._routes))
     } else if (
         envelope.module == 'conduit/multiplexer' &&
         envelope.method == 'envelope' &&
         this._routes[envelope.qualifier] != null
     ) {
-        this._routes[envelope.qualifier].write.enqueue(envelope.body, async())
+        this._routes[envelope.qualifier].inbox.enqueue(envelope.body, async())
     }
 })
 
 Multiplexer.prototype._envelop = function (qualifier, envelope) {
-    this.read.push({
+    this.outbox.push({
         module: 'conduit/multiplexer',
         method: 'envelope',
         qualifier: qualifier,

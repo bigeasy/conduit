@@ -17,13 +17,13 @@ function Socket (controller, identifier, receiver) {
 }
 
 Socket.prototype.monitor = cadence(function (async, destructible) {
-    destructible.destruct.wait(this, function () { this._receiver.read.push(null) })
-    this._receiver.read.shifter().pump(this, '_send', destructible.monitor('send'))
+    destructible.destruct.wait(this, function () { this._receiver.outbox.push(null) })
+    this._receiver.outbox.shifter().pump(this, '_send', destructible.monitor('send'))
 })
 
 Socket.prototype._receive = cadence(function (async, envelope) {
     async(function () {
-        this._receiver.write.enqueue(envelope, async())
+        this._receiver.inbox.enqueue(envelope, async())
     }, function () {
         if (envelope == null) {
             delete this._controller._sockets[this._identifier]
@@ -33,7 +33,7 @@ Socket.prototype._receive = cadence(function (async, envelope) {
 
 Socket.prototype._send = cadence(function (async, envelope) {
     async(function () {
-        this._controller.read.enqueue({
+        this._controller.outbox.enqueue({
             module: 'conduit/socket',
             method: 'envelope',
             identifier: this._identifier,

@@ -4,15 +4,15 @@ function prove (async, okay) {
     var Sender = require('../sender')
     var Procession = require('procession')
 
-    var read = new Procession
-    var shifter = read.shifter()
+    var outbox = new Procession
+    var shifter = outbox.shifter()
 
     var stream = require('stream')
     var through = new stream.PassThrough
     through.trailers = { key: 'value' }
 
     async(function () {
-        Sender(through, read, 'conduit/sender', async())
+        Sender(through, outbox, 'conduit/sender', async())
         through.write('hello, world')
         through.end()
     }, function () {

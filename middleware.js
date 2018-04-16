@@ -37,7 +37,7 @@ function Middleware (destructible, vargs) {
 // from the waiting callbacks. (Of course you do.) Maybe the response is a
 // separate object.
 Middleware.prototype.socket = cadence(function (async, envelope) {
-    var receiver = { read: new Procession, write: new Procession }
+    var receiver = { outbox: new Procession, inbox: new Procession }
     async(function () {
         this._destructible.monitor([ 'request', this._instance++ ], true, this, '_respond', envelope, receiver, async())
     }, function () {
@@ -54,7 +54,7 @@ Middleware.prototype._respond = cadence(function (async, destructible, envelope,
         rawHeaders: envelope.body.rawHeaders
     })
     var consumer = new Consumer(request, 'conduit/requester')
-    receiver.write.shifter().pump(consumer, 'enqueue', destructible.monitor('consumer'))
+    receiver.inbox.shifter().pump(consumer, 'enqueue', destructible.monitor('consumer'))
     this._request(receiver, request, destructible.monitor('request'))
 })
 
@@ -63,7 +63,7 @@ Middleware.prototype._request = cadence(function (async, receiver, request) {
         delta(async()).ee(request).on('response')
     }, function (response) {
         async(function () {
-            receiver.read.enqueue({
+            receiver.outbox.enqueue({
                 module: 'conduit/middleware',
                 method: 'header',
                 body: {
@@ -73,7 +73,7 @@ Middleware.prototype._request = cadence(function (async, receiver, request) {
                 }
             }, async())
         }, function () {
-            Sender(response, receiver.read, 'conduit/middleware', async())
+            Sender(response, receiver.outbox, 'conduit/middleware', async())
         })
     })
 })

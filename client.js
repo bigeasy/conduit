@@ -20,10 +20,10 @@ function Client (destructible) {
     this._identifier = '0'
     this._sockets = {}
 
-    this.write = new Procession
-    this.read = new Procession
+    this.inbox = new Procession
+    this.outbox = new Procession
 
-    this.write.shifter().pump(this, '_enqueue', destructible.monitor('read'))
+    this.inbox.shifter().pump(this, '_enqueue', destructible.monitor('read'))
 
     this._destructible = destructible
 }
@@ -36,7 +36,7 @@ Client.prototype.connect = cadence(function (async, receiver, header) {
         async(function () {
             this._destructible.monitor([ 'socket', identifier ], true, socket, 'monitor', async())
         }, function () {
-            this.read.push({
+            this.outbox.push({
                 module: 'conduit/client',
                 method: 'connect',
                 identifier: identifier,
@@ -48,7 +48,7 @@ Client.prototype.connect = cadence(function (async, receiver, header) {
 
 Client.prototype._enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
-        this.read = new Procession // acts as a null sink for any writes
+        this.outbox = new Procession // acts as a null sink for any writes
         async.forEach(function (identifier) {
             this._sockets[identifier]._receive(null, async())
             delete this._sockets[identifier]

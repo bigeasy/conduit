@@ -13,7 +13,7 @@ function prove (async, okay) {
     }, function (caller) {
         destructible.destruct.wait(async())
 
-        var shifter = caller.read.shifter()
+        var shifter = caller.outbox.shifter()
 
         caller.invoke(1, function (error, result) {
             okay(result, 2, 'invoke')
@@ -26,8 +26,8 @@ function prove (async, okay) {
             body: 1
         }, 'invoke envelope')
 
-        caller.write.push({})
-        caller.write.push({
+        caller.inbox.push({})
+        caller.inbox.push({
             module: 'conduit/procedure',
             method: 'invocation',
             cookie: '1',
@@ -38,7 +38,7 @@ function prove (async, okay) {
             okay(/^conduit#endOfStream$/m.test(error.message), 'response eos')
         })
 
-        caller.write.push(null)
+        caller.inbox.push(null)
 
         caller.invoke(1, function (error) {
             okay(/^conduit#endOfStream$/m.test(error.message), 'invoke eos')

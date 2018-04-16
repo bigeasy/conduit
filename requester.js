@@ -46,12 +46,12 @@ Requester.prototype.request = function (request, response) {
 }
 
 Requester.prototype._request = cadence(function (async, destructible, request, response) {
-    var receiver = { read: new Procession, write: new Procession }
+    var receiver = { outbox: new Procession, inbox: new Procession }
     var header = new Header(request)
     this._rewrite.call(null, header)
-    var receiver = { read: new Procession, write: new Procession }
+    var receiver = { outbox: new Procession, inbox: new Procession }
     var consumer = new Consumer(response, 'conduit/middleware')
-    receiver.write.shifter().pump(consumer, 'enqueue', destructible.monitor('consumer'))
+    receiver.inbox.shifter().pump(consumer, 'enqueue', destructible.monitor('consumer'))
     async(function () {
         this._client.connect(receiver, {
             module: 'conduit/requester',
@@ -59,7 +59,7 @@ Requester.prototype._request = cadence(function (async, destructible, request, r
             body: header
         }, async())
     }, function () {
-        Sender(request, receiver.read, 'conduit/requester', async())
+        Sender(request, receiver.outbox, 'conduit/requester', async())
     })
 })
 

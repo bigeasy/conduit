@@ -11,8 +11,8 @@ function prove (async, okay) {
     okay(Multiplexer, 'require')
 
     var receiver = {
-        read: new Procession,
-        write: new Procession,
+        outbox: new Procession,
+        inbox: new Procession,
         destroy: function () {
             this._callback.call()
         },
@@ -27,25 +27,25 @@ function prove (async, okay) {
     }, function (multiplexer) {
         destructible.completed.wait(async())
 
-        var read = receiver.write.shifter()
-        multiplexer.write.push({
+        var outbox = receiver.inbox.shifter()
+        multiplexer.inbox.push({
             module: 'conduit/multiplexer',
             method: 'envelope',
             qualifier: 'x',
             body: 2
         })
-        okay(read.shift(), 2, 'receive')
-        var write = multiplexer.read.shifter()
-        receiver.read.push(1)
-        okay(write.shift(), {
+        okay(outbox.shift(), 2, 'receive')
+        var inbox = multiplexer.outbox.shifter()
+        receiver.outbox.push(1)
+        okay(inbox.shift(), {
             module: 'conduit/multiplexer',
             method: 'envelope',
             qualifier: 'x',
             body: 1
         }, 'send')
-        multiplexer.write.push({})
-        multiplexer.write.push(null)
-        read.shift()
-        okay(read.endOfStream, 'eos')
+        multiplexer.inbox.push({})
+        multiplexer.inbox.push(null)
+        outbox.shift()
+        okay(outbox.endOfStream, 'eos')
     })
 }

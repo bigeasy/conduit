@@ -17,17 +17,17 @@ function Server (destructible, connect) {
 
     this._sockets = {}
 
-    this.read = new Procession
-    this.write = new Procession
+    this.outbox = new Procession
+    this.inbox = new Procession
 
-    this.write.shifter().pump(this, '_write', destructible.monitor('read'))
+    this.inbox.shifter().pump(this, '_write', destructible.monitor('read'))
 
     this._destructible = destructible
 }
 
 Server.prototype._write = cadence(function (async, envelope) {
     if (envelope == null) {
-        this.read = new Procession // acts as a null sink for any writes
+        this.outbox = new Procession // acts as a null sink for any writes
         async.forEach(function (identifier) {
             this._sockets[identifier]._receive(null, async())
             delete this._sockets[identifier]

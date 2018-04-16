@@ -19,10 +19,10 @@ function prove (async, okay) {
     }, function (procedure) {
         destructible.completed.wait(async())
 
-        var shifter = procedure.read.shifter()
+        var shifter = procedure.outbox.shifter()
 
-        procedure.write.push({})
-        procedure.write.push({
+        procedure.inbox.push({})
+        procedure.inbox.push({
             module: 'conduit/caller',
             method: 'invoke',
             cookie: '1',
@@ -36,6 +36,6 @@ function prove (async, okay) {
             body: 2
         }, 'response')
 
-        procedure.write.push(null)
+        procedure.inbox.push(null)
     })
 }

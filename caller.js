@@ -19,6 +19,7 @@ function Caller (destructible) {
     this._cliffhanger = new Cliffhanger
     this._destructible = destructible
     this._destructible.markDestroyed(this)
+    this._eos = false
 }
 
 Caller.prototype.monitor = cadence(function (async) {
@@ -27,7 +28,7 @@ Caller.prototype.monitor = cadence(function (async) {
 })
 
 Caller.prototype.invoke = cadence(function (async, body) {
-    if (this.inbox.endOfStream || this.outbox.endOfStream) {
+    if (this._eos) {
         throw interrupt('endOfStream')
     } else {
         this.outbox.push({
@@ -41,6 +42,7 @@ Caller.prototype.invoke = cadence(function (async, body) {
 
 Caller.prototype._enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
+        this._eos = true
         this._cliffhanger.cancel(interrupt('endOfStream'))
         this.outbox.enqueue(envelope, async())
     } else if (

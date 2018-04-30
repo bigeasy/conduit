@@ -51,7 +51,7 @@ Requester.prototype._request = cadence(function (async, destructible, request, r
     this._rewrite.call(null, header)
     var receiver = { outbox: new Procession, inbox: new Procession }
     var consumer = new Consumer(response, 'conduit/middleware')
-    receiver.inbox.shifter().pump(consumer, 'enqueue', destructible.monitor('consumer'))
+    receiver.inbox.pump(consumer, 'enqueue', destructible.monitor('consumer'))
     async(function () {
         this._client.connect(receiver, {
             module: 'conduit/requester',

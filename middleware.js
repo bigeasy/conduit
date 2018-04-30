@@ -54,7 +54,7 @@ Middleware.prototype._respond = cadence(function (async, destructible, envelope,
         rawHeaders: envelope.body.rawHeaders
     })
     var consumer = new Consumer(request, 'conduit/requester')
-    receiver.inbox.shifter().pump(consumer, 'enqueue', destructible.monitor('consumer'))
+    receiver.inbox.pump(consumer, 'enqueue', destructible.monitor('consumer'))
     this._request(receiver, request, destructible.monitor('request'))
 })
 

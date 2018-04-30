@@ -24,8 +24,8 @@ function prove (async, okay) {
         destructible.monitor('first', Window, nested.first, async())
         destructible.monitor('second', Window, nested.second, { window: 4 }, async())
     }, function (first, second) {
-        first.outbox.shifter().pump(second.inbox)
-        second.outbox.shifter().pump(first.inbox)
+        first.outbox.pump(second.inbox)
+        second.outbox.pump(first.inbox)
 
         nested.first.outbox.push(1)
         okay(shifters.second.inbox.shift(), 1, 'first')

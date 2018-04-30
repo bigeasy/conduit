@@ -26,8 +26,7 @@ function Window (destructible, receiver, options) {
     this._reservoir = this._queue.shifter()
 
     this.restarts = 0
-    this._pumper = this._queue.shifter()
-    this._pumper.pump(this.outbox)
+    this._pumper = this._queue.pump(this.outbox)
 
     this._received = '0'
     this._sequence = '0'
@@ -39,8 +38,8 @@ function Window (destructible, receiver, options) {
     this.destroyed = false
     destructible.markDestroyed(this)
 
-    this.inbox.shifter().pump(this, '_read', destructible.monitor('read'))
-    this._receiver.outbox.shifter().pump(this, '_write', destructible.monitor('write'))
+    this.inbox.pump(this, '_read', destructible.monitor('read'))
+    this._receiver.outbox.pump(this, '_write', destructible.monitor('write'))
 }
 
 // Input into window from outside.
@@ -95,9 +94,8 @@ Window.prototype._read = cadence(function (async, envelope) {
         envelope.method == 'connect'
     ) {
         this._pumper.destroy()
-        this._pumper = this._reservoir
+        this._pumper = this._reservoir.pumpify(this.outbox)
         this._reservoir = this._pumper.shifter()
-        this._pumper.pump(this.outbox)
     }
 })
 

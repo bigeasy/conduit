@@ -23,7 +23,7 @@ function Client (destructible) {
     this.inbox = new Procession
     this.outbox = new Procession
 
-    this.inbox.shifter().pump(this, '_enqueue', destructible.monitor('read'))
+    this.inbox.pump(this, '_enqueue', destructible.monitor('read'))
 
     this._destructible = destructible
 }

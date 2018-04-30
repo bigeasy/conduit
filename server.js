@@ -20,7 +20,7 @@ function Server (destructible, connect) {
     this.outbox = new Procession
     this.inbox = new Procession
 
-    this.inbox.shifter().pump(this, '_write', destructible.monitor('read'))
+    this.inbox.pump(this, '_write', destructible.monitor('read'))
 
     this._destructible = destructible
 }

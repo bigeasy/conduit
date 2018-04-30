@@ -196,7 +196,7 @@ Conduit.prototype._monitor = cadence(function (async, destructible, buffer) {
         // TODO Curious that we're not just leaving things on the receiver's
         // queue. Why do we have to copy it over to a Turnstile?
         // destructible.monitor('pump', 'monitor', async())
-        this.receiver.outbox.shifter().pump(this._queue, 'push', abend)
+        this.receiver.outbox.pump(this._queue, 'push', abend)
     }, function () {
         this._consume(buffer, destructible.monitor('pump'))
         this.receiver.inbox.push({ module: 'conduit', method: 'connect' })

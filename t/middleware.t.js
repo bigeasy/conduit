@@ -39,8 +39,8 @@ function prove (async, okay) {
                 async(function () {
                     destructible.monitor('server', Server, middleware, 'socket', async())
                 }, function (server) {
-                    client.outbox.shifter().pump(server.inbox)
-                    server.outbox.shifter().pump(client.inbox)
+                    client.outbox.pump(server.inbox)
+                    server.outbox.pump(client.inbox)
                     destructible.destruct.wait(function () { client.inbox.push(null) })
                     destructible.destruct.wait(function () { server.inbox.push(null) })
                 }, function () {

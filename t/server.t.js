@@ -21,8 +21,7 @@ function prove (async, okay) {
             if (!visited) {
                 visited = true
                 okay(header, 1, 'header')
-                var shifter = receiver.inbox.shifter()
-                shifter.pump(function (envelope) {
+                var shifter = receiver.inbox.pump(function (envelope) {
                     okay(envelope, 2, 'envelope')
                     receiver.outbox.push(1)
                     receiver.outbox.push(null)
@@ -33,9 +32,9 @@ function prove (async, okay) {
         }, async())
         destructible.monitor('client', Client, async())
     }, function (server, client) {
-        client.outbox.shifter().pump(server.inbox)
-        server.outbox.shifter().pump(client.inbox)
-        server.inbox.shifter().pump(function (envelope) {
+        client.outbox.pump(server.inbox)
+        server.outbox.pump(client.inbox)
+        server.inbox.pump(function (envelope) {
             console.log('zz', envelope)
         }, abend)
 

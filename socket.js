@@ -18,7 +18,7 @@ function Socket (controller, identifier, receiver) {
 
 Socket.prototype.monitor = cadence(function (async, destructible) {
     destructible.destruct.wait(this, function () { this._receiver.outbox.push(null) })
-    this._receiver.outbox.shifter().pump(this, '_send', destructible.monitor('send'))
+    this._receiver.outbox.pump(this, '_send', destructible.monitor('send'))
 })
 
 Socket.prototype._receive = cadence(function (async, envelope) {

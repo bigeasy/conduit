@@ -56,7 +56,8 @@ function prove (async, okay) {
                     destructible.destruct.wait(server, 'destroy')
                     ua.fetch({
                         url: 'http://127.0.0.1:8888',
-                        timeout: 4000
+                        timeout: 4000,
+                        parse: 'text'
                     }, async())
                 }, function (body, response) {
                     okay(body, 'hello, world', 'index')

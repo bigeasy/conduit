@@ -47,7 +47,7 @@ function Conduit (input, output, receiver) {
 
 Conduit.prototype._consume = cadence(function (async, buffer) {
     async(function () {
-        this._parse(coalesce(buffer, new Buffer(0)), async())
+        this._parse(coalesce(buffer, Buffer.alloc(0)), async())
     }, function () {
         this._read(async())
     }, function () {
@@ -67,7 +67,7 @@ Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {
                 slice = Buffer.concat(this._slices)
                 this._slices.length = 0
             } else {
-                slice = new Buffer(slice)
+                slice = Buffer.from(slice)
             }
             var envelope = this._chunk.body
             var e = envelope
@@ -79,7 +79,7 @@ Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {
             this._record = new Jacket
             this.receiver.inbox.enqueue(envelope, async())
         } else {
-            this._slices.push(new Buffer(slice))
+            this._slices.push(Buffer.from(slice))
         }
     }, function () {
         return start

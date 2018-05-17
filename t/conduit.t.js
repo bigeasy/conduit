@@ -20,7 +20,13 @@ function prove (async, okay) {
         output: new stream.PassThrough
     }
 
-    async(function () {
+    destructible.completed.wait(async())
+
+    var buffer = Buffer.from('qwertyuiop')
+    var shifter
+    async([function () {
+        destructible.destroy()
+    }], function () {
         destructible.monitor('first', Conduit, first.input, first.output, first.receiver, async())
     }, function (conduit) {
         first.conduit = conduit
@@ -29,22 +35,21 @@ function prove (async, okay) {
     }, function (conduit) {
         second.conduit = conduit
     }, function () {
-        var buffer = new Buffer('qwertyuiop')
-
         first.conduit.receiver.outbox.push({
             module: 'conduit',
             method: 'example',
             body: { body: buffer }
         })
-        var buffer = first.output.read()
+        buffer = first.output.read()
 
-        var shifter = second.conduit.receiver.inbox.shifter()
+        shifter = second.conduit.receiver.inbox.shifter()
 
         second.input.write(buffer.slice(0, 10))
         second.input.write(buffer.slice(10, 120))
         second.input.write(buffer.slice(120))
 
-        var shifted = shifter.shift()
+        shifter.dequeue(async())
+    }, function (shifted) {
         shifted.body.body = shifted.body.body.toString()
         okay(shifted, {
             module: 'conduit', method: 'example',
@@ -54,7 +59,8 @@ function prove (async, okay) {
         okay(shifter.shift(), null, 'empty')
         second.input.write(buffer)
 
-        var shifted = shifter.shift()
+        shifter.dequeue(async())
+    }, function (shifted) {
         shifted.body.body = shifted.body.body.toString()
         okay(shifted, {
             module: 'conduit', method: 'example',
@@ -63,7 +69,10 @@ function prove (async, okay) {
 
         first.conduit.receiver.outbox.push(1)
         second.input.write(first.output.read())
-        okay(shifter.shift(), 1, 'envelope')
+
+        shifter.dequeue(async())
+    }, function (shifted) {
+        okay(shifted, 1, 'envelope')
 
         first.conduit.receiver.outbox.push(null)
         var input = first.output.read()
@@ -71,8 +80,5 @@ function prove (async, okay) {
 
 
         first.conduit.receiver.outbox.push({})
-
-        destructible.destruct.wait(async())
-        destructible.destroy()
     })
 }

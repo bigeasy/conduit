@@ -1,6 +1,6 @@
 {
           "name": "conduit",
-          "version": "2.9.2",
+          "version": "2.9.3",
           "description": "Evented pipelines.",
           "keywords": [
                     "cadence",

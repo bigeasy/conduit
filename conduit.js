@@ -20,21 +20,12 @@ var Signal = require('signal')
 // Return the first not null-like value.
 var coalesce = require('extant')
 
-// An error-frist callback work queue.
-var Turnstile = require('turnstile/redux')
-Turnstile.Queue = require('turnstile/queue')
-
-var abend = require('abend')
-
 function Conduit (input, output, receiver) {
     this._input = new Staccato.Readable(input)
 
     this.destroyed = false
 
     this._output = new Staccato.Writable(output)
-
-    this._turnstile = new Turnstile
-    this._queue = new Turnstile.Queue(this, '_write', this._turnstile)
 
     this.receiver = receiver
 
@@ -136,7 +127,6 @@ Conduit.prototype._read = cadence(function (async) {
 })
 
 Conduit.prototype._write = cadence(function (async, envelope) {
-    envelope = envelope.body
     async(function () {
         if (envelope == null) {
             async(function () {
@@ -183,21 +173,14 @@ Conduit.prototype._write = cadence(function (async, envelope) {
 Conduit.prototype._monitor = cadence(function (async, destructible, buffer) {
     destructible.markDestroyed(this)
 
-    destructible.destruct.wait(this._turnstile, 'pause')
     destructible.destruct.wait(this._closed, 'unlatch')
     destructible.destruct.wait(this._input, 'destroy')
 
-    this._queue.turnstile.listen(destructible.monitor('turnstile'))
-
     async(function () {
-        // TODO Should Turnstile have some sort of synchronous push that is
-        // agreed upon by Procession?
-        //
         // TODO Curious that we're not just leaving things on the receiver's
         // queue. Why do we have to copy it over to a Turnstile?
         // destructible.monitor('pump', 'monitor', async())
-        this.receiver.outbox.pump(this._queue, 'push', abend)
-    }, function () {
+        destructible.destruct.wait(this.receiver.outbox.pump(this, '_write', destructible.monitor('outbox')), 'destroy')
         this._consume(buffer, destructible.monitor('pump'))
         this.receiver.inbox.push({ module: 'conduit', method: 'connect' })
         return [ this ]

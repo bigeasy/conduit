@@ -29,7 +29,7 @@
                     "nop": "1.0.x",
                     "operation": "1.6.x",
                     "procession": "0.20.x",
-                    "signal": "3.4.x",
+                    "signal": "4.0.x",
                     "staccato": "6.1.x"
           },
           "devDependencies": {

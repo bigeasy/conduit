@@ -6,7 +6,7 @@ var Procession = require('procession')
 var coalesce = require('extant')
 
 // Contextualized callbacks and event handlers.
-var Operation = require('operation/variadic')
+var Operation = require('operation')
 
 function Procedure (destructible, vargs) {
     this.destroyed = false

@@ -22,7 +22,7 @@ var Sender = require('./sender')
 // Convert a Conduit event stream into an HTTP write.
 var Consumer = require('./consumer')
 
-var Operation = require('operation/variadic')
+var Operation = require('operation')
 
 var abend = require('abend')
 

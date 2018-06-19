@@ -5,7 +5,7 @@ var cadence = require('cadence')
 var Procession = require('procession')
 
 // Contextualized callbacks and event handlers.
-var Operation = require('operation/variadic')
+var Operation = require('operation')
 
 var Socket = require('./socket')
 

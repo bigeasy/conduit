@@ -1,44 +1,49 @@
 {
-          "name": "conduit",
-          "version": "2.10.5",
-          "description": "Evented pipelines.",
-          "keywords": [
-                    "cadence",
-                    "evented",
-                    "queue",
-                    "http"
-          ],
-          "author": "Alan Gutierrez <alan@prettyrobots.com>",
-          "homepage": "https://github.com/bigeasy/conduit",
-          "license": "MIT",
-          "repository": {
-                    "type": "git",
-                    "url": "bigeasy/conduit"
-          },
-          "dependencies": {
-                    "abend": "1.0.x",
-                    "cadence": "1.0.x",
-                    "cliffhanger": "2.0.x",
-                    "delta": "1.4.x",
-                    "destructible": "0.30.x",
-                    "extant": "1.0.x",
-                    "interlocutor": "0.5.x",
-                    "interrupt": "6.2.x",
-                    "monotonic": "3.0.x",
-                    "nascent.jacket": "0.0.x",
-                    "nop": "1.0.x",
-                    "operation": "2.0.x",
-                    "procession": "0.20.x",
-                    "signal": "4.0.x",
-                    "staccato": "6.1.x"
-          },
-          "devDependencies": {
-                    "proof": "3.0.x",
-                    "server-destroy": "1.0.1",
-                    "vizsla": "12.9.x"
-          },
-          "main": "conduit",
-          "scripts": {
-                    "test": "proof platform win32 && proof test */*.t.js || t/test"
-          }
+    "name":                 "conduit",
+    "version":              "2.10.5",
+    "description":
+
+      "Evented pipelines.",
+
+    "keywords":
+    [
+                            "cadence", "evented", "queue", "http"
+    ],
+    "author":               "Alan Gutierrez <alan@prettyrobots.com>",
+    "homepage":             "https://github.com/bigeasy/conduit",
+    "license":              "MIT",
+    "repository":
+    {
+                            "type": "git",
+                            "url": "bigeasy/conduit"
+    },
+    "dependencies":
+    {
+                            "abend":                        "1.0.x",
+                            "cadence":                      "1.0.x",
+                            "cliffhanger":                  "2.0.x",
+                            "delta":                        "1.4.x",
+                            "destructible":                 "0.30.x",
+                            "extant":                       "1.0.x",
+                            "interlocutor":                 "0.5.x",
+                            "interrupt":                    "6.2.x",
+                            "monotonic":                    "3.0.x",
+                            "nascent.jacket":               "0.0.x",
+                            "nop":                          "1.0.x",
+                            "operation":                    "2.0.x",
+                            "procession":                   "0.20.x",
+                            "signal":                       "4.0.x",
+                            "staccato":                     "6.1.x"
+    },
+    "devDependencies":
+    {
+                            "proof":                        "3.0.x",
+                            "server-destroy":               "1.0.1",
+                            "vizsla":                       "12.9.x"
+    },
+    "main":                 "conduit",
+    "scripts":
+    {
+                            "test": "proof platform win32 && proof test */*.t.js || t/test"
+    }
 }

@@ -6,7 +6,7 @@ var Procession = require('procession')
 
 var Cliffhanger = require('cliffhanger')
 
-var interrupt = require('interrupt').createInterrupter('conduit')
+var Interrupt = require('interrupt').createInterrupter('conduit')
 
 var Destructible = require('destructible')
 
@@ -29,7 +29,7 @@ Caller.prototype.monitor = cadence(function (async) {
 
 Caller.prototype.invoke = cadence(function (async, body) {
     if (this._eos) {
-        throw interrupt('endOfStream')
+        throw new Interrupt('endOfStream')
     } else {
         this.outbox.push({
             module: 'conduit/caller',
@@ -43,7 +43,7 @@ Caller.prototype.invoke = cadence(function (async, body) {
 Caller.prototype._enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
         this._eos = true
-        this._cliffhanger.cancel(interrupt('endOfStream'))
+        this._cliffhanger.cancel(new Interrupt('endOfStream'))
         this.outbox.enqueue(envelope, async())
     } else if (
         envelope.module == 'conduit/procedure' &&

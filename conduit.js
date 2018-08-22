@@ -51,8 +51,15 @@ Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {
         var length = Math.min(buffer.length - start, this._chunk.length)
         var slice = buffer.slice(start, start + length)
         start += length
+        console.log(this._chunk, length)
         this._chunk.length -= length
+        // If chunk length is zero we have gathered up all of our chunks so
+        // assemble them, but if not then save the slice for eventual assembly.
+
+        //
         if (this._chunk.length == 0) {
+            // If we've gathered slices, assemble them, otherwise make a copy of
+            // the buffered slice (TODO what? but why? is it necessary?)
             if (this._slices.length) {
                 this._slices.push(slice)
                 slice = Buffer.concat(this._slices)
@@ -60,14 +67,20 @@ Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {
             } else {
                 slice = Buffer.from(slice)
             }
+
+            // The buffer body can be nested arbitrarily deep in envelopes.
             var envelope = this._chunk.body
             var e = envelope
             while (e.body != null) {
                 e = e.body
             }
             e.body = slice
+
+            // Reset to read next record.
             this._chunk = null
             this._record = new Jacket
+
+            // Enqueue the parsed evelope.
             this.receiver.inbox.enqueue(envelope, async())
         } else {
             this._slices.push(Buffer.from(slice))

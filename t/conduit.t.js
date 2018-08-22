@@ -45,9 +45,14 @@ function prove (async, okay) {
         shifter = second.conduit.receiver.inbox.shifter()
 
         second.input.write(buffer.slice(0, 10))
+        setImmediate(async())
+    }, function () {
         second.input.write(buffer.slice(10, 120))
+        setImmediate(async())
+    }, function () {
         second.input.write(buffer.slice(120))
-
+        setImmediate(async())
+    }, function () {
         shifter.dequeue(async())
     }, function (shifted) {
         shifted.body.body = shifted.body.body.toString()

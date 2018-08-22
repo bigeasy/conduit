@@ -60,12 +60,12 @@ Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {
         if (this._chunk.length == 0) {
             // If we've gathered slices, assemble them, otherwise make a copy of
             // the buffered slice (TODO what? but why? is it necessary?)
-            if (this._slices.length) {
+            if (this._slices.length == 0) {
+                slice = Buffer.from(slice)
+            } else {
                 this._slices.push(slice)
                 slice = Buffer.concat(this._slices)
                 this._slices.length = 0
-            } else {
-                slice = Buffer.from(slice)
             }
 
             // The buffer body can be nested arbitrarily deep in envelopes.

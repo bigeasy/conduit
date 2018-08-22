@@ -27,11 +27,11 @@ function prove (async, okay) {
     async([function () {
         destructible.destroy()
     }], function () {
-        destructible.monitor('first', Conduit, first.input, first.output, first.receiver, async())
+        destructible.monitor('first', true, Conduit, first.input, first.output, first.receiver, async())
     }, function (conduit) {
         first.conduit = conduit
     }, function () {
-        destructible.monitor('second', Conduit, second.input, second.output, second.receiver, async())
+        destructible.monitor('second', true, Conduit, second.input, second.output, second.receiver, async())
     }, function (conduit) {
         second.conduit = conduit
     }, function () {
@@ -82,8 +82,8 @@ function prove (async, okay) {
         first.conduit.receiver.outbox.push(null)
         var input = first.output.read()
         second.input.write(input)
-
-
+        setImmediate(async())
+    }, function () {
         first.conduit.receiver.outbox.push({})
     })
 }

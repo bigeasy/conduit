@@ -51,7 +51,6 @@ Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {
         var length = Math.min(buffer.length - start, this._chunk.length)
         var slice = buffer.slice(start, start + length)
         start += length
-        console.log(this._chunk, length)
         this._chunk.length -= length
         // If chunk length is zero we have gathered up all of our chunks so
         // assemble them, but if not then save the slice for eventual assembly.

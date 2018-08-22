@@ -9,7 +9,10 @@ function fn () {
     setTimeout(function () {}, 5000)
 }
 
+var last = null
+
 function fn_ () {
+    last = Date.now()
 }
 
 fn()

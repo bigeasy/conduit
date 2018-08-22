@@ -27,10 +27,12 @@ function prove (async, okay) {
         first.outbox.pump(second.inbox)
         second.outbox.pump(first.inbox)
 
+        second.reconnect()
+
         nested.first.outbox.push(1)
         okay(shifters.second.inbox.shift(), 1, 'first')
 
-        first.inbox.push({ module: 'conduit', method: 'connect' })
+        second.reconnect()
 
         nested.first.outbox.push(2)
         nested.first.outbox.push(3)

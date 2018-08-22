@@ -25,8 +25,9 @@ function Window (destructible, receiver, options) {
     this._queue = new Procession
     this._reservoir = this._queue.shifter()
 
-    this.restarts = 0
-    this._pumper = this._queue.pump(this.outbox)
+    // TODO Hate the world `reconnect`.
+    // Pump to nowhere until we get our first reconnect message.
+    this._pumper = this._queue.pump(new Procession)
 
     this._received = '0'
     this._sequence = '0'
@@ -40,9 +41,39 @@ function Window (destructible, receiver, options) {
 
     this.inbox.pump(this, '_read', destructible.monitor('read'))
     this._receiver.outbox.pump(this, '_write', destructible.monitor('write'))
+
+    this.reconnections = 0
 }
 
-// Input into window from outside.
+Window.prototype.reconnect = function () {
+    this.outbox.push({
+        module: 'conduit/window',
+        method: 'connect',
+        reconnection: ++this.reconnections
+    })
+}
+
+// Why does reconnect work? Well, one side is going to realize that the
+// connection is broken and close it. If it is the client side then it will open
+// a new connection and the server will know to replace it. It will destroy its
+// Conduit and give the window to a new conduit. It will then send the reconnect
+// message (or rebuffer or something) and the client will reply.
+//
+// If the server detects disconnection, then the client might keep on chatting
+// with a half-open socket indefinately. We might want to add a keep-alive
+// reciever that will destroy the socket, or we might decide to add keep-alive
+// to this here, splitting it out only if we decide that we want to have
+// alternative flow-control methods.
+//
+// Actually, for now we could have keep-alive as a seprate receiver. It has a
+// Signal you can wire to destroy your Conduit. Simpler and we can optimize it
+// away if it is too expensive. (Rather optimize Procession so we're not shy
+// about creating pipelines.)
+//
+// Anyway, with a keep-alive, the server can disconnect and just chill. The
+// client can timeout and then go through the reconnect. It is not going to
+// empty it's queue until it gets a flush and it won't get one off the closed
+// socket.
 
 //
 Window.prototype._read = cadence(function (async, envelope) {
@@ -52,6 +83,15 @@ Window.prototype._read = cadence(function (async, envelope) {
         envelope.module == 'conduit/window'
     ) {
         switch (envelope.method) {
+        case 'connect':
+            this._pumper.destroy()
+            var reservoir = this._reservoir.shifter()
+            this._pumper = this._reservoir.pumpify(this.outbox)
+            this._reservoir = reservoir
+            if (envelope.reconnection !== this.reconnections) {
+                this.reconnect()
+            }
+            break
         case 'envelope':
             // If we've seen this one already, don't bother.
             if (Monotonic.compare(this._received, envelope.sequence) >= 0) {
@@ -89,13 +129,6 @@ Window.prototype._read = cadence(function (async, envelope) {
             }
             break
         }
-    } else if (
-        envelope.module == 'conduit' &&
-        envelope.method == 'connect'
-    ) {
-        this._pumper.destroy()
-        this._pumper = this._reservoir.pumpify(this.outbox)
-        this._reservoir = this._pumper.shifter()
     }
 })
 

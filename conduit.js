@@ -57,7 +57,7 @@ Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {
         // assemble them, but if not then save the slice for eventual assembly.
 
         //
-        if (this._chunk.length == 0) {
+        if (this._chunk.length === 0) {
             // If we've gathered slices, assemble them, otherwise make a copy of
             // the buffered slice (TODO what? but why? is it necessary?)
             if (this._slices.length == 0) {

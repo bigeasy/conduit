@@ -86,7 +86,7 @@ Window.prototype._read = cadence(function (async, envelope) {
         case 'connect':
             this._pumper.destroy()
             var reservoir = this._reservoir.shifter()
-            this._pumper = this._reservoir.pumpify(this.outbox)
+            this._pumper = this._reservoir.pump(this.outbox)
             this._reservoir = reservoir
             if (envelope.reconnection !== this.reconnections) {
                 this.reconnect()

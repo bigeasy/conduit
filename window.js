@@ -115,6 +115,8 @@ Window.prototype._read = cadence(function (async, envelope) {
                 })
                 this._flush = Monotonic.add(this._flush, this._window)
             }
+            // TODO Ah… But, but if the body is null, we are done here. We
+            // shutdown the pipeline.
             // Forward the body.
             this._receiver.inbox.enqueue(envelope.body, async())
             break

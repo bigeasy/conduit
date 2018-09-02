@@ -20,7 +20,7 @@ var Signal = require('signal')
 // Return the first not null-like value.
 var coalesce = require('extant')
 
-function Conduit (input, output, receiver) {
+function Conduit (destructible, input, output, buffer, receiver) {
     this._input = new Staccato.Readable(input)
 
     this.destroyed = false
@@ -34,6 +34,19 @@ function Conduit (input, output, receiver) {
     this._record = new Jacket
 
     this._closed = new Signal
+
+    destructible.markDestroyed(this)
+
+    destructible.destruct.wait(this._closed, 'unlatch')
+    destructible.destruct.wait(this._input, 'destroy')
+
+    var pump = this.receiver.outbox.pump(this, '_write', destructible.monitor('outbox'))
+
+    destructible.destruct.wait(this, function () {
+        this.receiver.inbox.push(null)
+    })
+
+    this._consume(buffer, destructible.monitor('pump'))
 }
 
 Conduit.prototype._consume = cadence(function (async, buffer) {
@@ -102,6 +115,7 @@ Conduit.prototype._json = cadence(function (async, buffer, start, end) {
                 this._chunk = this._record.object
                 break
             case 'trailer':
+                console.log('trailered')
                 // var socket = this._sockets[envelope.to]
                 this.receiver.inbox.enqueue(null, async())
                 // delete this._sockets[envelope.to]
@@ -182,19 +196,6 @@ Conduit.prototype._write = cadence(function (async, envelope) {
     })
 })
 
-Conduit.prototype._monitor = cadence(function (async, destructible, buffer) {
-    destructible.markDestroyed(this)
-
-    destructible.destruct.wait(this._closed, 'unlatch')
-    destructible.destruct.wait(this._input, 'destroy')
-
-    async(function () {
-        destructible.destruct.wait(this.receiver.outbox.pump(this, '_write', destructible.monitor('outbox')), 'destroy')
-        this._consume(buffer, destructible.monitor('pump'))
-        return [ this ]
-    })
-})
-
 module.exports = cadence(function (async, destructible, input, output, receiver, buffer) {
-    new Conduit(input, output, receiver)._monitor(destructible, coalesce(buffer), async())
+    return new Conduit(destructible, input, output, buffer, receiver)
 })

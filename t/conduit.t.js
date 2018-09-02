@@ -82,6 +82,9 @@ function prove (async, okay) {
         first.conduit.receiver.outbox.push(null)
         var input = first.output.read()
         second.input.write(input)
+        second.conduit.receiver.outbox.push(null)
+        var input = second.output.read()
+        first.input.write(input)
         setImmediate(async())
     }, function () {
         first.conduit.receiver.outbox.push({})

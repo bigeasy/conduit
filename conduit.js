@@ -20,6 +20,12 @@ var Signal = require('signal')
 // Return the first not null-like value.
 var coalesce = require('extant')
 
+// Once we get our hands on the `input` and `output` we own them, we're going to
+// use `end` to indicate an end of stream. At the outset I'd hand a muddled
+// imagining of external management of the stream, so that this interpretation
+// of its contents was a "separate concern."
+
+//
 function Conduit (destructible, input, output, buffer, receiver) {
     this._input = new Staccato.Readable(input)
 

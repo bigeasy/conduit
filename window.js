@@ -77,9 +77,8 @@ Window.prototype.reconnect = function () {
 
 //
 Window.prototype._read = cadence(function (async, envelope) {
-    if (envelope == null) {
-        this._receiver.inbox.push(null)
-    } else if (
+    if (
+        envelope != null &&
         envelope.module == 'conduit/window'
     ) {
         switch (envelope.method) {
@@ -136,6 +135,10 @@ Window.prototype._read = cadence(function (async, envelope) {
 
 // Input into window from nested listener. It is wrapped in an envelope and
 // added to a queue.
+//
+// TODO Place a nested `null` here. You may want to assert that you've shutdown
+// the Window with a guard, or you can start to destroy the Window. Are
+// end-of-stream and destruction separate concerns? Probably not, no.
 
 //
 Window.prototype._write = function (envelope) {

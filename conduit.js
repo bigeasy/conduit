@@ -134,17 +134,29 @@ Conduit.prototype._parse = cadence(function (async, buffer) {
     })(0)
 })
 
+// We end-of-stream at actual end of stream or on error. If it is an error then
+// the write side is probably going to emit errors too because the `input` and
+// the `output` stream are often the same duplex, socket stream. We're not going
+// to try to prevent the write side from generating errors, though. During
+// ordinary shutdown we're kind of expecting the middleware to notice an
+// end-of-stream using procession, shutdown processing while sending an
+// end-of-stream back through procession going the other way.
+
+//
 Conduit.prototype._read = cadence(function (async) {
-    var read = async(function () {
-        this._input.read(async())
-    }, function (buffer) {
-        if (buffer == null) {
-            this.receiver.inbox.push(null)
-            this.eos.unlatch()
-            return [ read.break ]
-        }
-        this._parse(buffer, async())
-    })()
+    async([function () {
+        this.receiver.inbox.push(null)
+        this.eos.unlatch()
+    }], function () {
+        var read = async(function () {
+            this._input.read(async())
+        }, function (buffer) {
+            if (buffer == null) {
+                return [ read.break ]
+            }
+            this._parse(buffer, async())
+        })()
+    })
 })
 
 Conduit.prototype._write = cadence(function (async, envelope) {

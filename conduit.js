@@ -45,7 +45,7 @@ function Conduit (destructible, input, output, buffer, receiver) {
 
     this.receiver.outbox.pump(this, '_write', destructible.monitor('outbox'))
 
-    this._consume(buffer, destructible.monitor('pump'))
+    this._consume(buffer, destructible.monitor('inbox'))
 }
 
 Conduit.prototype._consume = cadence(function (async, buffer) {

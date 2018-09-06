@@ -148,37 +148,33 @@ Conduit.prototype._read = cadence(function (async) {
 })
 
 Conduit.prototype._write = cadence(function (async, envelope) {
-    async(function () {
-        if (envelope == null) {
-            this._output.end(async())
-        } else {
-            var e = envelope
-            while (e.body != null && typeof e.body == 'object' && !Buffer.isBuffer(e.body)) {
-                e = e.body
-            }
-            if (Buffer.isBuffer(e.body)) {
-                var body = e.body
-                e.body = null
-                var packet = JSON.stringify({
-                    module: 'conduit',
-                    method: 'chunk',
-                    length: body.length,
-                    body: envelope
-                }) + '\n'
-                e.body = body
-                this._output.write(packet, async())
-                this._output.write(e.body, async())
-            } else {
-                this._output.write(JSON.stringify({
-                    module: 'conduit',
-                    method: 'envelope',
-                    body: envelope
-                }) + '\n', async())
-            }
+    if (envelope == null) {
+        this._output.end(async())
+    } else {
+        var e = envelope
+        while (e.body != null && typeof e.body == 'object' && !Buffer.isBuffer(e.body)) {
+            e = e.body
         }
-    }, function () {
-        return []
-    })
+        if (Buffer.isBuffer(e.body)) {
+            var body = e.body
+            e.body = null
+            var packet = JSON.stringify({
+                module: 'conduit',
+                method: 'chunk',
+                length: body.length,
+                body: envelope
+            }) + '\n'
+            e.body = body
+            this._output.write(packet, async())
+            this._output.write(e.body, async())
+        } else {
+            this._output.write(JSON.stringify({
+                module: 'conduit',
+                method: 'envelope',
+                body: envelope
+            }) + '\n', async())
+        }
+    }
 })
 
 module.exports = cadence(function (async, destructible, input, output, receiver, buffer) {

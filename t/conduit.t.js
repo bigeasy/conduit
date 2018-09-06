@@ -103,6 +103,10 @@ function prove (okay, callback) {
         }, function () {
             okay(true, 'second end')
         }, function () {
+            first.input.end()
+            second.input.end()
+            setImmediate(async())
+        }, function () {
             first.conduit.receiver.outbox.push({})
         })
     })(destructible.monitor('test'))

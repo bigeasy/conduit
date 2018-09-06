@@ -39,18 +39,11 @@ function Conduit (destructible, input, output, buffer, receiver) {
 
     this._record = new Jacket
 
-    this._closed = new Signal
+    this.eos = new Signal
 
     destructible.markDestroyed(this)
 
-    destructible.destruct.wait(this._closed, 'unlatch')
-    destructible.destruct.wait(this._input, 'destroy')
-
-    var pump = this.receiver.outbox.pump(this, '_write', destructible.monitor('outbox'))
-
-    destructible.destruct.wait(this, function () {
-        this.receiver.inbox.push(null)
-    })
+    this.receiver.outbox.pump(this, '_write', destructible.monitor('outbox'))
 
     this._consume(buffer, destructible.monitor('pump'))
 }
@@ -61,7 +54,7 @@ Conduit.prototype._consume = cadence(function (async, buffer) {
     }, function () {
         this._read(async())
     }, function () {
-        this._closed.wait(async())
+        this.eos.wait(async())
     })
 })
 
@@ -146,6 +139,8 @@ Conduit.prototype._read = cadence(function (async) {
         this._input.read(async())
     }, function (buffer) {
         if (buffer == null) {
+            this.receiver.inbox.push(null)
+            this.eos.unlatch()
             return [ read.break ]
         }
         this._parse(buffer, async())

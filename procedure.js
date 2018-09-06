@@ -8,6 +8,8 @@ var coalesce = require('extant')
 // Contextualized callbacks and event handlers.
 var Operation = require('operation')
 
+var Signal = require('signal')
+
 function Procedure (destructible, vargs) {
     this.destroyed = false
     destructible.markDestroyed(this)
@@ -18,14 +20,14 @@ function Procedure (destructible, vargs) {
     this.outbox = new Procession
 
     this.inbox.pump(this, '_enqueue', destructible.monitor('pump'))
+
+    this.eos = new Signal
 }
 
 Procedure.prototype._enqueue = cadence(function (async, envelope) {
-    if (
-        envelope != null &&
-        envelope.module == 'conduit/caller' &&
-        envelope.method == 'invoke'
-    ) {
+    if (envelope == null) {
+        this.eos.unlatch()
+    } else if (envelope.module == 'conduit/caller' && envelope.method == 'invoke') {
         async(function () {
             this._operation.call(null, envelope.body, async())
         }, function (response) {

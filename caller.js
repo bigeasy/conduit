@@ -12,6 +12,8 @@ var Destructible = require('destructible')
 
 var cadence = require('cadence')
 
+var Signal = require('signal')
+
 function Caller (destructible) {
     this.destroyed = false
     this.inbox = new Procession
@@ -19,7 +21,7 @@ function Caller (destructible) {
     this._cliffhanger = new Cliffhanger
     this._destructible = destructible
     this._destructible.markDestroyed(this)
-    this._eos = false
+    this.eos = new Signal
 }
 
 Caller.prototype.monitor = cadence(function (async) {
@@ -28,21 +30,21 @@ Caller.prototype.monitor = cadence(function (async) {
 })
 
 Caller.prototype.invoke = cadence(function (async, body) {
-    if (this._eos) {
-        throw new Interrupt('endOfStream')
-    } else {
+    if (this.eos.open == null) {
         this.outbox.push({
             module: 'conduit/caller',
             method: 'invoke',
             cookie: this._cliffhanger.invoke(async()),
             body: body
         })
+    } else {
+        throw new Interrupt('endOfStream')
     }
 })
 
 Caller.prototype._enqueue = cadence(function (async, envelope) {
     if (envelope == null) {
-        this._eos = true
+        this.eos.unlatch()
         this._cliffhanger.cancel(new Interrupt('endOfStream'))
         this.outbox.enqueue(envelope, async())
     } else if (

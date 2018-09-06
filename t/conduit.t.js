@@ -11,6 +11,10 @@ function prove (okay, callback) {
     var Destructible = require('destructible')
     var destructible = new Destructible('t/conduit.t.js')
 
+    // Note that we split our duplex stream into four streams because we want to
+    // simulate the network so we can test receving partial chunks.
+
+    //
     var first = {
         receiver: { outbox: new Procession, inbox: new Procession },
         input: new stream.PassThrough,

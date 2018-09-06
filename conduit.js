@@ -120,12 +120,6 @@ Conduit.prototype._json = cadence(function (async, buffer, start, end) {
             case 'chunk':
                 this._chunk = this._record.object
                 break
-            case 'trailer':
-                console.log('trailered')
-                // var socket = this._sockets[envelope.to]
-                this.receiver.inbox.enqueue(null, async())
-                // delete this._sockets[envelope.to]
-                break
             }
             this._record = new Jacket
         }
@@ -161,17 +155,7 @@ Conduit.prototype._read = cadence(function (async) {
 Conduit.prototype._write = cadence(function (async, envelope) {
     async(function () {
         if (envelope == null) {
-            async(function () {
-                // TODO And then destroy the conduit.
-                this._output.write(JSON.stringify({
-                    module: 'conduit',
-                    method: 'trailer',
-                    body: null
-                }) + '\n', async())
-            }, function () {
-                this._output.destroy()
-                this._closed.unlatch()
-            })
+            this._output.close(async())
         } else {
             var e = envelope
             while (e.body != null && typeof e.body == 'object' && !Buffer.isBuffer(e.body)) {

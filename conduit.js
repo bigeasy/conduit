@@ -155,7 +155,7 @@ Conduit.prototype._read = cadence(function (async) {
 Conduit.prototype._write = cadence(function (async, envelope) {
     async(function () {
         if (envelope == null) {
-            this._output.close(async())
+            this._output.end(async())
         } else {
             var e = envelope
             while (e.body != null && typeof e.body == 'object' && !Buffer.isBuffer(e.body)) {

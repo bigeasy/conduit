@@ -91,7 +91,7 @@ Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {
             this._chunk = null
             this._record = new Jacket
 
-            // Enqueue the parsed evelope.
+            // Enqueue the parsed envelope.
             this.receiver.inbox.enqueue(envelope, async())
         } else {
             this._slices.push(Buffer.from(slice))
@@ -159,6 +159,15 @@ Conduit.prototype._read = cadence(function (async) {
     })
 })
 
+// Nothing more to do about ends and errors here. If things are operating
+// normally, with one half of the duplex closing before the other, then we do
+// want to drain the lagging half normally, waiting for its end-of-stream `null`
+// message. If there is an error, the thrown error will stop the Procession's
+// pumping and put an end writing. An error with a socket is going to probably
+// generate two exceptions, one for read and one for write, unified in a common
+// exception.
+
+//
 Conduit.prototype._write = cadence(function (async, envelope) {
     if (envelope == null) {
         this._output.end(async())

@@ -1,4 +1,4 @@
-require('proof')(4, require('cadence')(prove))
+require('proof')(5, require('cadence')(prove))
 
 function prove (async, okay) {
     var Procession = require('procession')
@@ -10,24 +10,22 @@ function prove (async, okay) {
 
     okay(Multiplexer, 'require')
 
-    var receiver = {
-        outbox: new Procession,
-        inbox: new Procession,
-        destroy: function () {
-            this._callback.call()
+    var receivers = {
+        x: {
+            outbox: new Procession,
+            inbox: new Procession
         },
-        monitor: function (destructible, callback) {
-            destructible.destruct.wait(this, 'destroy')
-            this._callback = destructible.monitor('monitor')
-            callback()
+        y: {
+            outbox: new Procession,
+            inbox: new Procession
         }
     }
     async(function () {
-        destructible.monitor('multiplexer', Multiplexer, { x: receiver }, async())
+        destructible.monitor('multiplexer', Multiplexer, receivers, async())
     }, function (multiplexer) {
         destructible.completed.wait(async())
 
-        var outbox = receiver.inbox.shifter()
+        var outbox = receivers.x.inbox.shifter()
         multiplexer.inbox.push({
             module: 'conduit/multiplexer',
             method: 'envelope',
@@ -36,7 +34,7 @@ function prove (async, okay) {
         })
         okay(outbox.shift(), 2, 'receive')
         var inbox = multiplexer.outbox.shifter()
-        receiver.outbox.push(1)
+        receivers.x.outbox.push(1)
         okay(inbox.shift(), {
             module: 'conduit/multiplexer',
             method: 'envelope',
@@ -46,6 +44,10 @@ function prove (async, okay) {
         multiplexer.inbox.push({})
         multiplexer.inbox.push(null)
         outbox.shift()
-        okay(outbox.endOfStream, 'eos')
+        okay(outbox.endOfStream, 'inbox eos')
+        receivers.y.outbox.push(null)
+        receivers.x.outbox.push(null)
+        inbox.shift()
+        okay(inbox.endOfStream, 'outbox eos')
     })
 }

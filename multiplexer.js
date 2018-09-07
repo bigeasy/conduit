@@ -15,6 +15,11 @@ function Multiplexer (routes) {
     this._eos = 0
 }
 
+// Note that our pumps are not going to error because they are nothing more than
+// copies. We still use `Destructible` to signal that we're coming to a close,
+// but we don't cancel the pumps. We wait for the end-of-stream.
+
+//
 Multiplexer.prototype._monitor = cadence(function (async, destructible, routes) {
     async(function () {
         this.inbox.pump(this, '_dispatch', destructible.monitor('dispatch'))

@@ -114,9 +114,7 @@ Window.prototype._read = cadence(function (async, envelope) {
                 })
                 this._flush = Monotonic.add(this._flush, this._window)
             }
-            // TODO Ah… But, but if the body is null, we are done here. We
-            // shutdown the pipeline.
-            // Forward the body.
+            // Forward the body which might actually be `null` end-of-stream.
             this._receiver.inbox.enqueue(envelope.body, async())
             break
         case 'flush':
@@ -142,16 +140,15 @@ Window.prototype._read = cadence(function (async, envelope) {
 
 //
 Window.prototype._write = function (envelope) {
+    this._queue.push({
+        module: 'conduit/window',
+        method: 'envelope',
+        previous: this._sequence,
+        sequence: this._sequence = Monotonic.increment(this._sequence, 0),
+        body: envelope
+    })
     if (envelope == null) {
         this._queue.push(null)
-    } else {
-        this._queue.push({
-            module: 'conduit/window',
-            method: 'envelope',
-            previous: this._sequence,
-            sequence: this._sequence = Monotonic.increment(this._sequence, 0),
-            body: envelope
-        })
     }
 }
 

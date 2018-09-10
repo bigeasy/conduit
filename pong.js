@@ -1,6 +1,6 @@
-var Procession = require('procession')
 var cadence = require('cadence')
 var coalesce = require('extant')
+var Procession = require('procession')
 
 function Pong (destructible, receiver, options) {
     this._timeout = coalesce(options.timeout, 5000)

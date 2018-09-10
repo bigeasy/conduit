@@ -1,7 +1,6 @@
-var Procession = require('procession')
 var cadence = require('cadence')
 var coalesce = require('extant')
-var Signal = require('signal')
+var Procession = require('procession')
 
 function Ping (destructible, receiver, options) {
     this._timeout = coalesce(options.timeout, 5000)

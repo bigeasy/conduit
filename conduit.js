@@ -26,7 +26,7 @@ var coalesce = require('extant')
 // of its contents was a "separate concern."
 
 //
-function Conduit (destructible, input, output, buffer, receiver) {
+function Conduit (destructible, receiver, input, output, buffer) {
     this._input = new Staccato.Readable(input)
 
     this.destroyed = false
@@ -198,6 +198,6 @@ Conduit.prototype._write = cadence(function (async, envelope) {
     }
 })
 
-module.exports = cadence(function (async, destructible, input, output, receiver, buffer) {
-    return new Conduit(destructible, input, output, buffer, receiver)
+module.exports = cadence(function (async, destructible, receiver, input, output, buffer) {
+    return new Conduit(destructible, receiver, input, output, buffer)
 })

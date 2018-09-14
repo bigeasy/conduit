@@ -53,8 +53,6 @@ Conduit.prototype._consume = cadence(function (async, buffer) {
         this._parse(coalesce(buffer, Buffer.alloc(0)), async())
     }, function () {
         this._read(async())
-    }, function () {
-        this.eos.wait(async())
     })
 })
 

@@ -4,8 +4,6 @@ var cadence = require('cadence')
 // An evented message queue.
 var Procession = require('procession')
 
-var assert = require('assert')
-
 function Socket (controller, identifier, receiver) {
     this._identifier = identifier
     this._controller = controller

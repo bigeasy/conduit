@@ -1,6 +1,3 @@
-// Node.js API.
-var assert = require('assert')
-
 // Control-flow utilities.
 var cadence = require('cadence')
 

@@ -1,6 +1,5 @@
 // Control-flow utilities.
 var cadence = require('cadence')
-var assert = require('assert')
 
 // An evented message queue.
 var Procession = require('procession')

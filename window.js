@@ -36,8 +36,8 @@ function Window (destructible, receiver, options) {
     this.destroyed = false
     destructible.markDestroyed(this)
 
-    this.inbox.pump(this, '_read', destructible.monitor('read'))
-    this._receiver.outbox.pump(this, '_write', destructible.monitor('write'))
+    this.inbox.pump(this, '_read', destructible.monitor('inbox'))
+    this._receiver.outbox.pump(this, '_write', destructible.monitor('outbox'))
 
     this.reconnections = 0
 }

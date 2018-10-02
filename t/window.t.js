@@ -1,6 +1,6 @@
-require('proof')(1, require('cadence')(prove))
+require('proof')(1, prove)
 
-function prove (async, okay) {
+function prove (okay, callback) {
     var Procession = require('procession')
     var Destructible = require('destructible')
 
@@ -16,37 +16,40 @@ function prove (async, okay) {
     }
     var Window = require('../window')
 
-    destructible.completed.wait(async())
+    destructible.completed.wait(callback)
 
-    async([function () {
-        destructible.destroy()
-    }], function () {
-        destructible.monitor('first', Window, nested.first, async())
-        destructible.monitor('second', Window, nested.second, { window: 4 }, async())
-    }, function (first, second) {
-        first.outbox.pump(second.inbox)
-        second.outbox.pump(first.inbox)
+    var cadence = require('cadence')
 
-        second.reconnect()
+    cadence(function (async) {
+        async(function () {
+            destructible.monitor('first', Window, nested.first, async())
+            destructible.monitor('second', Window, nested.second, { window: 4 }, async())
+        }, function (first, second) {
+            first.outbox.pump(second.inbox)
+            second.outbox.pump(first.inbox)
 
-        nested.first.outbox.push(1)
-        okay(shifters.second.inbox.shift(), 1, 'first')
+            second.reconnect()
 
-        second.reconnect()
+            nested.first.outbox.push(1)
+            okay(shifters.second.inbox.shift(), 1, 'first')
 
-        nested.first.outbox.push(2)
-        nested.first.outbox.push(3)
-        nested.first.outbox.push(4)
+            second.reconnect()
 
-        first.inbox.push({})
-        first.inbox.push({
-            module: 'conduit/window',
-            method: 'envelope',
-            sequence: 'a',
-            previous: '9'
+            nested.first.outbox.push(2)
+            nested.first.outbox.push(3)
+            nested.first.outbox.push(4)
+
+            first.inbox.push(null)
+            first.inbox.push({})
+            first.inbox.push({
+                module: 'conduit/window',
+                method: 'envelope',
+                sequence: 'a',
+                previous: '9'
+            })
+
+            nested.first.outbox.push(null)
+            second.hangup()
         })
-
-        nested.first.outbox.push(null)
-        nested.second.outbox.push(null)
-    })
+    })(destructible.monitor('test'))
 }

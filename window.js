@@ -36,11 +36,41 @@ function Window (destructible, receiver, options) {
     this.destroyed = false
     destructible.markDestroyed(this)
 
-    this.inbox.pump(this, '_read', destructible.monitor('inbox'))
+    this._pull(destructible.monitor('inbox'))
     this._receiver.outbox.pump(this, '_write', destructible.monitor('outbox'))
 
     this.reconnections = 0
 }
+
+Window.prototype.hangup = function () {
+    this.inbox.push({
+        module: 'conduit/window',
+        method: 'envelope',
+        body: null
+    })
+    this._receiver.outbox.push(null)
+}
+
+Window.prototype._pull = cadence(function (async) {
+    var connections = async(function () {
+        var shifter = this.inbox.shifter()
+        var envelopes = async(function () {
+            shifter.dequeue(async())
+        }, function (envelope) {
+            if (envelope == null) {
+                return [ envelopes.break ]
+            }
+            async(function () {
+                this._read(envelope, async())
+            }, function (eos) {
+            console.log(envelope, eos)
+                if (eos) {
+                    return [ connections.break ]
+                }
+            })
+        })()
+    })()
+})
 
 Window.prototype.reconnect = function () {
     this.outbox.push({
@@ -74,31 +104,28 @@ Window.prototype.reconnect = function () {
 
 //
 Window.prototype._read = cadence(function (async, envelope) {
-    if (
-        envelope != null &&
-        envelope.module == 'conduit/window'
-    ) {
+    if (envelope.module == 'conduit/window') {
         switch (envelope.method) {
         case 'connect':
+            if (envelope.reconnection !== this.reconnections) {
+                this.reconnect()
+            }
             this._pumper.destroy()
             var reservoir = this._reservoir.shifter()
             this._pumper = this._reservoir.pump(this.outbox)
             this._reservoir = reservoir
-            if (envelope.reconnection !== this.reconnections) {
-                this.reconnect()
-            }
-            break
+            return false
         case 'envelope':
             // If we've seen this one already, don't bother.
             if (Monotonic.compare(this._received, envelope.sequence) >= 0) {
-                return
+                return false
             }
             // We might lose an envelope. We're going to count on this being a
             // break where a conduit reconnect causes the messages to be resent
             // but we could probably request a replay ourselves.
             if (this._received != envelope.previous) {
                 // We maybe could use the sequence we're at as a version number.
-                return
+                return false
             }
             // Note the last received sequence.
             this._received = envelope.sequence
@@ -112,20 +139,24 @@ Window.prototype._read = cadence(function (async, envelope) {
                 this._flush = Monotonic.add(this._flush, this._window)
             }
             // Forward the body which might actually be `null` end-of-stream.
-            this._receiver.inbox.enqueue(envelope.body, async())
+            async(function () {
+                this._receiver.inbox.enqueue(envelope.body, async())
+            }, function () {
+                return envelope.body == null
+            })
             break
         case 'flush':
             // Shift the messages that we've received off of the reservoir.
             for (;;) {
                 var peek = this._reservoir.peek()
                 if (peek == null || peek.sequence == envelope.sequence) {
-                    break
+                    return false
                 }
                 this._reservoir.shift()
             }
-            break
         }
     }
+    return false
 })
 
 // Input into window from nested listener. It is wrapped in an envelope and

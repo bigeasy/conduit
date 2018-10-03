@@ -59,7 +59,6 @@ Window.prototype._pull = cadence(function (async) {
             async(function () {
                 this._read(envelope, async())
             }, function (eos) {
-            console.log(envelope, eos)
                 if (eos) {
                     return [ connections.break ]
                 }

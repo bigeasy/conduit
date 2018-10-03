@@ -43,11 +43,7 @@ function Window (destructible, receiver, options) {
 }
 
 Window.prototype.hangup = function () {
-    this.inbox.push({
-        module: 'conduit/window',
-        method: 'envelope',
-        body: null
-    })
+    this.inbox.push({ module: 'conduit/window', method: 'hangup' })
     this._receiver.outbox.push(null)
 }
 
@@ -106,6 +102,8 @@ Window.prototype.reconnect = function () {
 Window.prototype._read = cadence(function (async, envelope) {
     if (envelope.module == 'conduit/window') {
         switch (envelope.method) {
+        case 'hangup':
+            return true
         case 'connect':
             if (envelope.reconnection !== this.reconnections) {
                 this.reconnect()

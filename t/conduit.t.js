@@ -108,6 +108,7 @@ function prove (okay, callback) {
             setImmediate(async())
         }, function () {
             first.conduit.receiver.outbox.push({})
+            first.conduit.hangup()
         })
     })(destructible.monitor('test'))
 }

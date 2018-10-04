@@ -42,9 +42,14 @@ function Conduit (destructible, receiver, input, output, buffer) {
 
     destructible.markDestroyed(this)
 
-    this.receiver.outbox.pump(this, '_write', destructible.monitor('outbox'))
+    this._outbox = this.receiver.outbox.pump(this, '_write', destructible.monitor('outbox'))
 
     this._consume(buffer, destructible.monitor('inbox'))
+}
+
+Conduit.prototype.hangup = function () {
+    this._outbox.destroy()
+    this._input.destroy()
 }
 
 Conduit.prototype._consume = cadence(function (async, buffer) {

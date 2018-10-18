@@ -1,6 +1,6 @@
 {
     "name":                 "conduit",
-    "version":              "2.13.9",
+    "version":              "2.13.10",
     "description":
 
       "Evented pipelines.",

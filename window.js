@@ -75,6 +75,10 @@ Window.prototype.reconnect = function () {
     })
 }
 
+Window.prototype.disconnect = function () {
+    this._pumper.destroy()
+}
+
 // Why does reconnect work? Well, one side is going to realize that the
 // connection is broken and close it. If it is the client side then it will open
 // a new connection and the server will know to replace it. It will destroy its
@@ -105,11 +109,16 @@ Window.prototype._read = cadence(function (async, envelope) {
             return true
         case 'connect':
             if (envelope.reconnection !== this.reconnections) {
+                this.reconnections = envelope.reconnection - 1
                 this.reconnect()
             }
             this._pumper.destroy()
             var reservoir = this._reservoir.shifter()
-            this._pumper = this._reservoir.pump(this.outbox)
+            var entry
+            while ((entry = this._reservoir.shift()) != null) {
+                this.outbox.push(entry)
+            }
+            this._pumper = this._queue.pump(this.outbox)
             this._reservoir = reservoir
             return false
         case 'envelope':

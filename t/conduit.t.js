@@ -36,11 +36,11 @@ function prove (okay, callback) {
         async([function () {
             destructible.destroy()
         }], function () {
-            destructible.monitor('first', true, Conduit, first.receiver, first.input, first.output, async())
+            destructible.monitor('writer', true, Conduit, first.receiver, first.input, first.output, async())
         }, function (conduit) {
             first.conduit = conduit
         }, function () {
-            destructible.monitor('second', true, Conduit, second.receiver, second.input, second.output, async())
+            destructible.monitor('reader', true, Conduit, second.receiver, second.input, second.output, async())
         }, function (conduit) {
             second.conduit = conduit
         }, function () {

@@ -35,7 +35,7 @@ function prove (async, okay) {
         consumer.enqueue({
             module: 'conduit/consumer',
             method: 'chunk',
-            body: new Buffer('hello, world')
+            body: Buffer.from('hello, world')
         }, async())
     }, function () {
         consumer.enqueue({

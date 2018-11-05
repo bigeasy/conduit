@@ -11,7 +11,7 @@ var Destructible = require('destructible')
 function Multiplexer (routes) {
     this.outbox = new Procession
     this.inbox = new Procession
-    this._routes = {}
+    this.conduits = {}
     this._eos = 0
 }
 
@@ -24,7 +24,7 @@ Multiplexer.prototype._monitor = cadence(function (async, destructible, routes) 
     async(function () {
         this.inbox.pump(this, '_dispatch', destructible.monitor('dispatch'))
         async.forEach(function (qualifier) {
-            var receiver = this._routes[qualifier] = routes[qualifier]
+            var receiver = this.conduits[qualifier] = routes[qualifier]
             receiver.outbox.pump(this, function (envelope) {
                 this._envelop(qualifier, envelope)
             }, destructible.monitor([ 'receiver', 'envelop', qualifier ]))
@@ -37,20 +37,20 @@ Multiplexer.prototype._monitor = cadence(function (async, destructible, routes) 
 Multiplexer.prototype._dispatch = cadence(function (async, envelope) {
     if (envelope == null) {
         async.forEach(function (qualifier) {
-            this._routes[qualifier].inbox.enqueue(null, async())
-        })(Object.keys(this._routes))
+            this.conduits[qualifier].inbox.enqueue(null, async())
+        })(Object.keys(this.conduits))
     } else if (
         envelope.module == 'conduit/multiplexer' &&
         envelope.method == 'envelope' &&
-        this._routes[envelope.qualifier] != null
+        this.conduits[envelope.qualifier] != null
     ) {
-        this._routes[envelope.qualifier].inbox.enqueue(envelope.body, async())
+        this.conduits[envelope.qualifier].inbox.enqueue(envelope.body, async())
     }
 })
 
 Multiplexer.prototype._envelop = function (qualifier, envelope) {
     if (envelope == null) {
-        if (++this._eos === Object.keys(this._routes).length) {
+        if (++this._eos === Object.keys(this.conduits).length) {
             this.outbox.push(null)
         }
     } else {

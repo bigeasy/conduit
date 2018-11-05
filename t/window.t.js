@@ -48,8 +48,8 @@ function prove (okay, callback) {
                 previous: '9'
             })
 
-            nested.first.outbox.push(null)
             second.hangup()
+            nested.first.outbox.push(null)
         })
     })(destructible.monitor('test'))
 }

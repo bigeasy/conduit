@@ -75,9 +75,11 @@ Window.prototype.reconnect = function () {
     })
 }
 
+/*
 Window.prototype.disconnect = function () {
     this._pumper.destroy()
 }
+*/
 
 // Why does reconnect work? Well, one side is going to realize that the
 // connection is broken and close it. If it is the client side then it will open

@@ -18,7 +18,7 @@ function Server (destructible, connect) {
     this.outbox = new Procession
     this.inbox = new Procession
 
-    this.inbox.pump(this, '_receive', destructible.monitor('receive'))
+    this.inbox.pump(this, '_receive').run(destructible.monitor('receive'))
 
     this.turnstile = new Turnstile
     this._requests = new Turnstile.Queue(this, '_request', this.turnstile)
@@ -105,7 +105,7 @@ Server.prototype._receive = cadence(function (async, envelope) {
                 if (envelope == null) {
                     this._close(enqueue.identifier)
                 }
-            }, this._destructible.monitor([ 'socket', enqueue.identifier ], true))
+            }).run(this._destructible.monitor([ 'socket', enqueue.identifier ], true))
         } else {
             enqueue.outbox = socket.outbox = []
         }

@@ -1,10 +1,12 @@
 require('proof')(1, prove)
 
 function prove (okay, callback) {
+    var abend = require('abend')
+
     var Destructible = require('destructible')
 
     var destructible = {
-        both: new Destructible('t/ping.t'),
+        both: new Destructible(3000, 't/ping.t'),
         ping: new Destructible('t/ping.t/ping'),
         pong: new Destructible('t/ping.t/pong')
     }
@@ -42,18 +44,20 @@ function prove (okay, callback) {
             destructible.ping.monitor('ping', Ping, receivers.ping, { timeout: 1000 }, async())
             destructible.pong.monitor('pong', Pong, receivers.pong, { timeout: 1000 }, async())
         }, function (ping, pong) {
-            var pinger = ping.outbox.pump(pong.inbox)
-            var ponger = pong.outbox.pump(ping.inbox)
+            var pinger = ping.outbox.pump(pong.inbox, 'enqueue').run(abend)
+            var ponger = pong.outbox.pump(ping.inbox, 'enqueue').run(abend)
             async(function () {
-                setTimeout(async(), 1500)
+                setTimeout(async(), 500)
             }, function () {
-                pinger.destroy()
-                ponger.destroy()
+                ping.stop()
+                ping.stop()
                 okay(true, 'okay')
                 setTimeout(async(), 1500)
             }, function () {
                 ping.inbox.push(null)
                 pong.inbox.push(null)
+                ping.outbox.push(null)
+                pong.outbox.push(null)
             })
         })
     })(destructible.both.monitor('test'))

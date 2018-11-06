@@ -25,7 +25,7 @@ function Caller (destructible) {
 }
 
 Caller.prototype.monitor = cadence(function (async) {
-    this.inbox.pump(this, '_enqueue', this._destructible.monitor('pump'))
+    this.inbox.pump(this, '_enqueue').run(this._destructible.monitor('pump'))
     return [ this ]
 })
 

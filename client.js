@@ -18,7 +18,7 @@ function Client (destructible) {
     this.inbox = new Procession
     this.outbox = new Procession
 
-    this.inbox.pump(this, '_receive', destructible.monitor('receive'))
+    this.inbox.pump(this, '_receive').run(destructible.monitor('receive'))
 
     this._destructible = destructible
 
@@ -50,7 +50,7 @@ Client.prototype.connect = function (request) {
             if (envelope == null) {
                 this._close(identifier)
             }
-        }, this._destructible.monitor([ 'socket', identifier ], true))
+        }).run(this._destructible.monitor([ 'socket', identifier ], true))
     } else {
         outbox = []
     }

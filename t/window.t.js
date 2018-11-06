@@ -1,6 +1,8 @@
 require('proof')(1, prove)
 
 function prove (okay, callback) {
+    var abend = require('abend')
+
     var Procession = require('procession')
     var Destructible = require('destructible')
 
@@ -25,8 +27,8 @@ function prove (okay, callback) {
             destructible.monitor('first', Window, nested.first, async())
             destructible.monitor('second', Window, nested.second, { window: 4 }, async())
         }, function (first, second) {
-            first.outbox.pump(second.inbox)
-            second.outbox.pump(first.inbox)
+            first.outbox.pump(second.inbox, 'enqueue').run(abend)
+            second.outbox.pump(first.inbox, 'enqueue').run(abend)
 
             second.reconnect()
 

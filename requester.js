@@ -56,7 +56,7 @@ Requester.prototype._request = cadence(function (async, destructible, request, r
         body: header
     })
     var consumer = new Consumer(response, 'conduit/middleware')
-    _response.inbox.pump(consumer, 'enqueue', destructible.monitor('consumer'))
+    _response.inbox.pump(consumer, 'enqueue').run(destructible.monitor('consumer'))
     Sender(request, _response.outbox, 'conduit/requester', async())
 })
 

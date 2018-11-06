@@ -42,7 +42,7 @@ function Conduit (destructible, receiver, input, output, buffer) {
 
     destructible.markDestroyed(this)
 
-    this._outbox = this.receiver.outbox.pump(this, '_write', destructible.monitor('outbox'))
+    this._outbox = this.receiver.outbox.pump(this, '_write').run(destructible.monitor('outbox'))
 
     this._consume(buffer, destructible.monitor('inbox'))
 }

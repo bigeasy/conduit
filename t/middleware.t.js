@@ -38,8 +38,8 @@ function prove (okay, callback) {
                 middleware.request(header, inbox, outbox)
             }), async())
         }, function (client, server, requester) {
-            client.outbox.pump(server.inbox)
-            server.outbox.pump(client.inbox)
+            client.outbox.pump(server.inbox, 'enqueue').run(abend)
+            server.outbox.pump(client.inbox, 'enqueue').run(abend)
             destructible.destruct.wait(client.inbox, 'end')
             destructible.destruct.wait(server.inbox, 'end')
             async(function () {

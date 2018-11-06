@@ -13,6 +13,8 @@ var coalesce = require('extant')
 // Do nothing.
 var noop = require('nop')
 
+var abend = require('abend')
+
 function Window (destructible, receiver, options) {
     this.outbox = new Procession
     this.inbox = new Procession
@@ -24,7 +26,7 @@ function Window (destructible, receiver, options) {
 
     // TODO Hate the world `reconnect`.
     // Pump to nowhere until we get our first reconnect message.
-    this._pumper = this._queue.pump(new Procession)
+    this._pumper = this._queue.pump(new Procession, 'enqueue').run(abend)
 
     this._received = '0'
     this._sequence = '0'
@@ -37,7 +39,7 @@ function Window (destructible, receiver, options) {
     destructible.markDestroyed(this)
 
     this._pull(destructible.monitor('inbox'))
-    this._receiver.outbox.pump(this, '_write', destructible.monitor('outbox'))
+    this._receiver.outbox.pump(this, '_write').run(destructible.monitor('outbox'))
 
     this.reconnections = 0
 }
@@ -120,7 +122,11 @@ Window.prototype._read = cadence(function (async, envelope) {
             while ((entry = this._reservoir.shift()) != null) {
                 this.outbox.push(entry)
             }
-            this._pumper = this._queue.pump(this.outbox)
+            this._pumper = this._queue.pump(this, function (envelope, callback) {
+                if (envelope != null) {
+                    this.outbox.enqueue(envelope, callback)
+                }
+            }).run(abend)
             this._reservoir = reservoir
             return false
         case 'envelope':

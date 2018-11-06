@@ -47,12 +47,12 @@ function prove (okay, callback) {
             }), async())
             destructible.monitor('client', Client, async())
         }, function (server, client) {
-            client.outbox.pump(server.inbox)
-            server.outbox.pump(client.inbox)
+            client.outbox.pump(server.inbox, 'enqueue').run(abend)
+            server.outbox.pump(client.inbox, 'enqueue').run(abend)
             server.inbox.push({})
             client.inbox.push({})
-            server.inbox.pump(function (envelope) { console.log('server', envelope) }, abend)
-            client.inbox.pump(function (envelope) { console.log('client', envelope) }, abend)
+            server.inbox.pump(function (envelope) { console.log('server', envelope) }).run(abend)
+            client.inbox.pump(function (envelope) { console.log('client', envelope) }).run(abend)
 
             async(function () {
                 client.connect({ method: 'call' }).inbox.dequeue(async())

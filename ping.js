@@ -1,31 +1,51 @@
 var cadence = require('cadence')
 var coalesce = require('extant')
 var Procession = require('procession')
+var abend = require('abend')
 
 function Ping (destructible, receiver, options) {
     this._timeout = coalesce(options.timeout, 5000)
-    this._interval = setInterval(this._ping.bind(this), coalesce(options.ping, this._timeout / 2))
+    this._frequency = coalesce(options.ping, this._timeout / 2)
     this._lastPingAt = Date.now()
-    destructible.destruct.wait(this, function () { clearInterval(this._interval) })
 
     this._destructible = destructible
+
+    this._checker = setInterval(this._check.bind(this), coalesce(this._frequency, this._timeout / 2))
+    this._destructible.destruct.wait(this, function () { clearInterval(this._checker) })
 
     this.outbox = new Procession
     this.inbox = new Procession
 
-    receiver.outbox.pump(this.outbox)
+    receiver.outbox.pump(this.outbox, 'enqueue').run(abend)
 
-    this.inbox.pump(this, '_enqueue', destructible.monitor('inbox'))
+    this.inbox.pump(this, '_enqueue').run(destructible.monitor('inbox'))
 
     this.receiver = receiver
+
+    this.start()
+}
+
+Ping.prototype.start = function () {
+    this.stop()
+    this._pinger = setInterval(this._ping.bind(this), coalesce(this._frequency, this._timeout / 2))
+    this._stopper = this._destructible.destruct.wait(this, function () { clearInterval(this._pinger) })
+}
+
+Ping.prototype.stop = function () {
+    if (this._stopper != null) {
+        this._destructible.destruct.cancel(this._stopper)()
+        this._stopper = null
+    }
+}
+
+Ping.prototype._check = function () {
+    if (Date.now() - this._lastPingAt > this._timeout) {
+        this._destructible.destroy()
+    }
 }
 
 Ping.prototype._ping = function () {
-    if (Date.now() - this._lastPingAt > this._timeout) {
-        this._destructible.destroy()
-    } else {
-        this.outbox.push({ module: 'conduit/ping', method: 'ping' })
-    }
+    this.outbox.push({ module: 'conduit/ping', method: 'ping' })
 }
 
 Ping.prototype._enqueue = cadence(function (async, envelope) {

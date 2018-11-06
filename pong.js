@@ -1,6 +1,7 @@
 var cadence = require('cadence')
 var coalesce = require('extant')
 var Procession = require('procession')
+var abend = require('abend')
 
 function Pong (destructible, receiver, options) {
     this._timeout = coalesce(options.timeout, 5000)
@@ -16,8 +17,9 @@ function Pong (destructible, receiver, options) {
 
     this.receiver = receiver
 
-    receiver.outbox.pump(this.outbox)
-    this.inbox.pump(this, '_enqueue', destructible.monitor('inbox'))
+    receiver.outbox.pump(this.outbox, 'enqueue').run(abend)
+
+    this.inbox.pump(this, '_enqueue').run(destructible.monitor('inbox'))
 }
 
 Pong.prototype._checkTimeout = function () {

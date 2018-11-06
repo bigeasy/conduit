@@ -22,12 +22,12 @@ function Multiplexer (routes) {
 //
 Multiplexer.prototype._monitor = cadence(function (async, destructible, routes) {
     async(function () {
-        this.inbox.pump(this, '_dispatch', destructible.monitor('dispatch'))
+        this.inbox.pump(this, '_dispatch').run(destructible.monitor('dispatch'))
         async.forEach(function (qualifier) {
             var receiver = this.conduits[qualifier] = routes[qualifier]
             receiver.outbox.pump(this, function (envelope) {
                 this._envelop(qualifier, envelope)
-            }, destructible.monitor([ 'receiver', 'envelop', qualifier ]))
+            }).run(destructible.monitor([ 'receiver', 'envelop', qualifier ]))
         })(Object.keys(routes))
     }, function () {
         return [ this ]

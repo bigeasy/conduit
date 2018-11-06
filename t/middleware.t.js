@@ -1,6 +1,6 @@
-require('proof')(1, require('cadence')(prove))
+require('proof')(1, prove)
 
-function prove (async, okay) {
+function prove (okay, callback) {
     var Procession = require('procession')
 
     var Client = require('../client')
@@ -20,51 +20,47 @@ function prove (async, okay) {
 
     var destructible = new Destructible(1000, 't/middleware')
 
-    var server
+    destructible.completed.wait(callback)
 
-    async([function () {
-        destructible.completed.wait(async())
+    var cadence = require('cadence')
+    var delta = require('delta')
+
+    cadence(function (async) {
         async(function () {
-            var delta = require('delta')
-
-            async([function () {
-                destructible.destroy()
-            }], function () {
-                destructible.monitor('client', Client, async())
-                destructible.monitor('middleware', Middleware, function (request, response) {
-                    response.writeHead(200, { 'content-type': 'text/plain', connection: 'close' })
-                    response.end('hello, world')
-                }, async())
-            }, function (client, middleware) {
-                async(function () {
-                    destructible.monitor('server', Server, middleware, 'socket', async())
-                }, function (server) {
-                    client.outbox.pump(server.inbox)
-                    server.outbox.pump(client.inbox)
-                    destructible.destruct.wait(function () { client.inbox.push(null) })
-                    destructible.destruct.wait(function () { server.inbox.push(null) })
-                }, function () {
-                    destructible.monitor('requester', Requester, client, function () {}, async())
-                }, function (requester) {
-                    server = http.createServer(function (request, response) {
-                        requester.request(request, response)
-                    })
-                    destroyer(server)
-                    server.listen(8888, '127.0.0.1', async())
-                }, function () {
-                    delta(destructible.monitor('http')).ee(server).on('close')
-                    destructible.destruct.wait(server, 'destroy')
-                    ua.fetch({
-                        url: 'http://127.0.0.1:8888',
-                        timeout: 4000,
-                        parse: 'text'
-                    }, async())
-                }, function (body, response) {
-                    okay(body, 'hello, world', 'index')
+            destructible.monitor('middleware', Middleware, function (request, response) {
+                response.writeHead(200, { 'content-type': 'text/plain', connection: 'close' })
+                response.end('hello, world')
+            }, async())
+        }, function (middleware) {
+            destructible.monitor('client', Client, async())
+            destructible.monitor('server', Server, cadence(function (async, header, inbox, outbox) {
+                console.log(header)
+                middleware.request(header, inbox, outbox)
+            }), async())
+        }, function (client, server, requester) {
+            client.outbox.pump(server.inbox)
+            server.outbox.pump(client.inbox)
+            destructible.destruct.wait(client.inbox, 'end')
+            destructible.destruct.wait(server.inbox, 'end')
+            async(function () {
+                destructible.monitor('requester', Requester, client, function () {}, async())
+            }, function (requester) {
+                server = http.createServer(function (request, response) {
+                    requester.request(request, response)
                 })
+                destroyer(server)
+                server.listen(8888, '127.0.0.1', async())
+            }, function () {
+                delta(destructible.monitor('http')).ee(server).on('close')
+                destructible.destruct.wait(server, 'destroy')
+                ua.fetch({
+                    url: 'http://127.0.0.1:8888',
+                    timeout: 4000,
+                    parse: 'text'
+                }, async())
+            }, function (body, response) {
+                okay(body, 'hello, world', 'index')
             })
         })
-    }, function (error) {
-        throw error
-    }])
+    })(destructible.monitor('test'))
 }

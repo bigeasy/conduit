@@ -27,6 +27,7 @@
                             "extant":                       "1.0.x",
                             "interlocutor":                 "0.5.x",
                             "interrupt":                    "6.3.x",
+                            "magazine":                     "3.2.x",
                             "monotonic":                    "3.0.x",
                             "nascent.jacket":               "0.0.x",
                             "nop":                          "1.0.x",

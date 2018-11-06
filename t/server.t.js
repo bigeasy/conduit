@@ -1,10 +1,12 @@
-require('proof')(5, require('cadence')(prove))
+require('proof')(7, prove)
 
-function prove (async, okay) {
+function prove (okay, callback) {
     var Procession = require('procession')
     var Destructible = require('destructible')
 
     var destructible = new Destructible('t/server.t.js')
+
+    destructible.completed.wait(callback)
 
     var Client = require('../client')
     var Server = require('../server')
@@ -13,68 +15,71 @@ function prove (async, okay) {
 
     var visited = false
 
-    async([function () {
-        destructible.destroy()
-    }], function () {
-        destructible.monitor('server', Server, function (header, callback) {
-            var receiver = { outbox: new Procession, inbox: new Procession }
-            if (!visited) {
-                visited = true
-                okay(header, 1, 'header')
-                var shifter = receiver.inbox.pump(function (envelope) {
-                    okay(envelope, 2, 'envelope')
-                    receiver.outbox.push(1)
-                    receiver.outbox.push(null)
-                    shifter.destroy()
-                }, abend)
-            }
-            callback(null, receiver)
-        }, async())
-        destructible.monitor('client', Client, async())
-    }, function (server, client) {
-        client.outbox.pump(server.inbox)
-        server.outbox.pump(client.inbox)
-        server.inbox.pump(function (envelope) {
-            console.log('zz', envelope)
-        }, abend)
+    var cadence = require('cadence')
 
-        var receiver = { outbox: new Procession, inbox: new Procession }
-        var inbox = receiver.inbox.shifter()
+    cadence(function (async) {
         async(function () {
-            client.connect(receiver, 1, async())
-        }, function () {
-            receiver.outbox.push(2)
-
-            client.inbox.push({})
+            destructible.monitor('server', Server, cadence(function (async, header, inbox, outbox) {
+                switch (header.method) {
+                case 'call':
+                    return [ 1 ]
+                    break
+                case 'stream':
+                    async(function () {
+                        inbox.dequeue(async())
+                    }, function (value) {
+                        okay(value, 1, 'received')
+                        inbox.dequeue(async())
+                    }, function (value) {
+                        okay(value, null, 'received eos')
+                        outbox.push(1)
+                        outbox.push(null)
+                    })
+                    break
+                case 'hangup':
+                    async(function () {
+                        inbox.dequeue(async())
+                    }, function (value) {
+                        okay(value, null, 'hungup server')
+                    })
+                    break
+                }
+            }), async())
+            destructible.monitor('client', Client, async())
+        }, function (server, client) {
+            client.outbox.pump(server.inbox)
+            server.outbox.pump(client.inbox)
             server.inbox.push({})
+            client.inbox.push({})
+            server.inbox.pump(function (envelope) { console.log('server', envelope) }, abend)
+            client.inbox.pump(function (envelope) { console.log('client', envelope) }, abend)
 
-            okay(inbox.shift(), 1, 'server to client')
-            receiver.outbox.push(null)
-
-            okay({
-                client: Object.keys(client._sockets).length,
-                server: Object.keys(server._sockets).length
-            }, {
-                client: 0,
-                server: 0
-            }, 'sockets gone')
-        }, function () {
             async(function () {
-                console.log('connecting again')
-                client.connect({ outbox: new Procession, inbox: new Procession }, null, async())
+                client.connect({ method: 'call' }).inbox.dequeue(async())
+            }, function (called) {
+                okay(called, 1, 'called')
+                // TODO Why not 'outbox' ??
+                var request = client.connect({ method: 'stream', inbox: true, outbox: true })
+                request.outbox.push(1)
+                request.outbox.push(null)
+                async(function () {
+                    request.inbox.dequeue(async())
+                }, function (value) { okay(value, 1, 'sent')
+                    request.inbox.dequeue(async())
+                }, function (value) {
+                    okay(value, null, 'sent eos')
+                })
             }, function () {
-                console.log('connected again')
-                client.inbox.push(null)
-                server.inbox.push(null)
-
-                okay({
-                    client: Object.keys(client._sockets).length,
-                    server: Object.keys(server._sockets).length
-                }, {
-                    client: 0,
-                    server: 0
-                }, 'sockets gone on null')
+                var request = client.connect({ method: 'hangup', inbox: true, outbox: true })
+                async(function () {
+                    request.inbox.dequeue(async())
+                    server.inbox.push(null)
+                    client.inbox.push(null)
+                }, function (value) {
+                    okay(value, null, 'hungup client')
+                })
+            }, function () {
             })
         })
-    })
+    })(destructible.monitor('test'))
 }

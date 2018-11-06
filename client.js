@@ -7,57 +7,102 @@ var Monotonic = require('monotonic').asString
 // An evented message queue.
 var Procession = require('procession')
 
-var Socket = require('./socket')
-
-var util = require('util')
-
-var assert = require('assert')
+var Cache = require('magazine')
 
 function Client (destructible) {
     this.monitoring = false
     this.destroyed = false
 
     this._identifier = '0'
-    this._sockets = {}
 
     this.inbox = new Procession
     this.outbox = new Procession
 
-    this.inbox.pump(this, '_enqueue', destructible.monitor('read'))
+    this.inbox.pump(this, '_receive', destructible.monitor('receive'))
 
     this._destructible = destructible
+
+    this._sockets = new Cache().createMagazine()
 }
 
-Client.prototype.connect = cadence(function (async, receiver, header) {
-    var vargs = Array.prototype.slice.call(arguments, 1)
-    var identifier = this._identifier = Monotonic.increment(this._identifier, 0)
-    async(function () {
-        var socket = this._sockets[identifier] = new Socket(this, identifier, receiver)
-        async(function () {
-            this._destructible.monitor([ 'socket', identifier ], true, socket, 'monitor', async())
-        }, function () {
+Client.prototype._close = function (identifier) {
+    var cartridge = this._sockets.hold(identifier, { open: 1, outbox: [] })
+    if (--cartridge.value.open == 0) {
+        cartridge.value.outbox.push(null)
+        cartridge.remove()
+    } else {
+        cartridge.release()
+    }
+}
+
+Client.prototype.connect = function (request) {
+    var response = { inbox: null, outbox: null }, inbox = null, outbox = null, open = 1
+    if (request.outbox) {
+        open++
+        outbox = response.outbox = new Procession
+        outbox.pump(this, function (envelope) {
             this.outbox.push({
                 module: 'conduit/client',
-                method: 'connect',
+                method: 'envelope',
                 identifier: identifier,
-                body: header
+                body: envelope
             })
-        })
+            if (envelope == null) {
+                this._close(identifier)
+            }
+        }, this._destructible.monitor([ 'socket', identifier ], true))
+    } else {
+        outbox = []
+    }
+    inbox = new Procession
+    response.inbox = inbox.shifter()
+    var identifier = this._identifier = Monotonic.increment(this._identifier, 0)
+    var socket = {
+        open: open,
+        request: request,
+        inbox: inbox,
+        outbox: outbox
+    }
+    this._sockets.put(identifier, socket)
+    this.outbox.push({
+        module: 'conduit/client',
+        method: 'connect',
+        identifier: identifier,
+        body: request
     })
-})
+    return response
+}
 
-Client.prototype._enqueue = cadence(function (async, envelope) {
+Client.prototype.expire = function (before) {
+    var iterator = this._sockets.iterator()
+    while (!iterator.end && iterator.when < before) {
+        var socket = this._sockets.remove(iterator.key)
+        socket.inbox.push(null)
+        socket.outbox.push(null)
+        iterator.previous()
+    }
+}
+
+Client.prototype._receive = cadence(function (async, envelope) {
     if (envelope == null) {
         this.outbox = new Procession // acts as a null sink for any writes
-        async.forEach(function (identifier) {
-            this._sockets[identifier]._receive(null, async())
-            delete this._sockets[identifier]
-        })(Object.keys(this._sockets))
+        this.expire(Infinity)
     } else if (
-        envelope.module == 'conduit/socket' &&
+        envelope.module == 'conduit/server' &&
+        envelope.method == 'response'
+    ) {
+        var cartridge = this._sockets.hold(envelope.identifier, null)
+        cartridge.value.inbox.push(envelope.body)
+        cartridge.value.inbox.push(null)
+        cartridge.remove()
+    } else if (
+        envelope.module == 'conduit/server' &&
         envelope.method == 'envelope'
     ) {
-        this._sockets[envelope.identifier]._receive(envelope.body, async())
+        this._sockets.get(envelope.identifier).inbox.push(envelope.body)
+        if (envelope.body == null) {
+            this._close(envelope.identifier)
+        }
     }
 })
 

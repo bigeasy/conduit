@@ -1,114 +1,85 @@
-require('proof')(8, prove)
+require('proof')(7, prove)
 
 function prove (okay, callback) {
-    var Conduit = require('..')
-    var stream = require('stream')
-    var abend = require('abend')
     var Procession = require('procession')
-
-    var delta = require('delta')
-
     var Destructible = require('destructible')
-    var destructible = new Destructible('t/conduit.t.js')
 
-    // Note that we split our duplex stream into four streams because we want to
-    // simulate the network so we can test receving partial chunks.
-
-    //
-    var first = {
-        receiver: { outbox: new Procession, inbox: new Procession },
-        input: new stream.PassThrough,
-        output: new stream.PassThrough
-    }
-    var second = {
-        receiver: { outbox: new Procession, inbox: new Procession },
-        input: new stream.PassThrough,
-        output: new stream.PassThrough
-    }
+    var destructible = new Destructible('t/server.t.js')
 
     destructible.completed.wait(callback)
+
+    var Conduit = require('../conduit')
+
+    var abend = require('abend')
+
+    var visited = false
 
     var cadence = require('cadence')
 
     cadence(function (async) {
-        var buffer = Buffer.from('qwertyuiop')
-        var shifter
-        async([function () {
-            destructible.destroy()
-        }], function () {
-            destructible.monitor('writer', true, Conduit, first.receiver, first.input, first.output, async())
-        }, function (conduit) {
-            first.conduit = conduit
-        }, function () {
-            destructible.monitor('reader', true, Conduit, second.receiver, second.input, second.output, async())
-        }, function (conduit) {
-            second.conduit = conduit
-        }, function () {
-            first.conduit.receiver.outbox.push({
-                module: 'conduit',
-                method: 'example',
-                body: { body: buffer }
+        async(function () {
+            destructible.monitor('server', Conduit, cadence(function (async, header, inbox, outbox) {
+                switch (header.method) {
+                case 'call':
+                    return [ 1 ]
+                    break
+                case 'stream':
+                    async(function () {
+                        inbox.dequeue(async())
+                    }, function (value) {
+                        okay(value, 1, 'received')
+                        inbox.dequeue(async())
+                    }, function (value) {
+                        okay(value, null, 'received eos')
+                        outbox.push(1)
+                        outbox.push(null)
+                    })
+                    break
+                case 'hangup':
+                    async(function () {
+                        inbox.dequeue(async())
+                    }, function (value) {
+                        okay(value, null, 'hungup server')
+                    })
+                    break
+                }
+            }), async())
+            destructible.monitor('client', Conduit, null, async())
+        }, function (server, client) {
+            client.outbox.pump(server.inbox, 'enqueue').run(abend)
+            server.outbox.pump(client.inbox, 'enqueue').run(abend)
+            server.inbox.push({})
+            client.inbox.push({})
+            server.inbox.pump(function (envelope) { console.log('server', envelope) }).run(abend)
+            client.inbox.pump(function (envelope) { console.log('client', envelope) }).run(abend)
+
+            async(function () {
+                client.connect({ method: 'call' }).inbox.dequeue(async())
+            }, function (called) {
+                okay(called, 1, 'called')
+                // TODO Why not 'outbox' ??
+                var request = client.connect({ method: 'stream', inbox: true, outbox: true })
+                request.outbox.push(1)
+                request.outbox.push(null)
+                async(function () {
+                    request.inbox.dequeue(async())
+                }, function (value) { okay(value, 1, 'sent')
+                    request.inbox.dequeue(async())
+                }, function (value) {
+                    okay(value, null, 'sent eos')
+                })
+            }, function () {
+                var request = client.connect({ method: 'hangup', inbox: true, outbox: true })
+                async(function () {
+                    request.inbox.dequeue(async())
+                    console.log(request.inbox.procession)
+                    server.inbox.push(null)
+                    console.log(client._sockets.iterator().key)
+                    client.inbox.push(null)
+                }, function (value) {
+                    okay(value, null, 'hungup client')
+                })
             })
-            buffer = first.output.read()
-
-            shifter = second.conduit.receiver.inbox.shifter()
-
-            second.input.write(buffer.slice(0, 10))
-            setImmediate(async())
-        }, function () {
-            second.input.write(buffer.slice(10, 120))
-            setImmediate(async())
-        }, function () {
-            second.input.write(buffer.slice(120))
-            setImmediate(async())
-        }, function () {
-            shifter.dequeue(async())
-        }, function (shifted) {
-            shifted.body.body = shifted.body.body.toString()
-            okay(shifted, {
-                module: 'conduit', method: 'example',
-                body: { body: 'qwertyuiop' }
-            }, 'piecemeal')
-
-            okay(shifter.shift(), null, 'empty')
-            second.input.write(buffer)
-
-            shifter.dequeue(async())
-        }, function (shifted) {
-            shifted.body.body = shifted.body.body.toString()
-            okay(shifted, {
-                module: 'conduit', method: 'example',
-                body: { body: 'qwertyuiop' }
-            }, 'full buffer')
-
-            first.conduit.receiver.outbox.push(1)
-            second.input.write(first.output.read())
-
-            shifter.dequeue(async())
-        }, function (shifted) {
-            okay(shifted, 1, 'envelope')
-
-            delta(async()).ee(first.output).on('readable')
-            first.conduit.receiver.outbox.push(null)
-        }, function () {
-            delta(async()).ee(first.output).on('end')
-            okay(first.output.read(), null, 'first closed')
-        }, function () {
-            okay(true, 'first end')
-            delta(async()).ee(second.output).on('readable')
-            second.conduit.receiver.outbox.push(null)
-        }, function () {
-            delta(async()).ee(second.output).on('end')
-            okay(second.output.read(), null, 'second closed')
-        }, function () {
-            okay(true, 'second end')
-        }, function () {
-            first.input.end()
-            second.input.end()
-            setImmediate(async())
-        }, function () {
-            first.conduit.receiver.outbox.push({})
-            first.conduit.hangup()
         })
     })(destructible.monitor('test'))
 }

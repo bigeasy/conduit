@@ -10,7 +10,6 @@ var Procession = require('procession')
 var Cache = require('magazine')
 
 function Client (destructible) {
-    this.monitoring = false
     this.destroyed = false
 
     this._identifier = '0'

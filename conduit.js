@@ -4,202 +4,184 @@ var cadence = require('cadence')
 // An evented message queue.
 var Procession = require('procession')
 
-// Evented stream reading and writing.
-var Staccato = require('staccato')
+// Contextualized callbacks and event handlers.
+var Operation = require('operation')
 
-// JSON for use in packets.
-var Jacket = require('nascent.jacket')
+var Turnstile = require('turnstile')
+Turnstile.Queue = require('turnstile/queue')
 
-// Orderly destruction of complicated objects.
-var Destructible = require('destructible')
+var Cache = require('magazine')
 
-// Evented semaphore.
-var Signal = require('signal')
+var Monotonic = require('monotonic').asString
 
-// Return the first not null-like value.
-var coalesce = require('extant')
+function Conduit (destructible, vargs) {
+    this._connect = vargs[0] != null ? new Operation(vargs) : null
 
-// Once we get our hands on the `input` and `output` we own them, we're going to
-// use `end` to indicate an end of stream. At the outset I'd hand a muddled
-// imagining of external management of the stream, so that this interpretation
-// of its contents was a "separate concern."
+    this.outbox = new Procession
+    this.inbox = new Procession
 
-//
-function Conduit (destructible, receiver, input, output, buffer) {
-    this._input = new Staccato.Readable(input)
+    this.inbox.pump(this, '_receive').run(destructible.monitor('receive'))
 
-    this.destroyed = false
+    this.turnstile = new Turnstile
+    this._requests = new Turnstile.Queue(this, '_request', this.turnstile)
 
-    this._output = new Staccato.Writable(output)
+    this.turnstile.listen(destructible.monitor('turnstile'))
+    destructible.destruct.wait(this.turnstile, 'close')
 
-    this.receiver = receiver
+    this._destructible = destructible
+    this._identifier = '0'
 
-    this._slices = []
-
-    this._record = new Jacket
-
-    this.eos = new Signal
-
-    destructible.markDestroyed(this)
-
-    this._outbox = this.receiver.outbox.pump(this, '_write').run(destructible.monitor('outbox'))
-
-    this._consume(buffer, destructible.monitor('inbox'))
+    this._sockets = new Cache().createMagazine()
 }
 
-Conduit.prototype.hangup = function () {
-    this._outbox.destroy()
-    this._input.destroy()
-}
-
-Conduit.prototype._consume = cadence(function (async, buffer) {
+Conduit.prototype._request = cadence(function (async, envelope) {
+    var enqueued = envelope.body
     async(function () {
-        this._parse(coalesce(buffer, Buffer.alloc(0)), async())
-    }, function () {
-        this._read(async())
+        this._connect.call(null, enqueued.request, enqueued.inbox, enqueued.outbox, async())
+    }, function (response) {
+        if (!enqueued.request.inbox) {
+            this.outbox.push({
+                module: 'conduit/server',
+                method: 'response',
+                identifier: enqueued.identifier,
+                body: response
+            })
+            this._close('there:' + enqueued.identifier)
+        }
     })
 })
 
-Conduit.prototype._buffer = cadence(function (async, buffer, start, end) {
-    async(function () {
-        var length = Math.min(buffer.length - start, this._chunk.length)
-        var slice = buffer.slice(start, start + length)
-        start += length
-        this._chunk.length -= length
-        // If chunk length is zero we have gathered up all of our chunks so
-        // assemble them, but if not then save the slice for eventual assembly.
-
-        //
-        if (this._chunk.length === 0) {
-            // If we've gathered slices, assemble them, otherwise make a copy of
-            // the buffered slice (TODO what? but why? is it necessary?)
-            if (this._slices.length == 0) {
-                slice = Buffer.from(slice)
-            } else {
-                this._slices.push(slice)
-                slice = Buffer.concat(this._slices)
-                this._slices.length = 0
-            }
-
-            // The buffer body can be nested arbitrarily deep in envelopes.
-            var envelope = this._chunk.body
-            var e = envelope
-            while (e.body != null) {
-                e = e.body
-            }
-            e.body = slice
-
-            // Reset to read next record.
-            this._chunk = null
-            this._record = new Jacket
-
-            // Enqueue the parsed envelope.
-            this.receiver.inbox.enqueue(envelope, async())
-        } else {
-            this._slices.push(Buffer.from(slice))
-        }
-    }, function () {
-        return start
-    })
-})
-
-Conduit.prototype._json = cadence(function (async, buffer, start, end) {
-    start = this._record.parse(buffer, start, end)
-    async(function () {
-        if (this._record.object != null) {
-            var envelope = this._record.object
-            switch (envelope.method) {
-            case 'envelope':
-                this.receiver.inbox.enqueue(envelope.body, async())
-                break
-            case 'chunk':
-                this._chunk = this._record.object
-                break
-            }
-            this._record = new Jacket
-        }
-    }, function () {
-        return start
-    })
-})
-
-Conduit.prototype._parse = cadence(function (async, buffer) {
-    var parse = async(function (start) {
-        if (start == buffer.length) {
-            return [ parse.break ]
-        }
-        if (this._chunk != null) {
-            this._buffer(buffer, start, buffer.length, async())
-        } else {
-            this._json(buffer, start, buffer.length, async())
-        }
-    })(0)
-})
-
-// We end-of-stream at actual end of stream or on error. If it is an error then
-// the write side is probably going to emit errors too because the `input` and
-// the `output` stream are often the same duplex, socket stream. We're not going
-// to try to prevent the write side from generating errors, though. During
-// ordinary shutdown we're kind of expecting the middleware to notice an
-// end-of-stream using procession, shutdown processing while sending an
-// end-of-stream back through procession going the other way.
-
-//
-Conduit.prototype._read = cadence(function (async) {
-    async([function () {
-        this.receiver.inbox.push(null)
-        this.eos.unlatch()
-    }], function () {
-        var read = async(function () {
-            this._input.read(async())
-        }, function (buffer) {
-            if (buffer == null) {
-                return [ read.break ]
-            }
-            this._parse(buffer, async())
-        })()
-    })
-})
-
-// Nothing more to do about ends and errors here. If things are operating
-// normally, with one half of the duplex closing before the other, then we do
-// want to drain the lagging half normally, waiting for its end-of-stream `null`
-// message. If there is an error, the thrown error will stop the Procession's
-// pumping and put an end writing. An error with a socket is going to probably
-// generate two exceptions, one for read and one for write, unified in a common
-// exception.
-
-//
-Conduit.prototype._write = cadence(function (async, envelope) {
-    if (envelope == null) {
-        this._output.end(async())
+Conduit.prototype._close = function (identifier) {
+    var cartridge = this._sockets.hold(identifier, { open: 1, outbox: [] })
+    if (--cartridge.value.open == 0) {
+        cartridge.value.outbox.push(null)
+        cartridge.remove()
     } else {
-        var e = envelope
-        while (e.body != null && typeof e.body == 'object' && !Buffer.isBuffer(e.body)) {
-            e = e.body
+        cartridge.release()
+    }
+}
+
+Conduit.prototype.expire = function (before) {
+    var iterator = this._sockets.iterator()
+    console.log('check hangups')
+    while (!iterator.end && iterator.when < before) {
+        var socket = this._sockets.remove(iterator.key)
+        console.log('hanging up!', iterator.key, socket)
+        socket.inbox.push(null)
+        console.log('pushed inbox')
+        socket.outbox.push(null)
+        console.log('pushed outbox')
+        iterator.previous()
+    }
+    console.log('checked hangups')
+}
+
+Conduit.prototype._receive = cadence(function (async, envelope) {
+    if (envelope == null) {
+        this.outbox = new Procession // acts as a null sink for any writes
+        this.expire(Infinity)
+    } else if (
+        envelope.module == 'conduit/client' &&
+        envelope.method == 'connect'
+    ) {
+        var enqueue = {
+            request: envelope.body,
+            identifier: envelope.identifier,
+            inbox: null,
+            outbox: null
         }
-        if (Buffer.isBuffer(e.body)) {
-            var body = e.body
-            e.body = null
-            var packet = JSON.stringify({
-                module: 'conduit',
-                method: 'chunk',
-                length: body.length,
-                body: envelope
-            }) + '\n'
-            e.body = body
-            this._output.write(packet, async())
-            this._output.write(e.body, async())
+        var socket = { open: 1, inbox: null, outbox: [] }
+        this._sockets.put('there:' + envelope.identifier, socket)
+        if (enqueue.request.outbox) {
+            socket.inbox = new Procession
+            enqueue.inbox = socket.inbox.shifter()
         } else {
-            this._output.write(JSON.stringify({
-                module: 'conduit',
-                method: 'envelope',
-                body: envelope
-            }) + '\n', async())
+            enqueue.inbox = []
+        }
+        if (enqueue.request.inbox) {
+            socket.open++
+            socket.outbox = enqueue.outbox = new Procession
+            enqueue.outbox.pump(this, function (envelope) {
+                this.outbox.push({
+                    module: 'conduit/server',
+                    method: 'envelope',
+                    identifier: enqueue.identifier,
+                    body: envelope
+                })
+                if (envelope == null) {
+                    this._close('there:' + enqueue.identifier)
+                }
+            }).run(this._destructible.monitor([ 'socket', enqueue.identifier ], true))
+        } else {
+            enqueue.outbox = socket.outbox = []
+        }
+        this._requests.push(enqueue)
+    } else if (
+        envelope.module == 'conduit/client' &&
+        envelope.method == 'envelope'
+    ) {
+        this._sockets.get('there:' + envelope.identifier).inbox.push(envelope.body)
+        if (envelope.body == null) {
+            this._close('there:' + envelope.identifier)
+        }
+    } else if (
+        envelope.module == 'conduit/server' &&
+        envelope.method == 'response'
+    ) {
+        var cartridge = this._sockets.hold('here:' + envelope.identifier, null)
+        cartridge.value.inbox.push(envelope.body)
+        cartridge.value.inbox.push(null)
+        cartridge.remove()
+    } else if (
+        envelope.module == 'conduit/server' &&
+        envelope.method == 'envelope'
+    ) {
+        this._sockets.get('here:' + envelope.identifier).inbox.push(envelope.body)
+        if (envelope.body == null) {
+            this._close('here:' + envelope.identifier)
         }
     }
 })
 
-module.exports = cadence(function (async, destructible, receiver, input, output, buffer) {
-    return new Conduit(destructible, receiver, input, output, buffer)
+Conduit.prototype.connect = function (request) {
+    var response = { inbox: null, outbox: null }, inbox = null, outbox = null, open = 1
+    if (request.outbox) {
+        open++
+        outbox = response.outbox = new Procession
+        outbox.pump(this, function (envelope) {
+            this.outbox.push({
+                module: 'conduit/client',
+                method: 'envelope',
+                identifier: identifier,
+                body: envelope
+            })
+            if (envelope == null) {
+                this._close('here:' + identifier)
+            }
+        }).run(this._destructible.monitor([ 'socket', identifier ], true))
+    } else {
+        outbox = []
+    }
+    inbox = new Procession
+    response.inbox = inbox.shifter()
+    var identifier = this._identifier = Monotonic.increment(this._identifier, 0)
+    var socket = {
+        open: open,
+        request: request,
+        inbox: inbox,
+        outbox: outbox
+    }
+    socket.inbox.identifier = 'here:' + identifier
+    this._sockets.put('here:' + identifier, socket)
+    this.outbox.push({
+        module: 'conduit/client',
+        method: 'connect',
+        identifier: identifier,
+        body: request
+    })
+    return response
+}
+
+module.exports = cadence(function (async, destructible) {
+    return new Conduit(destructible, Array.prototype.slice.call(arguments, 2))
 })

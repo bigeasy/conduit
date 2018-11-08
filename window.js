@@ -10,23 +10,18 @@ var Monotonic = require('monotonic').asString
 // Return the first not null-like value.
 var coalesce = require('extant')
 
-// Do nothing.
-var noop = require('nop')
+var Signal = require('signal')
 
 var abend = require('abend')
 
-function Window (destructible, receiver, options) {
+var Interrupt = require('interrupt').createInterrupter('conduit/window')
+
+function Window (destructible, options) {
+    options || (options = {})
+
     this.outbox = new Procession
     this.inbox = new Procession
 
-    this._receiver = receiver
-
-    this._queue = new Procession
-    this._reservoir = this._queue.shifter()
-
-    // TODO Hate the world `reconnect`.
-    // Pump to nowhere until we get our first reconnect message.
-    this._pumper = this._queue.pump(new Procession, 'enqueue').run(abend)
 
     this._received = '0'
     this._sequence = '0'
@@ -38,50 +33,72 @@ function Window (destructible, receiver, options) {
     this.destroyed = false
     destructible.markDestroyed(this)
 
-    this._pull(destructible.monitor('inbox'))
-    this._receiver.outbox.pump(this, '_write').run(destructible.monitor('outbox'))
+    this._destructible = destructible
 
-    this.reconnections = 0
+    this.outbox.pump(this, '_send').run(destructible.monitor('outbox', true))
+
+    this._socket = {
+        inbox: new Procession().shifter(),
+        outbox: new Procession,
+        completed: new Signal
+    }
+    this._reservoir = this._socket.outbox.shifter()
+
+    this._socket.completed.unlatch()
+
+    this._connection = 0
 }
 
-Window.prototype.hangup = function () {
-    this.inbox.push({ module: 'conduit/window', method: 'hangup' })
-    this._receiver.outbox.push(null)
-}
-
-Window.prototype._pull = cadence(function (async) {
-    var connections = async(function () {
-        var shifter = this.inbox.shifter()
-        var envelopes = async(function () {
-            shifter.dequeue(async())
-        }, function (envelope) {
-            if (envelope == null) {
-                return [ envelopes.break ]
-            }
-            async(function () {
-                this._read(envelope, async())
-            }, function (eos) {
-                if (eos) {
-                    return [ connections.break ]
-                }
-            })
-        })()
-    })()
+Window.prototype._connect = cadence(function (async, destructible, inbox, outbox) {
+    async(function () {
+        // Shutdown our previous connections to a bi-directional pair.
+        this._socket.inbox.destroy()
+        this._socket.completed.wait(async())
+    }, function () {
+        // Read the new input into our `_pull` function.
+        var pump = inbox.pump(this, '_receive')
+        pump.run(destructible.monitor('inbox'))
+        var reservoir = this._reservoir
+        this._reservoir = outbox.shifter()
+        var entry
+        while ((entry = reservoir.shift()) != null) {
+            outbox.push(entry)
+        }
+        this._socket.outbox.end()
+        this._socket = { inbox: pump, outbox: outbox, completed: destructible.completed, destructible: destructible }
+    })
 })
 
-Window.prototype.reconnect = function () {
-    this.outbox.push({
-        module: 'conduit/window',
-        method: 'connect',
-        reconnection: ++this.reconnections
-    })
+Window.prototype.connect = function (inbox, outbox) {
+    this._destructible.monitor([ 'connect', this._connection++ ], true, this, '_connect', inbox, outbox, null)
 }
 
-/*
-Window.prototype.disconnect = function () {
-    this._pumper.destroy()
+// We can shutdown our side of the window by running null through the window's
+// outbox. The other side can shutdown down the inbox during normal operation,
+// but if the connection to the other side is cut and not coming back, we need
+// to be able to send a wrapped end of stream through the inbox. We don't have
+// the counter on the the ohter side and our Procession queues are generally
+// opaque, so we don't want to poke around in them for a counter.
+//
+// Thus, this is a way to hangup the inbox, but let's call it truncate.
+
+// We need a hangup because we are resisting shutting down due to end of stream
+// and rejecting messages that are out of order. We'd need to put an envelope
+// with a `null` body right at the of the stream with the correct sequence. The
+// queue doesn't really have a good way of looking at the input end, maybe it
+// does, but I haven't used it. Could use it, it's just the head of the inbox,
+// but we're filtering the inbox for our specific envelopes still, so we're not
+// expecting the inbox to contain only content related to us, so we have to
+// scan the inbox. Forget that. Let's just have a special control message.
+Window.prototype.truncate = function () {
+    // TODO Note that with this here, we're deciding that an inbox doesn't
+    // really belong to the object that presents it. We can throw stuff in the
+    // inbox we're given to trigger behaviors in the inbox consumer.
+    var inbox = new Procession
+    this.connect(inbox.shifter(), new Procession)
+    inbox.push({ module: 'conduit/window', method: 'truncate' })
+    inbox.push(null)
 }
-*/
 
 // Why does reconnect work? Well, one side is going to realize that the
 // connection is broken and close it. If it is the client side then it will open
@@ -106,71 +123,56 @@ Window.prototype.disconnect = function () {
 // socket.
 
 //
-Window.prototype._read = cadence(function (async, envelope) {
-    if (envelope.module == 'conduit/window') {
+Window.prototype._receive = cadence(function (async, envelope) {
+    if (envelope == null) {
+        // Nothing to do really, it will have canceled our pump to this
+        // function, so now we're going to wait for a reconnect.
+    } else if (envelope.module == 'conduit/window') {
         switch (envelope.method) {
-        case 'hangup':
-            return true
-        case 'connect':
-            if (envelope.reconnection !== this.reconnections) {
-                this.reconnections = envelope.reconnection - 1
-                this.reconnect()
-            }
-            this._pumper.destroy()
-            var reservoir = this._reservoir.shifter()
-            var entry
-            while ((entry = this._reservoir.shift()) != null) {
-                this.outbox.push(entry)
-            }
-            this._pumper = this._queue.pump(this, function (envelope, callback) {
-                if (envelope != null) {
-                    this.outbox.enqueue(envelope, callback)
-                }
-            }).run(abend)
-            this._reservoir = reservoir
-            return false
+        case 'truncate':
+            this._receive({
+                module: 'conduit/window',
+                method: 'envelope',
+                previous: this._received,
+                sequence: Monotonic.increment(this._received, 0),
+                body: null
+            }, async())
+            break
         case 'envelope':
             // If we've seen this one already, don't bother.
             if (Monotonic.compare(this._received, envelope.sequence) >= 0) {
-                return false
+                break
             }
             // We might lose an envelope. We're going to count on this being a
             // break where a conduit reconnect causes the messages to be resent
             // but we could probably request a replay ourselves.
-            if (this._received != envelope.previous) {
-                // We maybe could use the sequence we're at as a version number.
-                return false
-            }
+            Interrupt.assert(this._received == envelope.previous, 'ahead')
             // Note the last received sequence.
             this._received = envelope.sequence
             // Send a flush if we've reached the end of a window.
             if (this._received == this._flush) {
-                this.outbox.push({
+                this._socket.outbox.push({
                     module: 'conduit/window',
                     method: 'flush',
-                    sequence: this._window
+                    sequence: this._received
                 })
                 this._flush = Monotonic.add(this._flush, this._window)
             }
             // Forward the body which might actually be `null` end-of-stream.
-            async(function () {
-                this._receiver.inbox.enqueue(envelope.body, async())
-            }, function () {
-                return envelope.body == null
-            })
+            this.inbox.enqueue(envelope.body, async())
             break
         case 'flush':
             // Shift the messages that we've received off of the reservoir.
             for (;;) {
                 var peek = this._reservoir.peek()
                 if (peek == null || peek.sequence == envelope.sequence) {
-                    return false
+                    break
                 }
                 this._reservoir.shift()
             }
+            break
         }
     }
-    return false
 })
 
 // Input into window from nested listener. It is wrapped in an envelope and
@@ -181,16 +183,17 @@ Window.prototype._read = cadence(function (async, envelope) {
 // end-of-stream and destruction separate concerns? Probably not, no.
 
 //
-Window.prototype._write = function (envelope) {
-    this._queue.push({
+Window.prototype._send = function (envelope) {
+    this._socket.outbox.push({
         module: 'conduit/window',
         method: 'envelope',
         previous: this._sequence,
         sequence: this._sequence = Monotonic.increment(this._sequence, 0),
         body: envelope
     })
+    // When the nested stream ends, the underlying stream ends.
     if (envelope == null) {
-        this._queue.push(null)
+        this._socket.outbox.push(null)
     }
 }
 

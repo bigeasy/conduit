@@ -12,6 +12,8 @@ Turnstile.Queue = require('turnstile/queue')
 
 var Cache = require('magazine')
 
+var Signal = require('signal')
+
 var Monotonic = require('monotonic').asString
 
 function Conduit (destructible, inbox, outbox, vargs) {
@@ -31,6 +33,8 @@ function Conduit (destructible, inbox, outbox, vargs) {
     this._identifier = '0'
 
     this._sockets = new Cache().createMagazine()
+
+    this.eos = new Signal
 }
 
 Conduit.prototype._request = cadence(function (async, envelope) {
@@ -74,6 +78,7 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
     if (envelope == null) {
         this._outbox = new Procession // acts as a null sink for any writes
         this.expire(Infinity)
+        this.eos.unlatch()
     } else if (
         envelope.module == 'conduit/client' &&
         envelope.method == 'connect'

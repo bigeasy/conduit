@@ -16,9 +16,20 @@ function prove (okay, callback) {
 
     var cadence = require('cadence')
 
+    var network = {
+        server: {
+            inbox: new Procession,
+            outbox: new Procession
+        },
+        client: {
+            inbox: new Procession,
+            outbox: new Procession
+        }
+    }
+
     cadence(function (async) {
         async(function () {
-            destructible.monitor('server', Conduit, cadence(function (async, header, inbox, outbox) {
+            destructible.monitor('server', Conduit, network.server.inbox, network.server.outbox, cadence(function (async, header, inbox, outbox) {
                 switch (header.method) {
                 case 'call':
                     return [ 1 ]
@@ -44,14 +55,14 @@ function prove (okay, callback) {
                     break
                 }
             }), async())
-            destructible.monitor('client', Conduit, null, async())
+            destructible.monitor('client', Conduit, network.client.inbox, network.client.outbox, null, async())
         }, function (server, client) {
-            client.outbox.pump(server.inbox, 'enqueue').run(abend)
-            server.outbox.pump(client.inbox, 'enqueue').run(abend)
-            server.inbox.push({})
-            client.inbox.push({})
-            server.inbox.pump(function (envelope) { console.log('server', envelope) }).run(abend)
-            client.inbox.pump(function (envelope) { console.log('client', envelope) }).run(abend)
+            network.client.outbox.pump(network.server.inbox, 'enqueue').run(abend)
+            network.server.outbox.pump(network.client.inbox, 'enqueue').run(abend)
+            network.server.inbox.push({})
+            network.client.inbox.push({})
+            network.server.inbox.pump(function (envelope) { console.log('server', envelope) }).run(abend)
+            network.client.inbox.pump(function (envelope) { console.log('client', envelope) }).run(abend)
 
             async(function () {
                 client.connect({ method: 'call' }).inbox.dequeue(async())
@@ -72,10 +83,8 @@ function prove (okay, callback) {
                 var request = client.connect({ method: 'hangup', inbox: true, outbox: true })
                 async(function () {
                     request.inbox.dequeue(async())
-                    console.log(request.inbox.procession)
-                    server.inbox.push(null)
-                    console.log(client._sockets.iterator().key)
-                    client.inbox.push(null)
+                    network.server.inbox.push(null)
+                    network.client.inbox.push(null)
                 }, function (value) {
                     okay(value, null, 'hungup client')
                 })

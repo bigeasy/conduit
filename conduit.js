@@ -14,13 +14,12 @@ var Cache = require('magazine')
 
 var Monotonic = require('monotonic').asString
 
-function Conduit (destructible, vargs) {
+function Conduit (destructible, inbox, outbox, vargs) {
     this._connect = vargs[0] != null ? new Operation(vargs) : null
 
-    this.outbox = new Procession
-    this.inbox = new Procession
+    this._outbox = outbox
 
-    this.inbox.pump(this, '_receive').run(destructible.monitor('receive'))
+    inbox.pump(this, '_receive').run(destructible.monitor('receive'))
 
     this.turnstile = new Turnstile
     this._requests = new Turnstile.Queue(this, '_request', this.turnstile)
@@ -40,7 +39,7 @@ Conduit.prototype._request = cadence(function (async, envelope) {
         this._connect.call(null, enqueued.request, enqueued.inbox, enqueued.outbox, async())
     }, function (response) {
         if (!enqueued.request.inbox) {
-            this.outbox.push({
+            this._outbox.push({
                 module: 'conduit/server',
                 method: 'response',
                 identifier: enqueued.identifier,
@@ -63,22 +62,17 @@ Conduit.prototype._close = function (identifier) {
 
 Conduit.prototype.expire = function (before) {
     var iterator = this._sockets.iterator()
-    console.log('check hangups')
     while (!iterator.end && iterator.when < before) {
         var socket = this._sockets.remove(iterator.key)
-        console.log('hanging up!', iterator.key, socket)
         socket.inbox.push(null)
-        console.log('pushed inbox')
         socket.outbox.push(null)
-        console.log('pushed outbox')
         iterator.previous()
     }
-    console.log('checked hangups')
 }
 
 Conduit.prototype._receive = cadence(function (async, envelope) {
     if (envelope == null) {
-        this.outbox = new Procession // acts as a null sink for any writes
+        this._outbox = new Procession // acts as a null sink for any writes
         this.expire(Infinity)
     } else if (
         envelope.module == 'conduit/client' &&
@@ -102,7 +96,7 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
             socket.open++
             socket.outbox = enqueue.outbox = new Procession
             enqueue.outbox.pump(this, function (envelope) {
-                this.outbox.push({
+                this._outbox.push({
                     module: 'conduit/server',
                     method: 'envelope',
                     identifier: enqueue.identifier,
@@ -149,7 +143,7 @@ Conduit.prototype.connect = function (request) {
         open++
         outbox = response.outbox = new Procession
         outbox.pump(this, function (envelope) {
-            this.outbox.push({
+            this._outbox.push({
                 module: 'conduit/client',
                 method: 'envelope',
                 identifier: identifier,
@@ -173,7 +167,7 @@ Conduit.prototype.connect = function (request) {
     }
     socket.inbox.identifier = 'here:' + identifier
     this._sockets.put('here:' + identifier, socket)
-    this.outbox.push({
+    this._outbox.push({
         module: 'conduit/client',
         method: 'connect',
         identifier: identifier,
@@ -182,6 +176,6 @@ Conduit.prototype.connect = function (request) {
     return response
 }
 
-module.exports = cadence(function (async, destructible) {
-    return new Conduit(destructible, Array.prototype.slice.call(arguments, 2))
+module.exports = cadence(function (async, destructible, inbox, outbox) {
+    return new Conduit(destructible, inbox, outbox, Array.prototype.slice.call(arguments, 4))
 })

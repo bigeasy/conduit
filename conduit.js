@@ -89,16 +89,16 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
             inbox: null,
             outbox: null
         }
-        var socket = { open: 1, inbox: null, outbox: [] }
+        var socket = { request: envelope.body, open: 1, inbox: null, outbox: [] }
         this._sockets.put('there:' + envelope.identifier, socket)
         if (enqueue.request.outbox) {
+            socket.open++
             socket.inbox = new Procession
             enqueue.inbox = socket.inbox.shifter()
         } else {
             enqueue.inbox = []
         }
         if (enqueue.request.inbox) {
-            socket.open++
             socket.outbox = enqueue.outbox = new Procession
             enqueue.outbox.pump(this, function (envelope) {
                 this._outbox.push({

@@ -96,7 +96,7 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
             socket.inbox = new Procession
             enqueue.inbox = socket.inbox.shifter()
         } else {
-            enqueue.inbox = []
+            socket.inbox = []
         }
         if (enqueue.request.inbox) {
             socket.outbox = enqueue.outbox = new Procession
@@ -112,7 +112,7 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
                 }
             }).run(this._destructible.monitor([ 'socket', enqueue.identifier ], true))
         } else {
-            enqueue.outbox = socket.outbox = []
+            socket.outbox = []
         }
         this._requests.push(enqueue)
     } else if (

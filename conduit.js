@@ -65,12 +65,18 @@ Conduit.prototype._close = function (identifier) {
 }
 
 Conduit.prototype.expire = function (before) {
+    // TODO So broken!
     var iterator = this._sockets.iterator()
+    var keys = []
     while (!iterator.end && iterator.when < before) {
-        var socket = this._sockets.remove(iterator.key)
+        keys.push(iterator.key)
+        iterator.previous()
+    }
+
+    while (keys.length != 0) {
+        var socket = this._sockets.remove(keys.shift())
         socket.inbox.push(null)
         socket.outbox.push(null)
-        iterator.previous()
     }
 }
 

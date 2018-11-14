@@ -21,7 +21,7 @@ function Conduit (destructible, inbox, outbox, vargs) {
 
     this._outbox = outbox
 
-    inbox.pump(this, '_receive').run(destructible.monitor('receive'))
+    this.shifter = inbox.pump(this, '_receive').run(destructible.monitor('receive'))
 
     this.turnstile = new Turnstile
     this._requests = new Turnstile.Queue(this, '_request', this.turnstile)

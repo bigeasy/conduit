@@ -1,3 +1,6 @@
+// Node.js API.
+var assert = require('assert')
+
 // Control-flow utilities.
 var cadence = require('cadence')
 
@@ -9,8 +12,6 @@ var Operation = require('operation')
 
 var Turnstile = require('turnstile')
 Turnstile.Queue = require('turnstile/queue')
-
-var Cache = require('magazine')
 
 var Signal = require('signal')
 
@@ -32,7 +33,7 @@ function Conduit (destructible, inbox, outbox, vargs) {
     this._destructible = destructible
     this._identifier = '0'
 
-    this._sockets = new Cache().createMagazine()
+    this._streams = {}
 
     this.eos = new Signal
 }
@@ -42,144 +43,116 @@ Conduit.prototype._request = cadence(function (async, envelope) {
     async(function () {
         this._connect.call(null, enqueued.request, enqueued.inbox, enqueued.outbox, async())
     }, function (response) {
-        if (!enqueued.request.inbox) {
-            this._outbox.push({
-                module: 'conduit/server',
-                method: 'response',
-                identifier: enqueued.identifier,
-                body: response
-            })
-            this._close('there:' + enqueued.identifier)
+        if (enqueued.response) {
+            enqueued.outbox.push(response)
+            enqueued.outbox.end()
         }
     })
 })
 
-Conduit.prototype._close = function (identifier) {
-    var cartridge = this._sockets.hold(identifier, { open: 1, outbox: [] })
-    if (--cartridge.value.open == 0) {
-        cartridge.value.outbox.push(null)
-        cartridge.remove()
-    } else {
-        cartridge.release()
-    }
-}
-
-Conduit.prototype.expire = function (before) {
-    // TODO So broken!
-    var iterator = this._sockets.iterator()
-    var keys = []
-    while (!iterator.end && iterator.when < before) {
-        keys.push(iterator.key)
-        iterator.previous()
-    }
-
-    while (keys.length != 0) {
-        var socket = this._sockets.remove(keys.shift())
-        socket.inbox.push(null)
-        socket.outbox.push(null)
-    }
-}
-
 Conduit.prototype._receive = cadence(function (async, envelope) {
     if (envelope == null) {
-        this._outbox = new Procession // acts as a null sink for any writes
-        this.expire(Infinity)
-        this.eos.unlatch()
-    } else if (
-        envelope.module == 'conduit/client' &&
-        envelope.method == 'connect'
-    ) {
-        var enqueue = {
-            request: envelope.body,
-            identifier: envelope.identifier,
-            inbox: null,
-            outbox: null
-        }
-        var socket = { request: envelope.body, open: 1, inbox: null, outbox: [] }
-        this._sockets.put('there:' + envelope.identifier, socket)
-        if (enqueue.request.outbox) {
-            socket.open++
-            socket.inbox = new Procession
-            enqueue.inbox = socket.inbox.shifter()
-        } else {
-            socket.inbox = []
-        }
-        if (enqueue.request.inbox) {
-            socket.outbox = enqueue.outbox = new Procession
-            enqueue.outbox.pump(this, function (envelope) {
-                this._outbox.push({
-                    module: 'conduit/server',
-                    method: 'envelope',
-                    identifier: enqueue.identifier,
-                    body: envelope
-                })
-                if (envelope == null) {
-                    this._close('there:' + enqueue.identifier)
+        async(function () {
+            async.forEach(function (key) {
+                var split = key.split(':')
+                switch (split[1]) {
+                case 'outbox':
+                    this._streams[key].push(null)
+                    break
+                case 'inbox':
+                    this._receive({
+                        module: 'conduit',
+                        to: split[0],
+                        method: 'envelope',
+                        identifier: split[2],
+                        body: null
+                    }, async())
+                    break
                 }
-            }).run(this._destructible.monitor([ 'socket', enqueue.identifier ], true))
-        } else {
-            socket.outbox = []
-        }
-        this._requests.push(enqueue)
-    } else if (
-        envelope.module == 'conduit/client' &&
-        envelope.method == 'envelope'
-    ) {
-        this._sockets.get('there:' + envelope.identifier).inbox.push(envelope.body)
-        if (envelope.body == null) {
-            this._close('there:' + envelope.identifier)
-        }
-    } else if (
-        envelope.module == 'conduit/server' &&
-        envelope.method == 'response'
-    ) {
-        var cartridge = this._sockets.hold('here:' + envelope.identifier, null)
-        cartridge.value.inbox.push(envelope.body)
-        cartridge.value.inbox.push(null)
-        cartridge.remove()
-    } else if (
-        envelope.module == 'conduit/server' &&
-        envelope.method == 'envelope'
-    ) {
-        this._sockets.get('here:' + envelope.identifier).inbox.push(envelope.body)
-        if (envelope.body == null) {
-            this._close('here:' + envelope.identifier)
+            })(Object.keys(this._streams))
+        }, function () {
+            assert(Object.keys(this._streams).length == 0)
+            this.eos.unlatch()
+        })
+    } else if (envelope.module == 'conduit') {
+        switch (envelope.to) {
+        case 'server':
+            switch (envelope.method) {
+            case 'connect':
+                var enqueue = {
+                    request: envelope.body,
+                    identifier: envelope.identifier,
+                    response: false,
+                    inbox: null,
+                    outbox: new Procession
+                }
+                this._streams['server:outbox:' + envelope.identifier] = enqueue.outbox
+                if (enqueue.request.outbox) {
+                    var inbox = this._streams['server:inbox:' + envelope.identifier] = new Procession
+                    enqueue.inbox = inbox.shifter()
+                }
+                if (!enqueue.request.inbox) {
+                    enqueue.response = true
+                }
+                enqueue.outbox.pump(this, function (envelope) {
+                    this._outbox.push({
+                        module: 'conduit',
+                        to: 'client',
+                        method: 'envelope',
+                        identifier: enqueue.identifier,
+                        body: envelope
+                    })
+                    if (envelope == null) {
+                        delete this._streams['server:outbox:' + enqueue.identifier]
+                    }
+                }).run(this._destructible.monitor([ 'server', 'outbox', enqueue.identifier ], true))
+                this._requests.push(enqueue)
+                break
+            case 'envelope':
+                this._streams['server:inbox:' + envelope.identifier].push(envelope.body)
+                if (envelope.body == null) {
+                    delete this._streams['server:inbox:' + envelope.identifier]
+                }
+                break
+            }
+            break
+        case 'client':
+            switch (envelope.method) {
+            case 'envelope':
+                this._streams['client:inbox:' + envelope.identifier].push(envelope.body)
+                if (envelope.body == null) {
+                    delete this._streams['client:inbox:' + envelope.identifier]
+                }
+            }
+            break
         }
     }
 })
 
 Conduit.prototype.connect = function (request) {
-    var response = { inbox: null, outbox: null }, inbox = null, outbox = null, open = 1
+    var identifier = this._identifier = Monotonic.increment(this._identifier, 0)
+    var inbox = new Procession
+    var response = { inbox: new Procession, outbox: null }
     if (request.outbox) {
-        open++
-        outbox = response.outbox = new Procession
+        var outbox =this._streams['client:outbox:' + identifier] =  response.outbox = new Procession
         outbox.pump(this, function (envelope) {
             this._outbox.push({
-                module: 'conduit/client',
+                module: 'conduit',
+                to: 'server',
                 method: 'envelope',
                 identifier: identifier,
                 body: envelope
             })
             if (envelope == null) {
-                this._close('here:' + identifier)
+                delete this._streams['client:outbox:' + identifier]
             }
-        }).run(this._destructible.monitor([ 'socket', identifier ], true))
-    } else {
-        outbox = []
+        }).run(this._destructible.monitor([ 'client', 'inbox', identifier ], true))
     }
-    inbox = new Procession
     response.inbox = inbox.shifter()
-    var identifier = this._identifier = Monotonic.increment(this._identifier, 0)
-    var socket = {
-        open: open,
-        request: request,
-        inbox: inbox,
-        outbox: outbox
-    }
-    socket.inbox.identifier = 'here:' + identifier
-    this._sockets.put('here:' + identifier, socket)
+    this._streams['client:inbox:' + identifier] = inbox
     this._outbox.push({
-        module: 'conduit/client',
+        module: 'conduit',
+        to: 'server',
         method: 'connect',
         identifier: identifier,
         body: request

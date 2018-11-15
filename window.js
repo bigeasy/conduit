@@ -17,8 +17,6 @@ var abend = require('abend')
 var Interrupt = require('interrupt').createInterrupter('conduit/window')
 
 function Window (destructible, options) {
-    options || (options = {})
-
     this.outbox = new Procession
     this.inbox = new Procession
 

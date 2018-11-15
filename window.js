@@ -197,6 +197,6 @@ Window.prototype._send = function (envelope) {
     }
 }
 
-module.exports = cadence(function (async, destructible, receiver, options) {
-    return new Window(destructible, receiver, coalesce(options, {}))
+module.exports = cadence(function (async, destructible, options) {
+    return new Window(destructible, coalesce(options, {}))
 })

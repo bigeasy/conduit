@@ -3,8 +3,7 @@ require('proof')(1, prove)
 function prove (okay, callback) {
     var Procession = require('procession')
 
-    var Client = require('../client')
-    var Server = require('../server')
+    var Conduit = require('../conduit')
 
     var Middleware = require('../middleware')
     var Requester = require('../requester')
@@ -32,16 +31,15 @@ function prove (okay, callback) {
                 response.end('hello, world')
             }, async())
         }, function (middleware) {
-            destructible.monitor('client', Client, async())
-            destructible.monitor('server', Server, cadence(function (async, header, inbox, outbox) {
+            var inbox = new Procession, outbox = new Procession
+            destructible.destruct.wait(inbox, 'end')
+            destructible.destruct.wait(outbox, 'end')
+            destructible.monitor('client', Conduit, inbox, outbox, async())
+            destructible.monitor('server', Conduit, outbox, inbox, cadence(function (async, header, inbox, outbox) {
                 console.log(header)
                 middleware.request(header, inbox, outbox)
             }), async())
         }, function (client, server, requester) {
-            client.outbox.pump(server.inbox, 'enqueue').run(abend)
-            server.outbox.pump(client.inbox, 'enqueue').run(abend)
-            destructible.destruct.wait(client.inbox, 'end')
-            destructible.destruct.wait(server.inbox, 'end')
             async(function () {
                 destructible.monitor('requester', Requester, client, function () {}, async())
             }, function (requester) {

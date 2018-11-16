@@ -80,6 +80,7 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
             })(Object.keys(this._streams))
         }, function () {
             assert(Object.keys(this._streams).length == 0)
+            this._outbox.end()
         })
     } else if (envelope.module == 'conduit') {
         switch (envelope.to) {

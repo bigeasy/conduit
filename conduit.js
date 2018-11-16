@@ -38,8 +38,6 @@ function Conduit (destructible, inbox, outbox, vargs) {
     this._identifier = '0'
 
     this._streams = {}
-
-    this.eos = new Signal
 }
 
 Conduit.prototype._request = cadence(function (async, envelope) {
@@ -82,7 +80,6 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
             })(Object.keys(this._streams))
         }, function () {
             assert(Object.keys(this._streams).length == 0)
-            this.eos.unlatch()
         })
     } else if (envelope.module == 'conduit') {
         switch (envelope.to) {

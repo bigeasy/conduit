@@ -17,10 +17,14 @@ var Signal = require('signal')
 
 var Monotonic = require('monotonic').asString
 
+var instance = 0
 function Conduit (destructible, inbox, outbox, vargs) {
     this._connect = vargs[0] != null ? new Operation(vargs) : null
 
     this._outbox = outbox
+
+    this.instance = 'cnd-' + (instance++)
+    destructible.context.push(this.instance)
 
     this.shifter = inbox.pump(this, '_receive').run(destructible.monitor('receive'))
 
@@ -57,6 +61,12 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
                 var split = key.split(':')
                 switch (split[1]) {
                 case 'outbox':
+                    this._outbox.shifter().join(function (envelope) {
+                        return envelope.module == 'conduit' &&
+                               envelope.method == 'envelope' &&
+                               envelope.identifier == split[2] &&
+                               envelope.body == null
+                    }, async())
                     this._streams[key].push(null)
                     break
                 case 'inbox':
@@ -95,6 +105,9 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
                     enqueue.response = true
                 }
                 enqueue.outbox.pump(this, function (envelope) {
+                    if (envelope == null) {
+                        delete this._streams['server:outbox:' + enqueue.identifier]
+                    }
                     this._outbox.push({
                         module: 'conduit',
                         to: 'client',
@@ -102,9 +115,6 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
                         identifier: enqueue.identifier,
                         body: envelope
                     })
-                    if (envelope == null) {
-                        delete this._streams['server:outbox:' + enqueue.identifier]
-                    }
                 }).run(this._destructible.monitor([ 'server', 'outbox', enqueue.identifier ], true))
                 this._requests.push(enqueue)
                 break
@@ -136,6 +146,9 @@ Conduit.prototype.connect = function (request) {
     if (request.outbox) {
         var outbox =this._streams['client:outbox:' + identifier] =  response.outbox = new Procession
         outbox.pump(this, function (envelope) {
+            if (envelope == null) {
+                delete this._streams['client:outbox:' + identifier]
+            }
             this._outbox.push({
                 module: 'conduit',
                 to: 'server',
@@ -143,9 +156,6 @@ Conduit.prototype.connect = function (request) {
                 identifier: identifier,
                 body: envelope
             })
-            if (envelope == null) {
-                delete this._streams['client:outbox:' + identifier]
-            }
         }).run(this._destructible.monitor([ 'client', 'inbox', identifier ], true))
     }
     response.inbox = inbox.shifter()

@@ -34,7 +34,7 @@
                             "operation":                    "2.0.x",
                             "procession":                   "2.5.x",
                             "signal":                       "4.0.x",
-                            "staccato":                     "6.3.x"
+                            "staccato":                     "6.4.x"
     },
     "devDependencies":
     {

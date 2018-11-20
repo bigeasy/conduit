@@ -89,13 +89,10 @@ Window.prototype.connect = function (inbox, outbox) {
 // expecting the inbox to contain only content related to us, so we have to
 // scan the inbox. Forget that. Let's just have a special control message.
 Window.prototype.truncate = function () {
-    // TODO Note that with this here, we're deciding that an inbox doesn't
-    // really belong to the object that presents it. We can throw stuff in the
-    // inbox we're given to trigger behaviors in the inbox consumer.
-    var inbox = new Procession
-    this.connect(inbox.shifter(), new Procession)
-    inbox.push({ module: 'conduit/window', method: 'truncate' })
-    inbox.push(null)
+    this._socket.inbox.destroy()
+    this._socket.destructible.completed.wait(this, function () {
+        this.inbox.end()
+    })
 }
 
 // Why does reconnect work? Well, one side is going to realize that the
@@ -127,15 +124,6 @@ Window.prototype._receive = cadence(function (async, envelope) {
         // function, so now we're going to wait for a reconnect.
     } else if (envelope.module == 'conduit/window') {
         switch (envelope.method) {
-        case 'truncate':
-            this._receive({
-                module: 'conduit/window',
-                method: 'envelope',
-                previous: this._received,
-                sequence: Monotonic.increment(this._received, 0),
-                body: null
-            }, async())
-            break
         case 'envelope':
             // If we've seen this one already, don't bother.
             if (Monotonic.compare(this._received, envelope.sequence) >= 0) {

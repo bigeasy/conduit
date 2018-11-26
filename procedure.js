@@ -6,7 +6,7 @@ var Procession = require('procession')
 var coalesce = require('extant')
 
 // Contextualized callbacks and event handlers.
-var Operation = require('operation')
+var operation = require('operation')
 
 var Signal = require('signal')
 
@@ -14,7 +14,7 @@ function Procedure (destructible, vargs) {
     this.destroyed = false
     destructible.markDestroyed(this)
 
-    this._operation = new Operation(vargs)
+    this._operation = operation.shift(vargs)
 
     this.inbox = new Procession
     this.outbox = new Procession

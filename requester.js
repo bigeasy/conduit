@@ -22,7 +22,7 @@ var Sender = require('./sender')
 // Convert a Conduit event stream into an HTTP write.
 var Consumer = require('./consumer')
 
-var Operation = require('operation')
+var operation = require('operation')
 
 var abend = require('abend')
 
@@ -35,7 +35,7 @@ function Requester (destructible, vargs) {
     destructible.destruct.wait(destructible.monitor('terminator'))
     var timeout = Timeout(15000, vargs)
     this._conduit = vargs.shift()
-    this._rewrite = Operation(vargs)
+    this._rewrite = operation.shift(vargs)
     this._instance = 0
     this._destructible = destructible
 }

@@ -8,7 +8,7 @@ var cadence = require('cadence')
 var Procession = require('procession')
 
 // Contextualized callbacks and event handlers.
-var Operation = require('operation')
+var operation = require('operation')
 
 var Turnstile = require('turnstile')
 Turnstile.Queue = require('turnstile/queue')
@@ -19,7 +19,7 @@ var Monotonic = require('monotonic').asString
 
 var instance = 0
 function Conduit (destructible, inbox, outbox, vargs) {
-    this._connect = vargs[0] != null ? new Operation(vargs) : null
+    this._connect = vargs[0] != null ? operation.shift(vargs) : null
 
     this._outbox = outbox
 

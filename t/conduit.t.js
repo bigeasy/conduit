@@ -88,6 +88,8 @@ function prove (okay, callback) {
                 }, function (value) {
                     okay(value, null, 'hungup client')
                 })
+            }, function () {
+                client._request({})
             })
         })
     })(destructible.monitor('test'))

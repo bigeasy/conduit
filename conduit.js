@@ -17,6 +17,8 @@ var Signal = require('signal')
 
 var Monotonic = require('monotonic').asString
 
+var restrictor = require('restrictor')
+
 var instance = 0
 function Conduit (destructible, inbox, outbox, vargs) {
     this._connect = vargs[0] != null ? operation.shift(vargs) : null
@@ -32,7 +34,7 @@ function Conduit (destructible, inbox, outbox, vargs) {
     this._requests = new Turnstile.Queue(this, '_request', this.turnstile)
 
     this.turnstile.listen(destructible.monitor('turnstile'))
-    destructible.destruct.wait(this.turnstile, 'close')
+    destructible.destruct.wait(this.turnstile, 'destroy')
 
     this._destructible = destructible
     this._identifier = '0'
@@ -40,17 +42,19 @@ function Conduit (destructible, inbox, outbox, vargs) {
     this._streams = {}
 }
 
-Conduit.prototype._request = cadence(function (async, envelope) {
-    var enqueued = envelope.body
-    async(function () {
-        this._connect.call(null, enqueued.request, enqueued.inbox, enqueued.outbox, async())
-    }, function (response) {
-        if (enqueued.response) {
-            enqueued.outbox.push(response)
-            enqueued.outbox.end()
-        }
-    })
-})
+Conduit.prototype._request = restrictor.push(cadence(function (async, envelope) {
+    if (!envelope.canceled) {
+        var enqueued = envelope.body.shift()
+        async(function () {
+            this._connect.call(null, enqueued.request, enqueued.inbox, enqueued.outbox, async())
+        }, function (response) {
+            if (enqueued.response) {
+                enqueued.outbox.push(response)
+                enqueued.outbox.end()
+            }
+        })
+    }
+}))
 
 Conduit.prototype._receive = cadence(function (async, envelope) {
     if (envelope == null) {
@@ -114,7 +118,7 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
                         body: envelope
                     })
                 }).run(this._destructible.monitor([ 'server', 'outbox', enqueue.identifier ], true))
-                this._requests.push(enqueue)
+                this._request(enqueue)
                 break
             case 'envelope':
                 this._streams['server:inbox:' + envelope.identifier].push(envelope.body)

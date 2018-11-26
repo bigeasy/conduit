@@ -51,7 +51,7 @@ function prove (okay, callback) {
             }, function () {
                 ping.stop()
                 ping.stop()
-                okay(true, 'okay')
+                okay('okay')
                 setTimeout(async(), 1500)
             }, function () {
                 ping.inbox.push(null)

@@ -5,12 +5,12 @@ var coalesce = require('extant')
 module.exports = cadence(function (async, message, read, module) {
     async(function () {
         var reader = new Staccato.Readable(message)
-        var loop = async(function () {
+        async.loop([], function () {
             async(function () {
                 reader.read(async())
             }, function (buffer) {
                 if (buffer == null) {
-                    return [ loop.break ]
+                    return [ async.break ]
                 }
                 read.enqueue({
                     module: module,
@@ -18,7 +18,7 @@ module.exports = cadence(function (async, message, read, module) {
                     body: buffer
                 }, async())
             })
-        })()
+        })
     }, function () {
         read.enqueue({
             module: module,

@@ -55,7 +55,7 @@ Conduit.prototype._request = cadence(function (async, envelope) {
 Conduit.prototype._receive = cadence(function (async, envelope) {
     if (envelope == null) {
         async(function () {
-            async.forEach(function (key) {
+            async.forEach([ Object.keys(this._streams) ], function (key) {
                 var split = key.split(':')
                 switch (split[1]) {
                 case 'outbox':
@@ -77,7 +77,7 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
                     }, async())
                     break
                 }
-            })(Object.keys(this._streams))
+            })
         }, function () {
             assert(Object.keys(this._streams).length == 0)
             this._outbox.end()

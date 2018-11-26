@@ -169,5 +169,8 @@ Conduit.prototype.connect = function (request) {
 }
 
 module.exports = cadence(function (async, destructible, inbox, outbox) {
-    return new Conduit(destructible, inbox, outbox, Array.prototype.slice.call(arguments, 4))
+    var vargs = []
+    vargs.push.apply(vargs, arguments)
+    vargs.splice(0, 4)
+    return new Conduit(destructible, inbox, outbox, vargs)
 })

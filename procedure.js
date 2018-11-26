@@ -42,5 +42,8 @@ Procedure.prototype._enqueue = cadence(function (async, envelope) {
 })
 
 module.exports = cadence(function (async, destructible) {
-    return new Procedure(destructible, Array.prototype.slice.call(arguments, 2))
+    var vargs = []
+    vargs.push.apply(vargs, arguments)
+    vargs.splice(0, 2)
+    return new Procedure(destructible, vargs)
 })

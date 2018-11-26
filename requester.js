@@ -63,5 +63,8 @@ Requester.prototype._request = cadence(function (async, destructible, request, r
 })
 
 module.exports = cadence(function (async, destructible) {
-    return new Requester(destructible, Array.prototype.slice.call(arguments, 2))
+    var vargs = []
+    vargs.push.apply(vargs, arguments)
+    vargs.splice(0, 2)
+    return new Requester(destructible, vargs)
 })

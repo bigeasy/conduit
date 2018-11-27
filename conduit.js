@@ -42,18 +42,15 @@ function Conduit (destructible, inbox, outbox, vargs) {
     this._streams = {}
 }
 
-Conduit.prototype._request = restrictor.push(cadence(function (async, envelope) {
-    if (!envelope.canceled) {
-        var enqueued = envelope.body.shift()
-        async(function () {
-            this._connect.call(null, enqueued.request, enqueued.inbox, enqueued.outbox, async())
-        }, function (response) {
-            if (enqueued.response) {
-                enqueued.outbox.push(response)
-                enqueued.outbox.end()
-            }
-        })
-    }
+Conduit.prototype._request = restrictor.push('canceled', cadence(function (async, enqueued) {
+    async(function () {
+        this._connect.call(null, enqueued.request, enqueued.inbox, enqueued.outbox, async())
+    }, function (response) {
+        if (enqueued.response) {
+            enqueued.outbox.push(response)
+            enqueued.outbox.end()
+        }
+    })
 }))
 
 Conduit.prototype._receive = cadence(function (async, envelope) {

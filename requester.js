@@ -32,7 +32,7 @@ var abend = require('abend')
 
 //
 function Requester (destructible, vargs) {
-    destructible.destruct.wait(destructible.monitor('terminator'))
+    destructible.destruct.wait(destructible.durable('terminator'))
     var timeout = Timeout(15000, vargs)
     this._conduit = vargs.shift()
     this._rewrite = operation.shift(vargs)
@@ -42,7 +42,7 @@ function Requester (destructible, vargs) {
 
 // http://stackoverflow.com/a/5426648
 Requester.prototype.request = function (request, response) {
-    this._destructible.monitor([ 'request', this._instance++ ], true, this, '_request', request, response, null)
+    this._destructible.ephemeral([ 'request', this._instance++ ], this, '_request', request, response, null)
 }
 
 Requester.prototype._request = cadence(function (async, destructible, request, response) {
@@ -58,7 +58,7 @@ Requester.prototype._request = cadence(function (async, destructible, request, r
         outbox: true
     })
     var consumer = new Consumer(response, 'conduit/middleware')
-    _request.inbox.pump(consumer, 'enqueue').run(destructible.monitor('consumer'))
+    _request.inbox.pump(consumer, 'enqueue').run(destructible.durable('consumer'))
     Sender(request, _request.outbox, 'conduit/requester', async())
 })
 

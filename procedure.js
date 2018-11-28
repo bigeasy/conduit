@@ -19,7 +19,7 @@ function Procedure (destructible, vargs) {
     this.inbox = new Procession
     this.outbox = new Procession
 
-    this.inbox.pump(this, '_enqueue').run(destructible.monitor('pump'))
+    this.inbox.pump(this, '_enqueue').run(destructible.durable('pump'))
 
     this.eos = new Signal
 }

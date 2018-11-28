@@ -28,12 +28,12 @@ function Conduit (destructible, inbox, outbox, vargs) {
     this.instance = 'cnd-' + (instance++)
     destructible.context.push(this.instance)
 
-    this.shifter = inbox.pump(this, '_receive').run(destructible.monitor('receive'))
+    this.shifter = inbox.pump(this, '_receive').run(destructible.durable('receive'))
 
     this.turnstile = new Turnstile
     this._requests = new Turnstile.Queue(this, '_request', this.turnstile)
 
-    this.turnstile.listen(destructible.monitor('turnstile'))
+    this.turnstile.listen(destructible.durable('turnstile'))
     destructible.destruct.wait(this.turnstile, 'destroy')
 
     this._destructible = destructible
@@ -114,7 +114,7 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
                         identifier: enqueue.identifier,
                         body: envelope
                     })
-                }).run(this._destructible.monitor([ 'server', 'outbox', enqueue.identifier ], true))
+                }).run(this._destructible.ephemeral([ 'server', 'outbox', enqueue.identifier ]))
                 this._request(enqueue)
                 break
             case 'envelope':
@@ -155,7 +155,7 @@ Conduit.prototype.connect = function (request) {
                 identifier: identifier,
                 body: envelope
             })
-        }).run(this._destructible.monitor([ 'client', 'inbox', identifier ], true))
+        }).run(this._destructible.ephemeral([ 'client', 'inbox', identifier ]))
     }
     response.inbox = inbox.shifter()
     this._streams['client:inbox:' + identifier] = inbox

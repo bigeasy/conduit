@@ -13,7 +13,7 @@ function prove (async, okay) {
     var abend = require('abend')
 
     async(function () {
-        destructible.monitor('procedure', Procedure, function (value, callback) {
+        destructible.durable('procedure', Procedure, function (value, callback) {
             callback(null, value + 1)
         }, async())
     }, function (procedure) {

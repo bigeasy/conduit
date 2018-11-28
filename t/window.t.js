@@ -24,8 +24,8 @@ function prove (okay, callback) {
 
     cadence(function (async) {
         async(function () {
-            destructible.monitor('first', Window, async())
-            destructible.monitor('second', Window, { window: 2 }, async())
+            destructible.durable('first', Window, async())
+            destructible.durable('second', Window, { window: 2 }, async())
         }, function (first, second) {
             var inboxes = {
                 first: first.inbox.shifter(),
@@ -97,5 +97,5 @@ function prove (okay, callback) {
                 second.outbox.push(null)
             })
         })
-    })(destructible.monitor('test'))
+    })(destructible.durable('test'))
 }

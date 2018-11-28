@@ -33,7 +33,7 @@ function Window (destructible, options) {
 
     this._destructible = destructible
 
-    this.outbox.pump(this, '_send').run(destructible.monitor('outbox', true))
+    this.outbox.pump(this, '_send').run(destructible.ephemeral('outbox'))
 
     this._socket = {
         inbox: new Procession().shifter(),
@@ -55,7 +55,7 @@ Window.prototype._connect = cadence(function (async, destructible, inbox, outbox
     }, function () {
         // Read the new input into our `_pull` function.
         var pump = inbox.pump(this, '_receive')
-        pump.run(destructible.monitor('inbox'))
+        pump.run(destructible.durable('inbox'))
         var reservoir = this._reservoir
         this._reservoir = outbox.shifter()
         var entry
@@ -68,7 +68,7 @@ Window.prototype._connect = cadence(function (async, destructible, inbox, outbox
 })
 
 Window.prototype.connect = function (inbox, outbox) {
-    this._destructible.monitor([ 'connect', this._connection++ ], true, this, '_connect', inbox, outbox, null)
+    this._destructible.ephemeral([ 'connect', this._connection++ ], this, '_connect', inbox, outbox, null)
 }
 
 // We can shutdown our side of the window by running null through the window's

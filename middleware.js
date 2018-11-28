@@ -24,7 +24,7 @@ var Destructible = require('destructible')
 var Timeout = require('./timeout')
 
 function Middleware (destructible, vargs) {
-    destructible.destruct.wait(destructible.monitor('terminator'))
+    destructible.destruct.wait(destructible.durable('terminator'))
     var timeout = Timeout(15000, vargs)
     var middleware = vargs.shift()
     this._interlocutor = new Interlocutor(middleware)
@@ -37,7 +37,7 @@ function Middleware (destructible, vargs) {
 // from the waiting callbacks. (Of course you do.) Maybe the response is a
 // separate object.
 Middleware.prototype.request = function (header, inbox, outbox) {
-    this._destructible.monitor([ 'request', this._instance++ ], true, this, '_respond', header, inbox, outbox, null)
+    this._destructible.ephemeral([ 'request', this._instance++ ], this, '_respond', header, inbox, outbox, null)
 }
 
 Middleware.prototype._respond = cadence(function (async, destructible, header, inbox, outbox) {
@@ -49,8 +49,8 @@ Middleware.prototype._respond = cadence(function (async, destructible, header, i
         rawHeaders: header.rawHeaders
     })
     var consumer = new Consumer(request, 'conduit/requester')
-    inbox.pump(consumer, 'enqueue').run(destructible.monitor('consumer'))
-    this._request(outbox, request, destructible.monitor('request'))
+    inbox.pump(consumer, 'enqueue').run(destructible.durable('consumer'))
+    this._request(outbox, request, destructible.durable('request'))
 })
 
 Middleware.prototype._request = cadence(function (async, outbox, request) {

@@ -29,7 +29,7 @@ function prove (okay, callback) {
 
     cadence(function (async) {
         async(function () {
-            destructible.monitor('server', Conduit, network.server.inbox, network.server.outbox, cadence(function (async, header, inbox, outbox) {
+            destructible.durable('server', Conduit, network.server.inbox, network.server.outbox, cadence(function (async, header, inbox, outbox) {
                 switch (header.method) {
                 case 'call':
                     return [ 1 ]
@@ -55,7 +55,7 @@ function prove (okay, callback) {
                     break
                 }
             }), async())
-            destructible.monitor('client', Conduit, network.client.inbox, network.client.outbox, null, async())
+            destructible.durable('client', Conduit, network.client.inbox, network.client.outbox, null, async())
         }, function (server, client) {
             network.client.outbox.pump(network.server.inbox, 'enqueue').run(abend)
             network.server.outbox.pump(network.client.inbox, 'enqueue').run(abend)
@@ -92,5 +92,5 @@ function prove (okay, callback) {
                 client._request({})
             })
         })
-    })(destructible.monitor('test'))
+    })(destructible.durable('test'))
 }

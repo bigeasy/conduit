@@ -9,7 +9,7 @@ function prove (async, okay) {
     var destructible = new Destructible('t/caller.t.js')
 
     async(function () {
-        destructible.monitor('caller', Caller, async())
+        destructible.durable('caller', Caller, async())
     }, function (caller) {
         destructible.destruct.wait(async())
 

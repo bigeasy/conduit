@@ -21,7 +21,7 @@ function prove (async, okay) {
         }
     }
     async(function () {
-        destructible.monitor('multiplexer', Multiplexer, receivers, async())
+        destructible.durable('multiplexer', Multiplexer, receivers, async())
     }, function (multiplexer) {
         destructible.completed.wait(async())
 

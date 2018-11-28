@@ -19,7 +19,7 @@ function Pong (destructible, receiver, options) {
 
     receiver.outbox.pump(this.outbox, 'enqueue').run(abend)
 
-    this.inbox.pump(this, '_enqueue').run(destructible.monitor('inbox'))
+    this.inbox.pump(this, '_enqueue').run(destructible.durable('inbox'))
 }
 
 Pong.prototype._checkTimeout = function () {

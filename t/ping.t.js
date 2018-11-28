@@ -13,8 +13,8 @@ function prove (okay, callback) {
 
     destructible.both.completed.wait(callback)
 
-    destructible.ping.completed.wait(destructible.both.monitor('ping'))
-    destructible.pong.completed.wait(destructible.both.monitor('pong'))
+    destructible.ping.completed.wait(destructible.both.durable('ping'))
+    destructible.pong.completed.wait(destructible.both.durable('pong'))
 
     var cadence = require('cadence')
 
@@ -41,8 +41,8 @@ function prove (okay, callback) {
         var Pong = require('../pong')
 
         async(function () {
-            destructible.ping.monitor('ping', Ping, receivers.ping, { timeout: 1000 }, async())
-            destructible.pong.monitor('pong', Pong, receivers.pong, { timeout: 1000 }, async())
+            destructible.ping.durable('ping', Ping, receivers.ping, { timeout: 1000 }, async())
+            destructible.pong.durable('pong', Pong, receivers.pong, { timeout: 1000 }, async())
         }, function (ping, pong) {
             var pinger = ping.outbox.pump(pong.inbox, 'enqueue').run(abend)
             var ponger = pong.outbox.pump(ping.inbox, 'enqueue').run(abend)
@@ -60,5 +60,5 @@ function prove (okay, callback) {
                 pong.outbox.push(null)
             })
         })
-    })(destructible.both.monitor('test'))
+    })(destructible.both.durable('test'))
 }

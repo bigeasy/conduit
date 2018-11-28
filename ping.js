@@ -18,7 +18,7 @@ function Ping (destructible, receiver, options) {
 
     receiver.outbox.pump(this.outbox, 'enqueue').run(abend)
 
-    this.inbox.pump(this, '_enqueue').run(destructible.monitor('inbox'))
+    this.inbox.pump(this, '_enqueue').run(destructible.durable('inbox'))
 
     this.receiver = receiver
 

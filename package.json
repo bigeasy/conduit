@@ -34,7 +34,7 @@
                             "procession":                   "2.10.x",
                             "restrictor":                   "2.5.x",
                             "signal":                       "6.0.x",
-                            "staccato":                     "6.5.x",
+                            "staccato":                     "6.6.x",
                             "turnstile":                    "4.9.x"
     },
     "devDependencies":

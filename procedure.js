@@ -12,7 +12,7 @@ var Signal = require('signal')
 
 function Procedure (destructible, vargs) {
     this.destroyed = false
-    destructible.markDestroyed(this)
+    destructible.destruct.wait(this, function () { this.destroyed = true })
 
     this._operation = operation.shift(vargs)
 

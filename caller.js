@@ -20,7 +20,7 @@ function Caller (destructible) {
     this.outbox = new Procession
     this._cliffhanger = new Cliffhanger
     this._destructible = destructible
-    this._destructible.markDestroyed(this)
+    this._destructible.destruct.wait(this, function () { this.destroyed = true })
     this.eos = new Signal
 }
 

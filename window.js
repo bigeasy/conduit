@@ -29,7 +29,7 @@ function Window (destructible, options) {
     this._flush = Monotonic.add('0', this._window)
 
     this.destroyed = false
-    destructible.markDestroyed(this)
+    destructible.destruct.wait(this, function () { this.destroyed = true })
 
     this._destructible = destructible
 

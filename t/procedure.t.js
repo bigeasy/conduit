@@ -1,41 +1,43 @@
-require('proof')(1, require('cadence')(prove))
+require('proof')(1, prove)
 
-function prove (async, okay) {
+function prove (okay, callback) {
     var Procession = require('procession')
     var Destructible = require('destructible')
 
     var destructible = new Destructible('t/procedure.t.js')
 
-    destructible.destruct.wait(async())
+    destructible.completed.wait(callback)
 
     var Procedure = require('../procedure')
 
     var abend = require('abend')
 
-    async(function () {
-        destructible.durable('procedure', Procedure, function (value, callback) {
-            callback(null, value + 1)
-        }, async())
-    }, function (procedure) {
-        destructible.completed.wait(async())
+    var cadence = require('cadence')
 
-        var shifter = procedure.outbox.shifter()
+    cadence(function (async) {
+        async(function () {
+            destructible.durable('procedure', Procedure, function (value, callback) {
+                callback(null, value + 1)
+            }, async())
+        }, function (procedure) {
+            var shifter = procedure.outbox.shifter()
 
-        procedure.inbox.push({})
-        procedure.inbox.push({
-            module: 'conduit/caller',
-            method: 'invoke',
-            cookie: '1',
-            body: 1
+            procedure.inbox.push({})
+            procedure.inbox.push({
+                module: 'conduit/caller',
+                method: 'invoke',
+                cookie: '1',
+                body: 1
+            })
+
+            okay(shifter.shift(), {
+                module: 'conduit/procedure',
+                method: 'invocation',
+                cookie: '1',
+                body: 2
+            }, 'response')
+
+            procedure.inbox.push(null)
         })
-
-        okay(shifter.shift(), {
-            module: 'conduit/procedure',
-            method: 'invocation',
-            cookie: '1',
-            body: 2
-        }, 'response')
-
-        procedure.inbox.push(null)
-    })
+    })(destructible.durable('test'))
 }

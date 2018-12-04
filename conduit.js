@@ -60,13 +60,21 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
                 var split = key.split(':')
                 switch (split[1]) {
                 case 'outbox':
-                    this._outbox.shifter().join(function (envelope) {
-                        return envelope.module == 'conduit' &&
-                               envelope.method == 'envelope' &&
-                               envelope.identifier == split[2] &&
-                               envelope.body == null
-                    }, async())
-                    this._streams[key].push(null)
+                    async.loop([], function () {
+                        this._outbox.shifter().join(function (envelope) {
+                            return envelope.module == 'conduit' &&
+                                   envelope.method == 'envelope' &&
+                                   envelope.identifier == split[2] &&
+                                   envelope.body == null
+                        }, async())
+                    }, function (terminator) {
+                        if (terminator != null) {
+                            return [ async.break ]
+                        }
+                    })
+                    async.block(function () {
+                        this._streams[key].push(null)
+                    })
                     break
                 case 'inbox':
                     this._receive({

@@ -38,11 +38,11 @@ function Window (destructible, options) {
     this._socket = {
         inbox: new Procession().shifter(),
         outbox: new Procession,
-        completed: new Signal
+        destructible: { completed: new Signal }
     }
     this._reservoir = this._socket.outbox.shifter()
 
-    this._socket.completed.unlatch()
+    this._socket.destructible.completed.unlatch()
 
     this._connection = 0
 }
@@ -51,7 +51,7 @@ Window.prototype._connect = cadence(function (async, destructible, inbox, outbox
     async(function () {
         // Shutdown our previous connections to a bi-directional pair.
         this._socket.inbox.destroy()
-        this._socket.completed.wait(async())
+        this._socket.destructible.completed.wait(async())
     }, function () {
         // Read the new input into our `_pull` function.
         var pump = inbox.pump(this, '_receive')
@@ -63,7 +63,7 @@ Window.prototype._connect = cadence(function (async, destructible, inbox, outbox
             outbox.push(entry)
         }
         this._socket.outbox.end()
-        this._socket = { inbox: pump, outbox: outbox, completed: destructible.completed, destructible: destructible }
+        this._socket = { inbox: pump, outbox: outbox, destructible: destructible }
     })
 })
 

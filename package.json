@@ -41,7 +41,7 @@
     {
                             "proof":                        "5.0.x",
                             "server-destroy":               "1.0.1",
-                            "vizsla":                       "12.17.x"
+                            "vizsla":                       "13.0.x"
     },
     "main":                 "conduit",
     "scripts":

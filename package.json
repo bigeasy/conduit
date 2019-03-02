@@ -28,7 +28,6 @@
                             "interlocutor":                 "0.7.x",
                             "interrupt":                    "7.0.x",
                             "monotonic":                    "3.0.x",
-                            "nascent.jacket":               "1.0.x",
                             "nop":                          "1.0.x",
                             "operation":                    "5.0.x",
                             "procession":                   "3.0.x",

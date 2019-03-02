@@ -25,7 +25,6 @@
                             "delta":                        "3.0.x",
                             "destructible":                 "1.0.x",
                             "extant":                       "1.0.x",
-                            "interlocutor":                 "1.0.x",
                             "interrupt":                    "7.0.x",
                             "monotonic":                    "3.0.x",
                             "nop":                          "1.0.x",

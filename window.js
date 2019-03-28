@@ -50,6 +50,9 @@ function Window (destructible, options) {
 Window.prototype._connect = cadence(function (async, destructible, inbox, outbox) {
     async(function () {
         // Shutdown our previous connections to a bi-directional pair.
+        // TODO Possible race when two or more calls to `_connect` wait for the
+        // previous socket to destruct.
+        // TODO We could at least assert that `completed` has unlatched.
         this._socket.inbox.destroy()
         this._socket.destructible.completed.wait(async())
     }, function () {
@@ -151,6 +154,7 @@ Window.prototype._receive = cadence(function (async, envelope) {
             // Shift the messages that we've received off of the reservoir.
             for (;;) {
                 var peek = this._reservoir.peek()
+                // TODO `peek` should never be `null`.
                 if (peek == null || peek.sequence == envelope.sequence) {
                     break
                 }

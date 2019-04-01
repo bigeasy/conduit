@@ -16,6 +16,10 @@ var abend = require('abend')
 
 var Interrupt = require('interrupt').createInterrupter('conduit/window')
 
+var logger = require('prolific.logger').createLogger('conduit.window')
+
+var Destructible = require('destructible')
+
 function Window (destructible, options) {
     this.outbox = new Procession
     this.inbox = new Procession
@@ -35,43 +39,54 @@ function Window (destructible, options) {
 
     this.outbox.pump(this, '_send').run(destructible.ephemeral('outbox'))
 
-    this._socket = {
-        inbox: new Procession().shifter(),
-        outbox: new Procession,
-        destructible: { completed: new Signal }
-    }
-    this._reservoir = this._socket.outbox.shifter()
+    this._outbox = new Procession
+
+    this._socket = { outbox: new Procession, destructible: new Destructible() }
+    this._reservoir = this._outbox.shifter()
+    this._tracer = this._reservoir.shifter()
 
     this._socket.destructible.completed.unlatch()
 
     this._connection = 0
+
+    this._id = coalesce(options.id)
+
+    logger.trace('created', { id: this._id })
 }
 
-Window.prototype._connect = cadence(function (async, destructible, inbox, outbox) {
+Window.prototype._connect = cadence(function (async, destructible, inbox, outbox, connection) {
     async(function () {
         // Shutdown our previous connections to a bi-directional pair.
         // TODO Possible race when two or more calls to `_connect` wait for the
         // previous socket to destruct.
         // TODO We could at least assert that `completed` has unlatched.
-        this._socket.inbox.destroy()
+        this._socket.destructible.destroy()
         this._socket.destructible.completed.wait(async())
     }, function () {
-        // Read the new input into our `_pull` function.
-        var pump = inbox.pump(this, '_receive')
-        pump.run(destructible.durable('inbox'))
+        Interrupt.assert(connection == this._connection, 'suspected race condition', { id: this._id })
+        // Read the new input into our `_receive` function.
+        this._outbox = new Procession()
+        destructible.durable('inbox', inbox.pump(this, '_receive'), 'destructible', null)
+        destructible.durable('outbox', this._outbox.pump(outbox, 'enqueue'), 'destructible', null)
         var reservoir = this._reservoir
-        this._reservoir = outbox.shifter()
-        var entry
-        while ((entry = reservoir.shift()) != null) {
-            outbox.push(entry)
+        this._reservoir = this._outbox.shifter()
+        this._tracer = this._reservoir.shifter()
+        var entry = reservoir.shift(), first = entry, last = null
+        while (entry != null) {
+            this._outbox.push(entry)
+            last = entry
+            entry = reservoir.shift()
         }
+        logger.trace('connecting', { id: this._id, sequence: this._sequence, connection: connection, $first: first, $last: last })
+        this._sendsToLog = 3
         this._socket.outbox.end()
-        this._socket = { inbox: pump, outbox: outbox, destructible: destructible }
+        this._socket = { outbox: outbox, destructible: destructible, connection: connection }
     })
 })
 
 Window.prototype.connect = function (inbox, outbox) {
-    this._destructible.ephemeral([ 'connect', this._connection++ ], this, '_connect', inbox, outbox, null)
+    var connection = ++this._connection
+    this._destructible.ephemeral([ 'connect', connection ], this, '_connect', inbox, outbox, connection, null)
 }
 
 // We can shutdown our side of the window by running null through the window's
@@ -92,7 +107,7 @@ Window.prototype.connect = function (inbox, outbox) {
 // expecting the inbox to contain only content related to us, so we have to
 // scan the inbox. Forget that. Let's just have a special control message.
 Window.prototype.truncate = function () {
-    this._socket.inbox.destroy()
+    this._socket.destructible.destroy()
     this._socket.destructible.completed.wait(this, function () {
         this.inbox.end()
     })
@@ -135,7 +150,18 @@ Window.prototype._receive = cadence(function (async, envelope) {
             // We might lose an envelope. We're going to count on this being a
             // break where a conduit reconnect causes the messages to be resent
             // but we could probably request a replay ourselves.
-            Interrupt.assert(this._received == envelope.previous, 'ahead')
+            if (this._received != envelope.previous) {
+                logger.trace('ahead', {
+                    id: this._id,
+                    previous: this._received,
+                    connection: this._socket.connection,
+                    $envelope: envelope
+                })
+            }
+            Interrupt.assert(this._received == envelope.previous, 'ahead', {
+                received: this._received,
+                envelope: envelope
+            })
             // Note the last received sequence.
             this._received = envelope.sequence
             // Send a flush if we've reached the end of a window.
@@ -146,16 +172,28 @@ Window.prototype._receive = cadence(function (async, envelope) {
                     sequence: this._received
                 })
                 this._flush = Monotonic.add(this._flush, this._window)
+                logger.trace('flush', {
+                    id: this._id,
+                    connection: this._socket.connection,
+                    sequence: this._received,
+                    flush: this._flush
+                })
             }
             // Forward the body which might actually be `null` end-of-stream.
             this.inbox.enqueue(envelope.body, async())
             break
         case 'flush':
             // Shift the messages that we've received off of the reservoir.
+            logger.trace('flushing', {
+                id: this._id,
+                connection: this._socket.connection,
+                $envelope: envelope
+            })
             for (;;) {
                 var peek = this._reservoir.peek()
                 // TODO `peek` should never be `null`.
-                if (peek == null || peek.sequence == envelope.sequence) {
+                Interrupt.assert(peek != null, 'null peek on flush')
+                if (peek.sequence == envelope.sequence) {
                     break
                 }
                 this._reservoir.shift()
@@ -174,16 +212,36 @@ Window.prototype._receive = cadence(function (async, envelope) {
 
 //
 Window.prototype._send = function (envelope) {
-    this._socket.outbox.push({
+    this._outbox.push(envelope = {
         module: 'conduit/window',
         method: 'envelope',
         previous: this._sequence,
         sequence: this._sequence = Monotonic.increment(this._sequence, 0),
         body: envelope
     })
+    var trace = this._tracer.shift()
+    for (;;) {
+        if (trace == null) {
+            logger.trace('missing', {
+                id: this._id,
+                $envelope: envelope
+            })
+            break
+        } else if (trace.sequence == envelope.sequence) {
+            break
+        }
+        trace = this._tracer.shift()
+    }
+    if (this._sendsToLog != 0) {
+        this._sendsToLog--
+        logger.trace('send', {
+            id: this._id,
+            $envelope: envelope
+        })
+    }
     // When the nested stream ends, the underlying stream ends.
     if (envelope == null) {
-        this._socket.outbox.push(null)
+        this._outbox.push(null)
     }
 }
 

@@ -22,6 +22,7 @@ var restrictor = require('restrictor')
 var instance = 0
 function Conduit (destructible, inbox, outbox, vargs) {
     this._connect = vargs[0] != null ? operation.shift(vargs) : null
+    this._seen = {}
 
     this._outbox = outbox
 
@@ -126,6 +127,10 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
                 this._request(enqueue)
                 break
             case 'envelope':
+                this._seen['server:inbox:' + envelope.identifier] = true
+                if (!this._streams['server:inbox:' + envelope.identifier]) {
+                    console.log('MISSING', envelope, Objcet.keys(this._seen))
+                }
                 this._streams['server:inbox:' + envelope.identifier].push(envelope.body)
                 if (envelope.body == null) {
                     delete this._streams['server:inbox:' + envelope.identifier]

@@ -19,10 +19,16 @@ var Monotonic = require('monotonic').asString
 
 var restrictor = require('restrictor')
 
+var Interrupt = require('interrupt').createInterrupter('conduit')
+
+function inspect (object) {
+    return require('util').inspect(object, { depth: Infinity })
+}
+
 var instance = 0
 function Conduit (destructible, inbox, outbox, vargs) {
     this._connect = vargs[0] != null ? operation.shift(vargs) : null
-    this._seen = {}
+    this._trace = { envelopes: [], inboxes: {} }
 
     this._outbox = outbox
 
@@ -55,6 +61,10 @@ Conduit.prototype._request = restrictor.push('canceled', cadence(function (async
 }))
 
 Conduit.prototype._receive = cadence(function (async, envelope) {
+    this._trace.envelopes.push(envelope)
+    if (this._trace.envelopes.length > 7) {
+        this._trace.envelopes.shift()
+    }
     if (envelope == null) {
         async(function () {
             async.forEach([ Object.keys(this._streams) ], function (key) {
@@ -107,6 +117,7 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
                 this._streams['server:outbox:' + envelope.identifier] = enqueue.outbox
                 if (enqueue.request.outbox) {
                     var inbox = this._streams['server:inbox:' + envelope.identifier] = new Procession
+                    this._trace.inboxes['server:inbox:' + envelope.identifier] = { envelopes: [] }
                     enqueue.inbox = inbox.shifter()
                 }
                 if (!enqueue.request.inbox) {
@@ -127,9 +138,17 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
                 this._request(enqueue)
                 break
             case 'envelope':
-                this._seen['server:inbox:' + envelope.identifier] = true
+                var identifier = 'server:inbox:' + envelope.identifier
+                if (!this._trace.inboxes[identifier]) {
+                    console.log('NEVER CREATED', envelope, inspect(this._trace))
+                    this._trace.inboxes[identifier] = { envelopes: [] }
+                }
+                this._trace.inboxes[identifier].envelopes.push(envelope)
+                if (this._trace.inboxes[identifier].envelopes.length > 3) {
+                    this._trace.inboxes[identifier].envelopes.shift()
+                }
                 if (!this._streams['server:inbox:' + envelope.identifier]) {
-                    console.log('MISSING', envelope, Object.keys(this._seen))
+                    console.log('CONDUIT MISSING SOCKET', envelope, inspect(this._trace))
                 }
                 this._streams['server:inbox:' + envelope.identifier].push(envelope.body)
                 if (envelope.body == null) {
@@ -156,10 +175,12 @@ Conduit.prototype.connect = function (request) {
     var inbox = new Procession
     var response = { inbox: new Procession, outbox: null }
     if (request.outbox) {
-        var outbox =this._streams['client:outbox:' + identifier] =  response.outbox = new Procession
+        var outbox = this._streams['client:outbox:' + identifier] =  response.outbox = new Procession
         outbox.pump(this, function (envelope) {
             if (envelope == null) {
                 delete this._streams['client:outbox:' + identifier]
+            } else {
+                Interrupt.assert(this._streams['client:outbox:' + identifier], 'missing.outbox')
             }
             this._outbox.push({
                 module: 'conduit',

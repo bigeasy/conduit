@@ -2,9 +2,6 @@
 var cadence = require('cadence')
 var delta = require('delta')
 
-// Read and write streams with error-first callbacks.
-var Staccato = require('staccato')
-
 // An evented work queue.
 var Procession = require('procession')
 

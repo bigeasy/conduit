@@ -10,6 +10,7 @@ module.exports = cadence(function (async, message, read, module) {
                 reader.read(async())
             }, function (buffer) {
                 if (buffer == null) {
+                    reader.raise()
                     return [ async.break ]
                 }
                 read.enqueue({

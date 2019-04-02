@@ -1,9 +1,6 @@
 // Control-flow utilities.
 var cadence = require('cadence')
 
-// Read and write streams with error-first callbacks.
-var Staccato = require('staccato')
-
 // Return the first not null-like value.
 var coalesce = require('extant')
 

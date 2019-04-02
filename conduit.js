@@ -129,7 +129,7 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
             case 'envelope':
                 this._seen['server:inbox:' + envelope.identifier] = true
                 if (!this._streams['server:inbox:' + envelope.identifier]) {
-                    console.log('MISSING', envelope, Objcet.keys(this._seen))
+                    console.log('MISSING', envelope, Object.keys(this._seen))
                 }
                 this._streams['server:inbox:' + envelope.identifier].push(envelope.body)
                 if (envelope.body == null) {

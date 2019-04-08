@@ -23,7 +23,7 @@
                             "cadence":                      "3.0.x",
                             "cliffhanger":                  "3.0.x",
                             "delta":                        "3.0.x",
-                            "destructible":                 "1.0.x",
+                            "destructible":                 "2.0.x",
                             "extant":                       "1.0.x",
                             "interlocutor":                 "1.0.x",
                             "interrupt":                    "7.0.x",

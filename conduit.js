@@ -25,6 +25,13 @@ function inspect (object) {
     return require('util').inspect(object, { depth: Infinity })
 }
 
+function increment (value) {
+    if (value === 0xffffffff) {
+        return 0
+    }
+    return value + 1
+}
+
 var instance = 0
 function Conduit (destructible, inbox, outbox, vargs) {
     this._connect = vargs[0] != null ? operation.shift(vargs) : null
@@ -45,6 +52,9 @@ function Conduit (destructible, inbox, outbox, vargs) {
 
     this._destructible = destructible
     this._identifier = '0'
+
+    this._written = 0xffffffff
+    this._read = 0
 
     this._streams = {}
 }
@@ -92,6 +102,7 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
                         module: 'conduit',
                         to: split[0],
                         method: 'envelope',
+                        series: this._read,
                         identifier: split[2],
                         body: null
                     }, async())
@@ -103,6 +114,13 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
             this._outbox.end()
         })
     } else if (envelope.module == 'conduit') {
+        Interrupt.assert(this._read == envelope.series, 'series.mismatch', {
+            instance: this.instance,
+            read: this._read,
+            written: this._written,
+            $envelope: envelope
+        })
+        this._read = increment(this._read)
         switch (envelope.to) {
         case 'server':
             switch (envelope.method) {
@@ -131,6 +149,7 @@ Conduit.prototype._receive = cadence(function (async, envelope) {
                         module: 'conduit',
                         to: 'client',
                         method: 'envelope',
+                        series: this._written = increment(this._written),
                         identifier: enqueue.identifier,
                         body: envelope
                     })
@@ -186,6 +205,7 @@ Conduit.prototype.connect = function (request) {
                 module: 'conduit',
                 to: 'server',
                 method: 'envelope',
+                series: this._written = increment(this._written),
                 identifier: identifier,
                 body: envelope
             })
@@ -197,6 +217,7 @@ Conduit.prototype.connect = function (request) {
         module: 'conduit',
         to: 'server',
         method: 'connect',
+        series: this._written = increment(this._written),
         identifier: identifier,
         body: request
     })

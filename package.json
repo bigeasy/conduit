@@ -19,32 +19,17 @@
     },
     "dependencies":
     {
-                            "abend":                        "1.0.x",
-                            "cadence":                      "3.0.x",
-                            "cliffhanger":                  "3.0.x",
-                            "delta":                        "3.0.x",
-                            "destructible":                 "2.0.x",
+                            "avenue":                       "0.1.x",
+                            "destructible":                 "4.0.x",
                             "extant":                       "1.0.x",
-                            "interlocutor":                 "1.0.x",
-                            "interrupt":                    "7.0.x",
-                            "monotonic":                    "3.0.x",
-                            "nop":                          "1.0.x",
-                            "operation":                    "5.0.x",
-                            "procession":                   "4.0.x",
-                            "restrictor":                   "3.0.x",
-                            "signal":                       "7.0.x",
-                            "staccato":                     "8.0.x",
-                            "turnstile":                    "5.0.x"
+                            "interrupt":                    "8.0.x"
     },
     "devDependencies":
     {
-                            "proof":                        "7.0.x",
-                            "server-destroy":               "1.0.1",
-                            "vizsla":                       "14.0.x"
     },
     "main":                 "conduit",
     "scripts":
     {
-                            "test": "proof test test/*.t.js"
+                            "test": "mocha test/*.test.js"
     }
 }

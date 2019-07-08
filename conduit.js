@@ -5,6 +5,8 @@ const Destructible = require('destructible')
 const Flood = require('./flood')
 
 class Conduit {
+    static Error = Interrupt.create('Conduit.Error')
+
     constructor () {
         this._destructible = new Destructible('conduit')
         this._identifier = 0n
@@ -141,7 +143,5 @@ class Conduit {
         return result
     }
 }
-
-Conduit.Error = Interrupt.create('Conduit.Error')
 
 module.exports = Conduit

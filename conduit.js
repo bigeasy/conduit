@@ -104,11 +104,11 @@ class Conduit {
         return this._destructible.promise
     }
 
-    async request (header, splicer = false, queue = false) {
+    async request (header, shifter = false, queue = false) {
         const identifier = (this._identifier++).toString(16)
         const inbox = this._queues[`client:inbox:${identifier}`] = new Queue
         const response = { queue: null, shifter: inbox.shifter() }
-        const request = { header, splicer, queue }
+        const request = { header, shifter, queue }
         if (queue) {
             const outbox = this._queues[`client:outbox:${identifier}`] = response.queue = new Queue
             this._destructible.ephemeral([ 'client', 'outbox', indentifier ], (entry) => {
@@ -135,7 +135,7 @@ class Conduit {
             identifier: identifier,
             body: request
         })
-        if (splicer || queue) {
+        if (shifter || queue) {
             return response
         }
         const result = await response.shifter.shift()

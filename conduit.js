@@ -7,12 +7,16 @@ const Flood = require('./flood')
 class Conduit {
     static Error = Interrupt.create('Conduit.Error')
 
-    constructor (destructible = new Destructible('conduit')) {
+    constructor (destructible = new Destructible('conduit'), shifter, queue, responder) {
         this._destructible = destructible
         this._identifier = 0n
         this._written = 0n
         this._read = 0n
         this._queues = {}
+        this.promise = destructible.promise
+        if (shifter && queue && responder) {
+            this.pump(shifter, queue, responder)
+        }
     }
 
     destroy () {

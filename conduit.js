@@ -7,8 +7,8 @@ const Flood = require('./flood')
 class Conduit {
     static Error = Interrupt.create('Conduit.Error')
 
-    constructor () {
-        this._destructible = new Destructible('conduit')
+    constructor (destructible = new Destructible('conduit')) {
+        this._destructible = destructible
         this._identifier = 0n
         this._written = 0n
         this._read = 0n

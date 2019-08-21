@@ -14,7 +14,7 @@ class Conduit {
         this._read = 0n
         this._queues = {}
         this.promise = destructible.promise
-        if (shifter && queue && responder) {
+        if (shifter && queue) {
             this.pump(shifter, queue, responder)
         }
     }

@@ -5,18 +5,15 @@ describe('conduit', () => {
     const Queue = require('avenue')
     it('can invoke a function', async () => {
         const destructible = new Destructible('invoke')
-        const server = new Conduit
         const from = new Queue
         const to = new Queue
-        destructible.durable('server', server.pump(from.shifter(), to, async function (header) {
+        const server = new Conduit(destructible.durable('server'), from.shifter(), to, async function (header) {
             return header.value
-        }))
-        destructible.destruct(() => server.destroy())
-        const client = new Conduit
-        destructible.durable('server', client.pump(to.shifter(), from))
-        destructible.destruct(() => client.destroy())
+        })
+        const client = new Conduit(destructible.durable('client'), to.shifter(), from)
         assert.equal(await client.request({ value: 1 }), 1, 'invoke')
         to.push(null)
         from.push(null)
+        await destructible.promise
     })
 })

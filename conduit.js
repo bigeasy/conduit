@@ -105,10 +105,9 @@ class Conduit {
                 }
             }
         }))
-        return this._destructible.promise
     }
 
-    async request (header, shifter = false, queue = false) {
+    request (header, shifter = false, queue = false) {
         const identifier = (this._identifier++).toString(16)
         const inbox = this._queues[`client:inbox:${identifier}`] = new Queue
         const response = { queue: null, shifter: inbox.shifter() }
@@ -142,8 +141,8 @@ class Conduit {
         if (shifter || queue) {
             return response
         }
-        const result = await response.shifter.shift()
-        response.shifter.destroy()
+        const result = response.shifter.shift()
+        result.then(() => response.shifter.destroy())
         return result
     }
 }

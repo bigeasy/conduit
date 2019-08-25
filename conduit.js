@@ -2,13 +2,13 @@
 const Queue = require('avenue')
 const Interrupt = require('interrupt')
 const Destructible = require('destructible')
-const Flood = require('./flood')
 
 class Conduit {
     static Error = Interrupt.create('Conduit.Error')
 
     constructor (destructible = new Destructible('conduit'), shifter, queue, responder) {
         this._destructible = destructible
+        this._instance = 0
         this._identifier = 0n
         this._written = 0n
         this._read = 0n
@@ -24,8 +24,15 @@ class Conduit {
     }
 
     pump (shifter, queue, responder) {
-        const throttle = new Flood(responder)
-        this._destructible.durable('responder', throttle.promise)
+        // **TODO** Document the use of the responder function as a
+        // `Destructible` monitored shifter function. It might reduce the number
+        // of sub-destructibles in an application.
+        async function respond (body, request) {
+            const response = await responder(body.header, request.shifter, request.queue)
+            if (!body.shifter) {
+                request.queue.enqueue([ response, null ])
+            }
+        }
         this._queue = queue
         this._destructible.durable('queue', shifter.pump(async (entry) => {
             if (entry == null) {
@@ -47,7 +54,6 @@ class Conduit {
                     await this._queues[key].queue.shifter().end
                 }
                 this._queue.push(null)
-                throttle.destroy()
             } else if (entry.module == 'conduit') {
                 Conduit.Error.assert(this._read.toString(16) == entry.series, 'series.mismatch', {
                     read: this._read.toString(16),
@@ -60,8 +66,7 @@ class Conduit {
                     switch (entry.method) {
                     case 'connect':
                         const down = this._queues['server:outbox:' + entry.identifier] = new Queue
-                        const request = { entry: entry, queue: null, shifter: null }
-                        request.queue = down
+                        const request = { entry: entry, queue: down, shifter: null }
                         if (entry.queue) {
                             const up = new Queue
                             this._queues[`server:inbox:${entry.identifier}`] = up
@@ -82,7 +87,10 @@ class Conduit {
                                 body: subEntry
                             })
                         }))
-                        throttle.respond(request)
+                        const instance = this._instance = (this._instance + 1) & 0xfffffff
+                        this._destructible.ephemeral([
+                            'request', entry.identifier
+                        ], respond(entry.body, request))
                         break
                     case 'envelope':
                         const identifier = `server:inbox:${entry.identifier}`

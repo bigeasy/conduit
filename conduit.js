@@ -1,4 +1,4 @@
-// An `async`/`await` message queue.
+// An `async`/`await` message queue. **TODO** Rename `Avenue`.
 const Queue = require('avenue')
 
 // Detailed exceptions that can be caught by type.
@@ -10,6 +10,7 @@ const Destructible = require('destructible')
 class Conduit {
     static Error = Interrupt.create('Conduit.Error')
 
+    // **TODO** No, always a destructor.
     constructor (destructible = new Destructible('conduit'), shifter, queue, responder) {
         this._destructible = destructible
         this._instance = 0
@@ -129,6 +130,7 @@ class Conduit {
         return this.request(header, true)
     }
 
+    // **TODO** I like `invoke` better.
     promise (header) {
         // would return the first entry as a promise
         return this.request(header)

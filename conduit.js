@@ -17,7 +17,6 @@ class Conduit {
         this._written = 0n
         this._read = 0n
         this._queues = {}
-        this.promise = destructible.promise
         if (shifter && queue) {
             this.pump(shifter, queue, responder)
         }
@@ -31,8 +30,9 @@ class Conduit {
         // **TODO** Document the use of the responder function as a
         // `Destructible` monitored shifter function. It might reduce the number
         // of sub-destructibles in an application.
+        // **TODO** Just use request.
         async function respond (body, request) {
-            const response = await responder(body.header, request.shifter, request.queue)
+            const response = await responder(body.header, request.queue, request.shifter)
             if (!body.shifter) {
                 request.queue.enqueue([ response, null ])
             }
@@ -65,42 +65,42 @@ class Conduit {
                     entry: entry
                 })
                 this._read++
+                const { identifier } = entry
                 switch (entry.to) {
                 case 'server':
                     switch (entry.method) {
                     case 'connect':
-                        const down = this._queues['server:outbox:' + entry.identifier] = new Queue
+                        const down = this._queues['server:outbox:' + identifier] = new Queue
                         const request = { entry: entry, queue: down, shifter: null }
-                        if (entry.queue) {
+                        if (entry.body.queue) {
                             const up = new Queue
-                            this._queues[`server:inbox:${entry.identifier}`] = up
+                            this._queues[`server:inbox:${identifier}`] = up
                             request.shifter = up.shifter()
                         }
                         this._destructible.ephemeral([
-                            'server', 'outbox', entry.identifier
-                        ], request.queue.shifter().pump(async (subEntry) => {
-                            if (subEntry == null) {
-                                delete this._queues[`server:outbox:${entry.identifier}`]
+                            'server', 'outbox', identifier
+                        ], request.queue.shifter().pump(async entry => {
+                            if (entry == null) {
+                                delete this._queues[`server:outbox:${identifier}`]
                             }
                             this._queue.push({
                                 module: 'conduit',
                                 to: 'client',
                                 method: 'envelope',
                                 series: (this._written++).toString(16),
-                                identifier: entry.identifier,
-                                body: subEntry
+                                identifier: identifier,
+                                body: entry
                             })
                         }))
                         const instance = this._instance = (this._instance + 1) & 0xfffffff
                         this._destructible.ephemeral([
-                            'request', entry.identifier
+                            'request', identifier
                         ], respond(entry.body, request))
                         break
                     case 'envelope':
-                        const identifier = `server:inbox:${entry.identifier}`
-                        this._queues[identifier].push(envelope.body)
-                        if (envelope.body == null) {
-                            delete this._queues[identifier]
+                        this._queues[`server:inbox:${identifier}`].push(entry.body)
+                        if (entry.body == null) {
+                            delete this._queues[`server:inbox:${identifier}`]
                         }
                         break
                     }
@@ -108,15 +108,30 @@ class Conduit {
                 case 'client':
                     switch (entry.method) {
                     case 'envelope':
-                        this._queues[`client:inbox:${entry.identifier}`].push(entry.body)
+                        this._queues[`client:inbox:${identifier}`].push(entry.body)
                         if (entry.body == null) {
-                            delete this._queues[`client:inbox:${entry.identifier}`]
+                            delete this._queues[`client:inbox:${identifier}`]
                         }
                     }
                     break
                 }
             }
         }))
+    }
+
+    queue (header) {
+        // would return shifter and queue
+        return this.request(header, true, true)
+    }
+
+    shifter (header) {
+        // would return shifter and no queue
+        return this.request(header, true)
+    }
+
+    promise (header) {
+        // would return the first entry as a promise
+        return this.request(header)
     }
 
     request (header, shifter = false, queue = false) {
@@ -126,7 +141,7 @@ class Conduit {
         const request = { header, shifter, queue }
         if (queue) {
             const outbox = this._queues[`client:outbox:${identifier}`] = response.queue = new Queue
-            this._destructible.ephemeral([ 'client', 'outbox', indentifier ], (entry) => {
+            this._destructible.ephemeral([ 'queue', identifier ], response.queue.shifter().pump(entry => {
                 if (entry == null) {
                     delete this._queues[`client:outbox:${identifier}`]
                 } else {
@@ -136,11 +151,11 @@ class Conduit {
                     module: 'conduit',
                     to: 'server',
                     method: 'envelope',
-                    series: this._written = increment(this._written),
+                    series: (this._written++).toString(16),
                     identifier: identifier,
-                    body: envelope
+                    body: entry
                 })
-            })
+            }))
         }
         this._queue.push({
             module: 'conduit',
@@ -150,6 +165,8 @@ class Conduit {
             identifier: identifier,
             body: request
         })
+        // If they want a shifter, give them one. If they want a queue then they
+        // are going to have to shift the response themselves.
         if (shifter || queue) {
             return response
         }

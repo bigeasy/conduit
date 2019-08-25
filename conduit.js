@@ -1,6 +1,10 @@
-// An evented message queue.
+// An `async`/`await` message queue.
 const Queue = require('avenue')
+
+// Detailed exceptions that can be caught by type.
 const Interrupt = require('interrupt')
+
+// A tree of cancellable strands.
 const Destructible = require('destructible')
 
 class Conduit {

@@ -1,3 +1,5 @@
+const assert = require('assert')
+
 // An `async`/`await` message queue. **TODO** Rename `Avenue`.
 const Queue = require('avenue')
 
@@ -7,59 +9,91 @@ const Interrupt = require('interrupt')
 // A tree of cancellable strands.
 const Destructible = require('destructible')
 
+// The proper way, the only way, to end a `Conduit` is to terminate its input
+// stream, so although `Conduit` is a `Destructible`-based class we do not pass
+// in its `Destructible`. We do not want the `Conduit` to destroy itself because
+// the parent `Destructible` is destroyed. We want the user destroy the
+// `Conduit` by ending the input stream, so it's the user's responsibility to
+// decide if the `Conduit` should run until the stream drains, or if the
+// `Conduit` should shutdown immediately by destroying the given shifter.
+
+// Destruction should mean sending a final message to the other side, so that
+// we're shutting down in an orderly fashion, terminating all the end points
+// correctly, or maybe timing out and hanging up prior to scram.
+
+// Recall that this is something you've considered and reconsisdered. It keeps
+// coming up. We don't want shutdown to be so brutal all the time.
+
 class Conduit {
     static Error = Interrupt.create('Conduit.Error')
 
-    // **TODO** No, always a destructor.
-    constructor (destructible = new Destructible('conduit'), shifter, queue, responder) {
-        this._destructible = destructible
+    constructor (...vargs) {
+        const scram = typeof vargs[0] == 'number' ? vargs.shift() : 750
+
+        this._destructible = new Destructible(scram, vargs.shift())
+        this._shifter = vargs.shift()
+        this._queue = vargs.shift()
+        this._responder = vargs.shift()
+
+        this.pumping = false
+        this.destroyed = false
+
         this._instance = 0
         this._identifier = 0n
         this._written = 0n
         this._read = 0n
         this._queues = {}
-        if (shifter && queue) {
-            this.pump(shifter, queue, responder)
-        }
+
+        this._sendable = this._destructible.durable('outboxes')
+
+        this._destructible.destruct(() => this.destroyed = true)
     }
 
-    destroy () {
-        this._destructible.destroy()
-    }
-
-    pump (shifter, queue, responder) {
+    async pump () {
+        // If the shifter has been destroyed, it will return null, so this
+        // method would return immediately, but we really do want to enforce a
+        // single call. What does it mean to have it called twice before it gets
+        // marked destroyed?
+        assert(!this.pumping)
+        this.pumping = true
         // **TODO** Document the use of the responder function as a
         // `Destructible` monitored shifter function. It might reduce the number
         // of sub-destructibles in an application.
         // **TODO** Just use request.
+        const respondable = this._destructible.durable('responder')
+        const receivable = this._destructible.durable('inboxes')
+        const responder = this._responder
         async function respond (body, request) {
             const response = await responder(body.header, request.queue, request.shifter)
             if (!body.shifter) {
                 request.queue.enqueue([ response, null ])
             }
         }
-        this._queue = queue
-        this._destructible.durable('queue', shifter.pump(async (entry) => {
-            if (entry == null) {
-                for (const key in this._queues) {
-                    const split = key.split(':')
-                    if (split[1] ==  'inbox') {
-                        await this._receive({
-                            module: 'conduit',
-                            to: split[0],
-                            method: 'envelope',
-                            series: this._read,
-                            identifier: split[2],
-                            body: null
-                        })
-                        break
-                    }
+        this._destructible.destruct(async () => {
+            for (const key in this._queues) {
+                const split = key.split(':')
+                if (split[1] ==  'inbox') {
+                    receive({
+                        module: 'conduit',
+                        to: split[0],
+                        method: 'envelope',
+                        series: this._read.toString(16),
+                        identifier: split[2],
+                        forced: true,
+                        body: null
+                    })
                 }
-                for (const key in this._queues) {
-                    await this._queues[key].queue.shifter().end
-                }
-                this._queue.push(null)
-            } else if (entry.module == 'conduit') {
+            }
+            await receivable.promise
+            await respondable.promise
+            for (const key in this._queues) {
+                this._queues[key].push(null)
+            }
+            await this._sendable.promise
+            this._queue.push(null)
+        })
+        const receive = (entry) => {
+            if (entry != null) {
                 Conduit.Error.assert(this._read.toString(16) == entry.series, 'series.mismatch', {
                     read: this._read.toString(16),
                     written: this._written.toString(16),
@@ -94,7 +128,7 @@ class Conduit {
                             })
                         }))
                         const instance = this._instance = (this._instance + 1) & 0xfffffff
-                        this._destructible.ephemeral([
+                        respondable.ephemeral([
                             'request', identifier
                         ], respond(entry.body, request))
                         break
@@ -117,7 +151,9 @@ class Conduit {
                     break
                 }
             }
-        }))
+        }
+        this._destructible.durable('queue', this._shifter.pump(receive))
+        await this._destructible.promise
     }
 
     queue (header) {
@@ -127,13 +163,13 @@ class Conduit {
 
     shifter (header) {
         // would return shifter and no queue
-        return this.request(header, true)
+        return this.request(header, true, false)
     }
 
     // **TODO** I like `invoke` better.
     promise (header) {
         // would return the first entry as a promise
-        return this.request(header)
+        return this.request(header, false, false)
     }
 
     request (header, shifter = false, queue = false) {
@@ -143,7 +179,9 @@ class Conduit {
         const request = { header, shifter, queue }
         if (queue) {
             const outbox = this._queues[`client:outbox:${identifier}`] = response.queue = new Queue
-            this._destructible.ephemeral([ 'queue', identifier ], response.queue.shifter().pump(entry => {
+            this._sendable.ephemeral([
+                'queue', identifier
+            ], response.queue.shifter().pump(entry => {
                 if (entry == null) {
                     delete this._queues[`client:outbox:${identifier}`]
                 } else {

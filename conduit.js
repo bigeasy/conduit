@@ -158,21 +158,21 @@ class Conduit {
 
     queue (header) {
         // would return shifter and queue
-        return this.request(header, true, true)
+        return this._request(header, true, true)
     }
 
     shifter (header) {
         // would return shifter and no queue
-        return this.request(header, true, false)
+        return this._request(header, true, false)
     }
 
     // **TODO** I like `invoke` better.
-    promise (header) {
+    invoke (header) {
         // would return the first entry as a promise
-        return this.request(header, false, false)
+        return this._request(header, false, false)
     }
 
-    request (header, shifter = false, queue = false) {
+    _request (header, shifter, queue) {
         const identifier = (this._identifier++).toString(16)
         const inbox = this._queues[`client:inbox:${identifier}`] = new Queue
         const response = { queue: null, shifter: inbox.shifter() }

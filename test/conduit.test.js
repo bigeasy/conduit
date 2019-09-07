@@ -13,7 +13,7 @@ describe('conduit', () => {
         destructible.durable('server', server.pump())
         const client = new Conduit(destructible.durable('client'), to.shifter(), from)
         destructible.durable('client', client.pump())
-        assert.equal(await client.promise({ value: 1 }), 1, 'invoke')
+        assert.equal(await client.invoke({ value: 1 }), 1, 'invoke')
         to.push(null)
         from.push(null)
         await destructible.promise

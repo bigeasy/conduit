@@ -1,9 +1,8 @@
-describe('conduit', () => {
-    const assert = require('assert')
+require('proof')(4, async (okay) => {
     const Conduit = require('../conduit')
     const Destructible = require('destructible')
     const Queue = require('avenue')
-    it('can invoke a function', async () => {
+    {
         const destructible = new Destructible('promise')
         const from = new Queue
         const to = new Queue
@@ -13,12 +12,12 @@ describe('conduit', () => {
         destructible.durable('server', server.pump())
         const client = new Conduit(destructible.durable('client'), to.shifter(), from)
         destructible.durable('client', client.pump())
-        assert.equal(await client.invoke({ value: 1 }), 1, 'invoke')
+        okay(await client.invoke({ value: 1 }), 1, 'invoke')
         to.push(null)
         from.push(null)
         await destructible.promise
-    })
-    it('can receive a stream', async () => {
+    }
+    {
         const destructible = new Destructible('shifter')
         const from = new Queue
         const to = new Queue
@@ -30,12 +29,12 @@ describe('conduit', () => {
         destructible.durable('client', client.pump())
         const { shifter } = client.shifter({ value: 1 })
         const [ value ] = await shifter.splice(2)
-        assert.equal(value, 1, 'shifter')
+        okay(value, 1, 'shifter')
         to.push(null)
         from.push(null)
         await destructible.promise
-    })
-    it('can send a stream', async () => {
+    }
+    {
         const destructible = new Destructible('queue')
         const from = new Queue
         const to = new Queue
@@ -49,12 +48,12 @@ describe('conduit', () => {
         const { queue, shifter } = client.queue(null)
         await queue.enqueue([ 1, null ])
         const [ value ] = await shifter.splice(2)
-        assert.equal(value, 1, 'queue')
+        okay(value, 1, 'queue')
         to.push(null)
         from.push(null)
         await destructible.promise
-    })
-    it('can hangup on a stream', async () => {
+    }
+    {
         const destructible = new Destructible('queue')
         const from = new Queue
         const to = new Queue
@@ -70,5 +69,6 @@ describe('conduit', () => {
         const { queue, shifter } = client.queue(null)
         from.push(null)
         await destructible.promise
-    })
+        okay(true, 'hangup')
+    }
 })

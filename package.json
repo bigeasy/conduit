@@ -26,10 +26,11 @@
     },
     "devDependencies":
     {
+                            "proof":                        "^8.0.0-alpha.7"
     },
     "main":                 "conduit",
     "scripts":
     {
-                            "test": "mocha test/*.test.js"
+                            "test": "proof test/*.test.js"
     }
 }

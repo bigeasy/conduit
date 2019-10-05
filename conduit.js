@@ -28,9 +28,7 @@ class Conduit {
     static Error = Interrupt.create('Conduit.Error')
 
     constructor (...vargs) {
-        const scram = typeof vargs[0] == 'number' ? vargs.shift() : 750
-
-        this._destructible = new Destructible(scram, vargs.shift())
+        this._destructible = vargs.shift()
         this._shifter = vargs.shift()
         this._queue = vargs.shift()
         this._responder = vargs.shift()
@@ -44,56 +42,54 @@ class Conduit {
         this._read = 0n
         this._queues = {}
 
-        this._sendable = this._destructible.durable('outboxes')
+        this.eos = new Promise(resolve => this._eos = resolve)
 
-        this._destructible.destruct(() => this.destroyed = true)
-    }
-
-    async pump () {
-        // If the shifter has been destroyed, it will return null, so this
-        // method would return immediately, but we really do want to enforce a
-        // single call. What does it mean to have it called twice before it gets
-        // marked destroyed?
-        assert(!this.pumping)
-        this.pumping = true
-        // **TODO** Document the use of the responder function as a
-        // `Destructible` monitored shifter function. It might reduce the number
-        // of sub-destructibles in an application.
-        // **TODO** Just use request.
-        const respondable = this._destructible.durable('responder')
-        const receivable = this._destructible.durable('inboxes')
-        const responder = this._responder
-        async function respond (body, request) {
-            const response = await responder(body.header, request.queue, request.shifter)
-            if (!body.shifter) {
-                request.queue.enqueue([ response, null ])
-            }
-        }
-        this._destructible.destruct(async () => {
-            for (const key in this._queues) {
-                const split = key.split(':')
-                if (split[1] ==  'inbox') {
-                    receive({
-                        module: 'conduit',
-                        to: split[0],
-                        method: 'envelope',
-                        series: this._read.toString(16),
-                        identifier: split[2],
-                        forced: true,
-                        body: null
-                    })
-                }
-            }
-            await receivable.promise
-            await respondable.promise
+        const shutdown = async () => {
+            await this.eos
+            await this._respondable.promise
             for (const key in this._queues) {
                 this._queues[key].push(null)
             }
             await this._sendable.promise
+            this.destroyed = true
             this._queue.push(null)
-        })
+        }
+
+        this._destructible.durable('shutdown', shutdown())
+
+        this._sendable = this._destructible.durable('outboxes')
+        this._respondable = this._destructible.durable('responder')
+
+        // **TODO** Document the use of the responder function as a
+        // `Destructible` monitored shifter function. It might reduce the number
+        // of sub-destructibles in an application.
+        // **TODO** Just use request.
+
+        const respond = async (body, request) => {
+            const response = await this._responder.call(null, body.header, request.queue, request.shifter)
+            if (!body.shifter) {
+                request.queue.enqueue([ response, null ])
+            }
+        }
+
         const receive = (entry) => {
-            if (entry != null) {
+            if (entry == null) {
+                for (const key in this._queues) {
+                    const split = key.split(':')
+                    if (split[1] ==  'inbox') {
+                        receive({
+                            module: 'conduit',
+                            to: split[0],
+                            method: 'envelope',
+                            series: this._read.toString(16),
+                            identifier: split[2],
+                            forced: true,
+                            body: null
+                        })
+                    }
+                }
+                this._eos.call()
+            } else {
                 Conduit.Error.assert(this._read.toString(16) == entry.series, 'series.mismatch', {
                     read: this._read.toString(16),
                     written: this._written.toString(16),
@@ -128,7 +124,7 @@ class Conduit {
                             })
                         }))
                         const instance = this._instance = (this._instance + 1) & 0xfffffff
-                        respondable.ephemeral([
+                        this._respondable.ephemeral([
                             'request', identifier
                         ], respond(entry.body, request))
                         break
@@ -152,8 +148,8 @@ class Conduit {
                 }
             }
         }
+
         this._destructible.durable('queue', this._shifter.pump(receive))
-        await this._destructible.promise
     }
 
     queue (header) {

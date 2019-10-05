@@ -42,23 +42,25 @@ class Conduit {
         this._read = 0n
         this._queues = {}
 
+        this._sendable = this._destructible.durable('outboxes')
+        const respondable = this._destructible.durable('responder')
+        const receivable = this._destructible.durable('inboxes')
+
         this.eos = new Promise(resolve => this._eos = resolve)
 
         const shutdown = async () => {
             await this.eos
-            await this._respondable.promise
+            this._sendable.promise
+            await respondable.promise
             for (const key in this._queues) {
                 this._queues[key].push(null)
             }
-            await this._sendable.promise
+            await receivable.promise
             this.destroyed = true
             this._queue.push(null)
         }
 
         this._destructible.durable('shutdown', shutdown())
-
-        this._sendable = this._destructible.durable('outboxes')
-        this._respondable = this._destructible.durable('responder')
 
         // **TODO** Document the use of the responder function as a
         // `Destructible` monitored shifter function. It might reduce the number
@@ -108,7 +110,7 @@ class Conduit {
                             this._queues[`server:inbox:${identifier}`] = up
                             request.shifter = up.shifter()
                         }
-                        this._destructible.ephemeral([
+                        receivable.ephemeral([
                             'server', 'outbox', identifier
                         ], request.queue.shifter().pump(async entry => {
                             if (entry == null) {
@@ -124,7 +126,7 @@ class Conduit {
                             })
                         }))
                         const instance = this._instance = (this._instance + 1) & 0xfffffff
-                        this._respondable.ephemeral([
+                        respondable.ephemeral([
                             'request', identifier
                         ], respond(entry.body, request))
                         break

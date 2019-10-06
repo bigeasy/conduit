@@ -13,7 +13,7 @@ require('proof')(4, async (okay) => {
         okay(await client.invoke({ value: 1 }), 1, 'invoke')
         to.push(null)
         from.push(null)
-        await destructible.promise
+        await destructible.destructed
     }
     {
         const destructible = new Destructible('shifter')
@@ -28,7 +28,7 @@ require('proof')(4, async (okay) => {
         okay(value, 1, 'shifter')
         to.push(null)
         from.push(null)
-        await destructible.promise
+        await destructible.destructed
     }
     {
         const destructible = new Destructible('queue')
@@ -45,7 +45,7 @@ require('proof')(4, async (okay) => {
         okay(value, 1, 'queue')
         to.push(null)
         from.push(null)
-        await destructible.promise
+        await destructible.destructed
     }
     {
         const destructible = new Destructible('queue')
@@ -60,7 +60,7 @@ require('proof')(4, async (okay) => {
         const client = new Conduit(destructible.durable('client'), to.shifter(), from)
         const { queue, shifter } = client.queue(null)
         from.push(null)
-        await destructible.promise
+        await destructible.destructed
         okay(true, 'hangup')
     }
 })

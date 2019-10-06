@@ -50,12 +50,12 @@ class Conduit {
 
         const shutdown = async () => {
             await this.eos
-            this._sendable.promise
-            await respondable.promise
+            this._sendable.destructed
+            await respondable.destructed
             for (const key in this._queues) {
                 this._queues[key].push(null)
             }
-            await receivable.promise
+            await receivable.destructed
             this.destroyed = true
             this._queue.push(null)
         }

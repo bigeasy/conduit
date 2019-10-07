@@ -1,9 +1,7 @@
 // Asynchronous control flow.
-var cadence = require('cadence')
-var delta = require('delta')
-
-// An evented work queue.
-var Procession = require('procession')
+// An `async`/`await` work queue.
+var Queue = require('avenue')
+const once = require('prospective/once')
 
 // Container for Sencha Connect middleware.
 var Interlocutor = require('interlocutor')
@@ -17,59 +15,46 @@ var Consumer = require('./consumer')
 // Controlled demolition of asynchronous operations.
 var Destructible = require('destructible')
 
-// Pluck a shutdown timeout if it is the first argument to a constructor.
-var Timeout = require('./timeout')
+class Middleware {
+    constructor (destructible, ...vargs) {
+        this._interlocutor = new Interlocutor(vargs.shift())
+        this._instance = '0'
+        this._destructible = destructible
+    }
 
-function Middleware (destructible, vargs) {
-    destructible.destruct.wait(destructible.durable('terminator'))
-    var timeout = Timeout(15000, vargs)
-    var middleware = vargs.shift()
-    this._interlocutor = new Interlocutor(middleware)
-    this._instance = 0
-    this._destructible = destructible
-}
-
-// TODO Implement rescue as a method that takes an argument the way you've
-// implemented `monitor`. Ensure that you manage to somehow remove the rescue
-// from the waiting callbacks. (Of course you do.) Maybe the response is a
-// separate object.
-Middleware.prototype.request = function (header, inbox, outbox) {
-    this._destructible.ephemeral([ 'request', this._instance++ ], this, '_respond', header, inbox, outbox, null)
-}
-
-Middleware.prototype._respond = cadence(function (async, destructible, header, inbox, outbox) {
-    var request = this._interlocutor.request({
-        httpVersion: header.httpVersion,
-        method: header.method,
-        path: header.url,
-        headers: header.headers,
-        rawHeaders: header.rawHeaders
-    })
-    var consumer = new Consumer(request, 'conduit/requester')
-    inbox.pump(consumer, 'enqueue').run(destructible.durable('consumer'))
-    this._request(outbox, request, destructible.durable('request'))
-})
-
-Middleware.prototype._request = cadence(function (async, outbox, request) {
-    async(function () {
-        delta(async()).ee(request).on('response')
-    }, function (response) {
-        async(function () {
-            outbox.enqueue({
-                module: 'conduit/middleware',
-                method: 'header',
-                body: {
-                    statusCode: response.statusCode,
-                    statusMessage: response.statusMessage,
-                    headers: response.headers
-                }
-            }, async())
-        }, function () {
-            Sender(response, outbox, 'conduit/middleware', async())
+    // TODO Implement rescue as a method that takes an argument the way you've
+    // implemented `monitor`. Ensure that you manage to somehow remove the
+    // rescue from the waiting callbacks. (Of course you do.) Maybe the response
+    // is a separate object.
+    request (header, shifter, queue) {
+        const destructible = this._destructible.ephemeral([
+            'request', this._instance = String(BigInt(this._instance) + 1n)
+        ])
+        const request = this._interlocutor.request({
+            httpVersion: header.httpVersion,
+            method: header.method,
+            path: header.url,
+            headers: header.headers,
+            rawHeaders: header.rawHeaders
         })
-    })
-})
+        const consumer = new Consumer(request, 'conduit/requester')
+        destructible.durable('shifter', shifter.pump(consumer.enqueue.bind(consumer)))
+        destructible.durable('queue', this._request(queue, request))
+    }
 
-module.exports = cadence(function (async, destructible) {
-    return new Middleware(destructible, Array.prototype.slice.call(arguments, 2))
-})
+    async _request (queue, request) {
+        const [ response ] = await once(request, 'response').promise
+        await queue.push({
+            module: 'conduit/middleware',
+            method: 'header',
+            body: {
+                statusCode: response.statusCode,
+                statusMessage: response.statusMessage,
+                headers: response.headers
+            }
+        })
+        await Sender(response, queue, 'conduit/middleware')
+    }
+}
+
+module.exports = Middleware

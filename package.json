@@ -22,12 +22,16 @@
                             "avenue":                       "^0.2.0-alpha.0",
                             "destructible":                 "^5.2.0-alpha.1",
                             "extant":                       "1.0.x",
+                            "interlocutor":                 "^1.0.2",
                             "interrupt":                    "^9.0.0-alpha.0",
-                            "prolific.logger":              "^11.0.0"
+                            "prolific.logger":              "^11.0.0",
+                            "staccato":                     "^11.0.0-alpha.1"
     },
     "devDependencies":
     {
-                            "proof":                        "^8.0.0-alpha.7"
+                            "axios":                        "0.19.0",
+                            "proof":                        "^8.0.0-alpha.7",
+                            "server-destroy":               "1.0.1"
     },
     "main":                 "conduit",
     "scripts":

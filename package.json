@@ -19,7 +19,7 @@
     },
     "dependencies":
     {
-                            "avenue":                       "0.2.0-alpha.0",
+                            "avenue":                       "^0.2.0-alpha.0",
                             "destructible":                 "^5.2.0-alpha.1",
                             "extant":                       "1.0.x",
                             "interrupt":                    "^9.0.0-alpha.0",

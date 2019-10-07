@@ -1,22 +1,61 @@
-require('proof')(5, prove)
+require('proof')(1, async (okay) => {
+    const Queue = require('avenue')
 
-function prove (okay, callback) {
-    var abend = require('abend')
+    const Destructible = require('destructible')
+    const destructible = new Destructible('t/window.t.js')
 
-    var Procession = require('procession')
-    var Destructible = require('destructible')
-
-    var destructible = new Destructible('t/window.t.js')
-
-    var nested = {
-        first: { outbox: new Procession, inbox: new Procession },
-        second: { outbox: new Procession, inbox: new Procession }
+    const queue = {
+        first: { outbox: new Queue, inbox: new Queue },
+        second: { outbox: new Queue, inbox: new Queue }
     }
-    var shifters = {
-        first: { outbox: nested.first.outbox.shifter(), inbox: nested.first.inbox.shifter() },
-        second: { outbox: nested.second.outbox.shifter(), inbox: nested.second.inbox.shifter() }
+    const shifter = {
+        first: { outbox: queue.first.outbox.shifter(), inbox: queue.first.inbox.shifter() },
+        second: { outbox: queue.second.outbox.shifter(), inbox: queue.second.inbox.shifter() }
     }
-    var Window = require('../window')
+
+    const Window = require('../window')
+    const window = {
+        first: new Window(destructible.durable('first')),
+        second: new Window(destructible.durable('first'), { window: 2 })
+    }
+
+    await window.first.connect(shifter.first.inbox, queue.first.outbox)
+    await window.second.connect(shifter.second.inbox, queue.second.outbox)
+
+    window.first.outbox.push(1)
+    window.first.outbox.push(2)
+    window.first.outbox.push(3)
+    queue.second.inbox.push(await shifter.first.outbox.shift())
+    queue.second.inbox.push(await shifter.first.outbox.shift())
+    queue.second.inbox.push(await shifter.first.outbox.shift())
+
+    queue.first.inbox.push(await shifter.second.outbox.shift())
+
+    queue.first.inbox.push(null)
+    await new Promise(resolve => setImmediate(resolve))
+    queue.first = { outbox: new Queue, inbox: new Queue }
+    shifter.first = { outbox: queue.first.outbox.shifter(), inbox: queue.first.inbox.shifter() }
+
+    await window.first.connect(shifter.first.inbox, queue.first.outbox)
+
+    queue.second.inbox.push(await shifter.first.outbox.shift())
+
+    window.first.drain()
+    queue.first.inbox.push(null)
+    queue.second.inbox.push(null)
+    await new Promise(resolve => setImmediate(resolve))
+    window.second.drain()
+
+    window.first.outbox.push(null)
+    window.second.outbox.push(null)
+
+    destructible.destroy()
+
+    await destructible.destructed
+
+    okay(true, 'done')
+
+    return
 
     destructible.completed.wait(callback)
 
@@ -98,4 +137,4 @@ function prove (okay, callback) {
             })
         })
     })(destructible.durable('test'))
-}
+})

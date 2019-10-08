@@ -22,6 +22,7 @@
                             "avenue":                       "^0.2.0-alpha.0",
                             "destructible":                 "^5.2.0-alpha.1",
                             "extant":                       "1.0.x",
+                            "isochronous":                  "^4.0.0-alpha.2",
                             "interlocutor":                 "^1.0.2",
                             "interrupt":                    "^9.0.0-alpha.0",
                             "prolific.logger":              "^11.0.0",

@@ -1,6 +1,7 @@
 /.*
 /*.md
 /coverage
+/benchmark
 /docs
 /node_modules
 /test

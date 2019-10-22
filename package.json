@@ -1,6 +1,6 @@
 {
     "name":                 "conduit",
-    "version":              "7.0.0-alpha.5",
+    "version":              "7.0.0-alpha.6",
     "description":
 
       "Evented pipelines.",
@@ -22,9 +22,9 @@
                             "avenue":                       "^0.2.0-alpha.0",
                             "destructible":                 "^5.2.0-alpha.1",
                             "extant":                       "^1.0.13",
-                            "isochronous":                  "^4.0.0-alpha.2",
                             "interlocutor":                 "^1.0.2",
                             "interrupt":                    "^9.0.0-alpha.0",
+                            "isochronous":                  "^4.0.0-alpha.2",
                             "prolific.logger":              "^11.0.0",
                             "staccato":                     "^11.0.0-alpha.1"
     },

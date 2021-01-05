@@ -26,7 +26,7 @@
                             "interrupt":                    "^9.0.0-alpha.0",
                             "isochronous":                  "^5.0.1",
                             "prolific.logger":              "^11.0.0",
-                            "staccato":                     "^11.0.0-alpha.1"
+                            "staccato":                     "^12.0.9"
     },
     "devDependencies":
     {

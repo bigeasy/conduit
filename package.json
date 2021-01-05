@@ -24,7 +24,7 @@
                             "extant":                       "^1.0.13",
                             "interlocutor":                 "^1.0.2",
                             "interrupt":                    "^9.0.0-alpha.0",
-                            "isochronous":                  "^4.0.0-alpha.2",
+                            "isochronous":                  "^5.0.1",
                             "prolific.logger":              "^11.0.0",
                             "staccato":                     "^11.0.0-alpha.1"
     },

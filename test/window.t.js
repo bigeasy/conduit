@@ -4,7 +4,7 @@ require('proof')(1, async (okay) => {
     const Destructible = require('destructible')
     const destructible = new Destructible('t/window.t.js')
 
-    destructible.rescue2('test', async () => {
+    destructible.ephemeral('test', async () => {
         const queue = {
             first: { outbox: new Queue, inbox: new Queue },
             second: { outbox: new Queue, inbox: new Queue }

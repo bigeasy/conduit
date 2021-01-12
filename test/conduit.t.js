@@ -32,7 +32,7 @@ require('proof')(4, async okay => {
     }
     {
         const destructible = new Destructible($ => $(), 'queue')
-        await destructible.rescue(async () => {
+        destructible.ephemeral('test', async () => {
             const from = new Queue
             const to = new Queue
             const server = new Conduit(destructible.durable('server'), from.shifter(), to, async function (header, queue, shifter) {

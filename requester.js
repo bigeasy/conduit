@@ -22,27 +22,32 @@ class Requester {
     constructor (destructible, conduit, rewrite) {
         this._conduit = conduit
         this._rewrite = coalesce(rewrite, () => {})
-        this._instance = '0'
+        this._instance = 1
         this._destructible = destructible
     }
 
     // http://stackoverflow.com/a/5426648
     request (request, response) {
-        const instance = this._instance = String(BigInt(this._instance) + 1n)
-        const destructible = this._destructible.ephemeral([ 'request', instance ])
-        const receiver = { outbox: new Queue, inbox: new Queue }
-        const header = new Header(request)
-        this._rewrite.call(null, header)
-        const { shifter, queue } = this._conduit.queue({
-            module: 'conduit/requester',
-            method: 'header',
-            body: header,
-            inbox: true,
-            outbox: true
+        const instance = ++this._instance
+        const destructible = this._destructible.ephemeral(`request.${instance}`)
+        destructible.ephemeral('header', async () => {
+            const receiver = { outbox: new Queue, inbox: new Queue }
+            const header = new Header(request)
+            this._rewrite.call(null, header)
+            const { shifter, queue } = await this._conduit.queue({
+                module: 'conduit/requester',
+                method: 'header',
+                body: header.toJSON(),
+                inbox: true,
+                outbox: true
+            })
+            const consumer = new Consumer(response, 'conduit/middleware')
+            destructible.ephemeral('shifter', shifter.push(consumer.enqueue.bind(consumer)))
+            destructible.durable('queue', async () => {
+                await Sender(request, queue, 'conduit/requester')
+                destructible.destroy()
+            })
         })
-        const consumer = new Consumer(response, 'conduit/middleware')
-        destructible.durable('shifter', shifter.pump(consumer.enqueue.bind(consumer)))
-        destructible.durable('queue', Sender(request, queue, 'conduit/requester'))
     }
 }
 

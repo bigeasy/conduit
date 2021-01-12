@@ -15,21 +15,16 @@ class Window {
         this.outbox = new Queue
         this.inbox = new Queue
 
-        // We could serialize BigInt with a specialized parser for Crockford's
-        // JSON but I don't want to add magic or dependencies. (The application
-        // developer may want a way to customize serialization, though.
-        // Something to consider.) We keep things as string and convert to
-        // `BitInt` for arithmetic.
-        this._expected = '0'
-        this._sequence = '-1'
+        this._expected = 0
+        this._sequence = -1
 
-        this._window = BigInt(coalesce(options.window, 64))
+        this._window = coalesce(options.window, 64)
 
-        this._flush = String(this._window)
+        this._flush = this._window
 
         this.destroyed = false
 
-        this._destructible = destructible
+        this.destructible = destructible
 
         destructible.durable('outbox', this._send(this.outbox.shifter()))
 
@@ -40,8 +35,8 @@ class Window {
         this._connection = {
             queue: queue,
             shifter: queue.shifter(),
-            destructible: this._destructible.ephemeral([ 'connection', '0' ]),
-            instance: '0'
+            destructible: this.destructible.ephemeral('connection.0'),
+            instance: 0
         }
         this._reservoir = this._queue.shifter()
 
@@ -51,15 +46,15 @@ class Window {
     }
 
     async connect (shifter, queue) {
-        // **TODO** With this emit a null?
+        // **TODO** Will this emit a null?
         this._connection.shifter.destroy()
         this._connection.destructible.destroy()
-        await this._connection.destructible.destructed
-        const instance = String(BigInt(this._connection.instance) + 1n)
-        const destructible = this._destructible.ephemeral([ 'connection', instance ])
+        await this._connection.destructible.promise
+        const instance = ++this._connection.instance
+        const destructible = this.destructible.ephemeral(`connection.${instance}`)
         destructible.durable('queue', this._receive(shifter))
         const _shifter = this._queue.shifter()
-        destructible.durable('shifter', _shifter.pump(24, queue.enqueue.bind(queue)))
+        destructible.durable('shifter', _shifter.push(24, queue.enqueue.bind(queue)))
         const reservoir = this._reservoir
         this._reservoir = this._queue.shifter()
         const resubmission = []
@@ -122,10 +117,12 @@ class Window {
     //
     async _receive (shifter) {
         for await (const envelope of shifter.iterator()) {
+        console.log('receiving')
+            console.log('receiving', envelope)
             switch (envelope.method) {
             case 'envelope':
                 // If we've seen this one already, don't bother.
-                if (BigInt(this._expected) > BigInt(envelope.sequence)) {
+                if (this._expected > envelope.sequence) {
                     break
                 }
                 Window.Error.assert(this._expected == envelope.sequence, 'ahead', {
@@ -141,7 +138,7 @@ class Window {
                         method: 'flush',
                         sequence: this._expected
                     })
-                    this._flush = String(BigInt(this._flush) + this._window)
+                    this._flush = this._flush + this._window
                     logger.trace('flush', {
                         id: this._id,
                         connection: this._connection.instance,
@@ -174,6 +171,7 @@ class Window {
             }
         }
         console.log('exit')
+        this._connection.destructible.destroy()
         if (this._draining) {
             this.inbox.push(null)
         }
@@ -188,6 +186,7 @@ class Window {
     //
     async _send (shifter) {
         for await (const envelope of shifter.iterator()) {
+            console.log('sending', envelope)
             this._queue.push({
                 module: 'conduit/window',
                 method: 'envelope',

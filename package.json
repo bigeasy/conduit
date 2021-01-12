@@ -19,14 +19,16 @@
     },
     "dependencies":
     {
-                            "avenue":                       "^0.6.0",
-                            "destructible":                 "^7.0.0-alpha.32",
+                            "avenue":                       "0.6.8",
+                            "destructible":                 "7.0.0-alpha.38",
                             "extant":                       "^1.0.13",
                             "interlocutor":                 "^1.0.2",
-                            "interrupt":                    "^11.0.0-alpha.16",
+                            "interrupt":                    "11.0.0-alpha.16",
                             "isochronous":                  "^5.0.1",
+                            "perhaps":                      "0.0.6",
                             "prolific.logger":              "^11.0.0",
-                            "staccato":                     "^12.0.9"
+                            "staccato":                     "12.0.10",
+                            "verbatim":                     "0.1.2"
     },
     "devDependencies":
     {

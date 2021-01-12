@@ -5,8 +5,8 @@ async function prove (okay) {
     const Destructible = require('destructible')
 
     const destructible = {
-        ping: new Destructible(3000, [ 't/ping.t', 'ping' ]),
-        pong: new Destructible(3000, [ 't/ping.t', 'pong' ])
+        ping: new Destructible(3000, 'ping'),
+        pong: new Destructible(3000, 'pong')
     }
 
     const inbox = new Queue, outbox = new Queue, proxy = new Queue
@@ -16,7 +16,7 @@ async function prove (okay) {
 
     let broken = false
     const shifter = inbox.shifter()
-    shifter.pump(entry => {
+    shifter.push(entry => {
         if (!broken) {
             proxy.push(entry)
         }

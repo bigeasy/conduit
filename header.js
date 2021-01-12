@@ -13,4 +13,9 @@ Header.prototype.addHTTPHeader = function (name, value) {
     }
 }
 
+Header.prototype.toJSON = function () {
+    const { httpVersion, method, url, headers, rawHeaders } = this
+    return { httpVersion, method, url, headers, rawHeaders }
+}
+
 module.exports = Header

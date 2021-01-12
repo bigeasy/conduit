@@ -10,7 +10,7 @@ async function prove (okay) {
 
     var destroyer = require('server-destroy')
 
-    const once = require('prospective/once')
+    const once = require('eject')
 
     var http = require('http')
     var Destructible = require('destructible')
@@ -19,6 +19,7 @@ async function prove (okay) {
     const destructible = new Destructible(1000, 't/middleware.t')
 
     const middleware  = new Middleware(destructible.durable('middleware'), function (request, response) {
+        console.log('callled!!!')
         response.writeHead(200, { 'content-type': 'text/plain', connection: 'close' })
         response.end('hello, world')
     })
@@ -41,11 +42,14 @@ async function prove (okay) {
     destructible.destruct(() => server.destroy())
     await once(server, 'listening').promise
 
-    const got = await axios.get('http://127.0.0.1:8888')
-    okay(got.data, 'hello, world', 'got')
-
+    try {
+        const got = await axios.get('http://127.0.0.1:8888')
+        okay(got.data, 'hello, world', 'got')
+    } catch (error) {
+        console.log(!! error)
+    }
     inbox.push(null)
     outbox.push(null)
     destructible.destroy()
-    await destructible.destructed
+    await destructible.promise
 }

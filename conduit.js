@@ -1,13 +1,17 @@
 const assert = require('assert')
 
-// An `async`/`await` message queue. **TODO** Rename `Avenue`.
 const Queue = require('avenue')
+const Transformer = require('avenue/transformer')
 
 // Detailed exceptions that can be caught by type.
 const Interrupt = require('interrupt')
 
 // A tree of cancellable strands.
 const Destructible = require('destructible')
+
+const Future = new require('perhaps')
+
+const Verbatim = require('verbatim')
 
 // The proper way, the only way, to end a `Conduit` is to terminate its input
 // stream, so although `Conduit` is a `Destructible`-based class we do not pass
@@ -27,123 +31,125 @@ const Destructible = require('destructible')
 class Conduit {
     static Error = Interrupt.create('Conduit.Error')
 
-    constructor (...vargs) {
-        this._destructible = vargs.shift()
-        this._shifter = vargs.shift()
-        this._queue = vargs.shift()
-        this._responder = vargs.shift()
+    static queue (max) {
+        return new Queue(max, entry => {
+            return entry != null ? entry.reduce((sum, buffer) => sum + buffer.length, 0) : 0
+        })
+    }
+
+    constructor (destructible, shifter, queue, responder = null) {
+        this.destructible = destructible
+
+        this._shifter = shifter
+        this._queue = queue
+        this._responder = responder
 
         this.pumping = false
         this.destroyed = false
 
         this._instance = 0
-        this._identifier = 0n
-        this._written = 0n
-        this._read = 0n
+        this._identifier = 0
+        this._written = 0
+        this._read = 0
         this._queues = {}
 
-        this._sendable = this._destructible.durable('outboxes')
-        const respondable = this._destructible.durable('responder')
-        const receivable = this._destructible.durable('inboxes')
+        this._sendable = this.destructible.durable('outboxes')
 
-        this.eos = new Promise(resolve => this._eos = resolve)
+        const respondable = this.destructible.durable('responder')
 
-        const shutdown = async () => {
-            await this.eos
-            this._sendable.destructed
-            await respondable.destructed
+        this.eos = new Future
+
+        this.destructible.durable('shutdown', async () => {
+            await this.eos.promise
+            await this._sendable.done
+            await respondable.done
             for (const key in this._queues) {
                 this._queues[key].push(null)
             }
-            await receivable.destructed
-            this.destroyed = true
             this._queue.push(null)
-        }
-
-        this._destructible.durable('shutdown', shutdown())
+        })
 
         // **TODO** Document the use of the responder function as a
         // `Destructible` monitored shifter function. It might reduce the number
         // of sub-destructibles in an application.
         // **TODO** Just use request.
 
-        const respond = async (body, request) => {
-            const response = await this._responder.call(null, body.header, request.queue, request.shifter)
-            if (!body.shifter) {
-                request.queue.enqueue([ response, null ])
+        const respond = async (verbatim, { queue, shifter }) => {
+            const response = await (this._responder)(verbatim.header, queue, shifter)
+            if (! verbatim.shifter) {
+                await queue.enqueue([ response, null ])
             }
         }
 
-        const receive = (entry) => {
+        const receive = async entry => {
             if (entry == null) {
                 for (const key in this._queues) {
-                    const split = key.split(':')
+                    const split = key.split('.')
                     if (split[1] ==  'inbox') {
-                        receive({
+                        receive(this._serialize({
                             module: 'conduit',
                             to: split[0],
                             method: 'envelope',
                             series: this._read.toString(16),
-                            identifier: split[2],
-                            forced: true,
-                            body: null
-                        })
+                            identifier: +split[2],
+                            forced: true
+                        }, null))
                     }
                 }
-                this._eos.call()
+                this.destructible.destroy()
+                this.eos.resolve()
             } else {
-                Conduit.Error.assert(this._read.toString(16) == entry.series, 'series.mismatch', {
+                const header = JSON.parse(String(entry.shift()))
+                const verbatim = entry.length == 0 ? null : Verbatim.deserialize(entry)
+                Conduit.Error.assert(this._read == header.series, 'series.mismatch', {
                     read: this._read.toString(16),
                     written: this._written.toString(16),
                     entry: entry
                 })
                 this._read++
-                const { identifier } = entry
-                switch (entry.to) {
+                const { identifier } = header
+                switch (header.to) {
                 case 'server':
-                    switch (entry.method) {
+                    switch (header.method) {
                     case 'connect':
-                        const down = this._queues['server:outbox:' + identifier] = new Queue
-                        const request = { entry: entry, queue: down, shifter: null }
-                        if (entry.body.queue) {
+                        const request = { entry: entry, queue: null, shifter: null }
+                        if (verbatim.queue) {
                             const up = new Queue
-                            this._queues[`server:inbox:${identifier}`] = up
+                            this._queues[`server.inbox.${identifier}`] = up
                             request.shifter = up.shifter()
                         }
-                        receivable.ephemeral([
-                            'server', 'outbox', identifier
-                        ], request.queue.shifter().pump(async entry => {
-                            if (entry == null) {
-                                delete this._queues[`server:outbox:${identifier}`]
-                            }
-                            this._queue.push({
+                        let eos = false
+                        request.queue = new Transformer(this._queue, body => {
+                            assert(! eos)
+                            eos = body == null
+                            return this._serialize({
                                 module: 'conduit',
                                 to: 'client',
                                 method: 'envelope',
-                                series: (this._written++).toString(16),
-                                identifier: identifier,
-                                body: entry
-                            })
-                        }))
-                        const instance = this._instance = (this._instance + 1) & 0xfffffff
-                        respondable.ephemeral([
-                            'request', identifier
-                        ], respond(entry.body, request))
+                                series: this._written++,
+                                identifier: header.identifier
+                            }, body)
+                        })
+                        const instance = this._instance++
+                        // **TODO** Wrap in `try`/`catch`? Actually, we should find a way to
+                        // error out of the socket instead, shut it down, rather than try to
+                        // recover an indivdiual queue.
+                        respondable.ephemeral(`request.${identifier}`, respond(verbatim, request))
                         break
                     case 'envelope':
-                        this._queues[`server:inbox:${identifier}`].push(entry.body)
-                        if (entry.body == null) {
-                            delete this._queues[`server:inbox:${identifier}`]
+                        await this._queues[`server.inbox.${identifier}`].push(verbatim)
+                        if (verbatim == null) {
+                            delete this._queues[`server.inbox.${identifier}`]
                         }
                         break
                     }
                     break
                 case 'client':
-                    switch (entry.method) {
+                    switch (header.method) {
                     case 'envelope':
-                        this._queues[`client:inbox:${identifier}`].push(entry.body)
-                        if (entry.body == null) {
-                            delete this._queues[`client:inbox:${identifier}`]
+                        await this._queues[`client.inbox.${identifier}`].push(verbatim)
+                        if (verbatim == null) {
+                            delete this._queues[`client.inbox.${identifier}`]
                         }
                     }
                     break
@@ -151,7 +157,7 @@ class Conduit {
             }
         }
 
-        this._destructible.durable('queue', this._shifter.pump(receive))
+        this.destructible.durable('queue', this._shifter.push(receive))
     }
 
     queue (header) {
@@ -164,53 +170,55 @@ class Conduit {
         return this._request(header, true, false)
     }
 
-    // **TODO** I like `invoke` better.
     invoke (header) {
         // would return the first entry as a promise
         return this._request(header, false, false)
     }
 
-    _request (header, shifter, queue) {
-        const identifier = (this._identifier++).toString(16)
-        const inbox = this._queues[`client:inbox:${identifier}`] = new Queue
+    async _request (header, shifter, queue) {
+        const identifier = this._identifier++
+        const inbox = this._queues[`client.inbox.${identifier}`] = new Queue
         const response = { queue: null, shifter: inbox.shifter() }
         const request = { header, shifter, queue }
         if (queue) {
-            const outbox = this._queues[`client:outbox:${identifier}`] = response.queue = new Queue
-            this._sendable.ephemeral([
-                'queue', identifier
-            ], response.queue.shifter().pump(entry => {
-                if (entry == null) {
-                    delete this._queues[`client:outbox:${identifier}`]
-                } else {
-                    Conduit.Error.assert(this._queues[`client:outbox:${identifier}`], 'missing.outbox')
-                }
-                this._queue.push({
+            let eos = false
+            response.queue = new Transformer(this._queue, body => {
+                assert(! eos)
+                eos = body == null
+                return this._serialize({
                     module: 'conduit',
                     to: 'server',
                     method: 'envelope',
-                    series: (this._written++).toString(16),
-                    identifier: identifier,
-                    body: entry
-                })
-            }))
+                    series: this._written++,
+                    identifier: identifier
+                }, body)
+            })
         }
-        this._queue.push({
+        await this._queue.push(this._serialize({
             module: 'conduit',
             to: 'server',
             method: 'connect',
-            series: (this._written++).toString(16),
-            identifier: identifier,
-            body: request
-        })
+            series: this._written++,
+            identifier: identifier
+        }, request))
         // If they want a shifter, give them one. If they want a queue then they
         // are going to have to shift the response themselves.
         if (shifter || queue) {
             return response
         }
-        const result = response.shifter.shift()
-        result.then(() => response.shifter.destroy())
-        return result
+        return async function () {
+            const result = await response.shifter.shift()
+            response.shifter.destroy()
+            return result
+        } ()
+    }
+
+    _serialize (header, body) {
+        const buffer = Buffer.from(JSON.stringify(header))
+        if (body == null) {
+            return [ buffer ]
+        }
+        return [ buffer ].concat(Verbatim.serialize(body))
     }
 }
 

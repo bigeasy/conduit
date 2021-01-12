@@ -1,7 +1,7 @@
 // Asynchronous control flow.
 // An `async`/`await` work queue.
 var Queue = require('avenue')
-const once = require('prospective/once')
+const once = require('eject')
 
 // Container for Sencha Connect middleware.
 var Interlocutor = require('interlocutor')
@@ -18,7 +18,7 @@ var Destructible = require('destructible')
 class Middleware {
     constructor (destructible, ...vargs) {
         this._interlocutor = new Interlocutor(vargs.shift())
-        this._instance = '0'
+        this._instance = 0
         this._destructible = destructible
     }
 
@@ -27,9 +27,7 @@ class Middleware {
     // rescue from the waiting callbacks. (Of course you do.) Maybe the response
     // is a separate object.
     request (header, shifter, queue) {
-        const destructible = this._destructible.ephemeral([
-            'request', this._instance = String(BigInt(this._instance) + 1n)
-        ])
+        const destructible = this._destructible.ephemeral(`request.${++this._instance}`)
         const request = this._interlocutor.request({
             httpVersion: header.httpVersion,
             method: header.method,
@@ -38,11 +36,11 @@ class Middleware {
             rawHeaders: header.rawHeaders
         })
         const consumer = new Consumer(request, 'conduit/requester')
-        destructible.durable('shifter', shifter.pump(consumer.enqueue.bind(consumer)))
-        destructible.durable('queue', this._request(queue, request))
+        destructible.ephemeral('shifter', shifter.push(consumer.enqueue.bind(consumer)))
+        destructible.durable('queue', this._request(destructible, queue, request))
     }
 
-    async _request (queue, request) {
+    async _request (destructible, queue, request) {
         const [ response ] = await once(request, 'response').promise
         await queue.push({
             module: 'conduit/middleware',
@@ -54,6 +52,8 @@ class Middleware {
             }
         })
         await Sender(response, queue, 'conduit/middleware')
+        console.log('sent')
+        destructible.destroy()
     }
 }
 

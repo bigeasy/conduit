@@ -20,7 +20,7 @@
     "dependencies":
     {
                             "avenue":                       "0.6.8",
-                            "destructible":                 "7.0.0-alpha.38",
+                            "destructible":                 "7.0.0-alpha.39",
                             "extant":                       "^1.0.13",
                             "interlocutor":                 "^1.0.2",
                             "interrupt":                    "11.0.0-alpha.16",

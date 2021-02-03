@@ -1,17 +1,17 @@
 // Return the first not null-like value.
-var coalesce = require('extant')
+const { coalesce } = require('extant')
 
 // Proxied header constructor.
-var Header = require('./header')
+const Header = require('./header')
 
 // An evented message queue.
-var Queue = require('avenue')
+const Queue = require('avenue')
 
 // Send a Node.js HTTP stream over a Conduit event stream.
-var Sender = require('./sender')
+const Sender = require('./sender')
 
 // Convert a Conduit event stream into an HTTP write.
-var Consumer = require('./consumer')
+const Consumer = require('./consumer')
 
 // Create a new request that proxies the given Node.js HTTP request and response
 // through the given Conduit client. An optional rewrite function can be used to

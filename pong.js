@@ -1,5 +1,6 @@
 const assert = require('assert')
-const coalesce = require('extant')
+
+const { coalesce } = require('extant')
 
 class Pong {
     constructor (destructible, shifter, queue, options) {

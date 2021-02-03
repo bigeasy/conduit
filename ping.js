@@ -1,5 +1,6 @@
-const coalesce = require('extant')
 const assert = require('assert')
+
+const { coalesce } = require('extant')
 const Isochronous = require('isochronous')
 
 class Ping {

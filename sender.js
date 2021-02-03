@@ -1,5 +1,6 @@
-var Staccato = require('staccato')
-var coalesce = require('extant')
+const Staccato = require('staccato')
+
+const { coalesce } = require('extant')
 
 module.exports = async function (message, read, module) {
     // **TODO** Replace with new Staccato.

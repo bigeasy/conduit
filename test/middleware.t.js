@@ -1,19 +1,19 @@
 require('proof')(1, prove)
 
 async function prove (okay) {
-    var Queue = require('avenue')
+    const { Queue } = require('avenue')
 
-    var Conduit = require('../conduit')
+    const Conduit = require('../conduit')
 
-    var Middleware = require('../middleware')
-    var Requester = require('../requester')
+    const Middleware = require('../middleware')
+    const Requester = require('../requester')
 
-    var destroyer = require('server-destroy')
+    const destroyer = require('server-destroy')
 
     const once = require('eject')
 
-    var http = require('http')
-    var Destructible = require('destructible')
+    const http = require('http')
+    const Destructible = require('destructible')
     const axios = require('axios')
 
     const destructible = new Destructible(1000, 't/middleware.t')

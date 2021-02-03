@@ -1,5 +1,5 @@
 require('proof')(1, async (okay) => {
-    const Queue = require('avenue')
+    const { Queue } = require('avenue')
 
     const Destructible = require('destructible')
     const destructible = new Destructible('t/window.t.js')

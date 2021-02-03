@@ -1,10 +1,10 @@
 // An `async`/`await` message queue.
-const Queue = require('avenue')
+const { Queue } = require('avenue')
 
 // Return the first not null-like value.
 const { coalesce } = require('extant')
 
-const Interrupt = require('interrupt')
+const { Interrupt } = require('interrupt')
 
 const logger = require('prolific.logger').create('conduit.window')
 

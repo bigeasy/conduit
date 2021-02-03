@@ -1,7 +1,7 @@
 require('proof')(1, prove)
 
 async function prove (okay) {
-    const Queue = require('avenue')
+    const { Queue } = require('avenue')
     const Destructible = require('destructible')
 
     const destructible = {

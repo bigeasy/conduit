@@ -1,10 +1,10 @@
 const assert = require('assert')
 
-const Queue = require('avenue')
-const Transformer = require('avenue/transformer')
+const { Queue } = require('avenue')
+const { Transformer } = require('avenue/transformer')
 
 // Detailed exceptions that can be caught by type.
-const Interrupt = require('interrupt')
+const { Interrupt } = require('interrupt')
 
 // A tree of cancellable strands.
 const Destructible = require('destructible')

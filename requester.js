@@ -5,7 +5,7 @@ const { coalesce } = require('extant')
 const Header = require('./header')
 
 // An evented message queue.
-const Queue = require('avenue')
+const { Queue } = require('avenue')
 
 // Send a Node.js HTTP stream over a Conduit event stream.
 const Sender = require('./sender')

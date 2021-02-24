@@ -134,7 +134,14 @@ class Conduit {
                         // **TODO** Wrap in `try`/`catch`? Actually, we should find a way to
                         // error out of the socket instead, shut it down, rather than try to
                         // recover an indivdiual queue.
-                        respondable.ephemeral(`request.${identifier}`, respond(verbatim, request))
+                        //
+                        // Not sure what the above is about. It is old.
+                        //
+                        // We defer the invocation of `respond` in case the destructible is
+                        // shut down. If it is then an exception the promise returned from
+                        // `respond` will not be handled because the ephemeral was never
+                        // created.
+                        respondable.ephemeral(`request.${identifier}`, () => respond(verbatim, request))
                         break
                     case 'envelope':
                         await this._queues[`server.inbox.${identifier}`].push(verbatim)

@@ -25,7 +25,7 @@
                             "interlocutor":                 "^1.0.8",
                             "interrupt":                    "11.0.0-alpha.20",
                             "isochronous":                  "^5.0.1",
-                            "perhaps":                      "0.0.9",
+                            "perhaps":                      "0.0.11",
                             "prolific.logger":              "^11.0.0",
                             "staccato":                     "13.0.0-alpha.5",
                             "verbatim":                     "0.1.2"

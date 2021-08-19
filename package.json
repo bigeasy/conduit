@@ -28,7 +28,7 @@
                             "perhaps":                      "0.0.11",
                             "prolific.logger":              "^11.0.4",
                             "staccato":                     "13.0.0-alpha.11",
-                            "verbatim":                     "0.1.2"
+                            "verbatim":                     "0.1.8"
     },
     "devDependencies":
     {

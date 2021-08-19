@@ -21,7 +21,7 @@
     {
                             "avenue":                       "0.6.13",
                             "destructible":                 "7.0.0-alpha.63",
-                            "extant":                       "^2.0.0-alpha.0",
+                            "extant":                       "^2.0.0-alpha.3",
                             "interlocutor":                 "^1.0.8",
                             "interrupt":                    "11.0.0-alpha.20",
                             "isochronous":                  "^5.0.1",

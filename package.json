@@ -27,7 +27,7 @@
                             "isochronous":                  "^5.0.2",
                             "perhaps":                      "0.0.11",
                             "prolific.logger":              "^11.0.0",
-                            "staccato":                     "13.0.0-alpha.5",
+                            "staccato":                     "13.0.0-alpha.11",
                             "verbatim":                     "0.1.2"
     },
     "devDependencies":

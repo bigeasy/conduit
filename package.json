@@ -26,7 +26,7 @@
                             "interrupt":                    "11.0.0-alpha.20",
                             "isochronous":                  "^5.0.2",
                             "perhaps":                      "0.0.11",
-                            "prolific.logger":              "^11.0.0",
+                            "prolific.logger":              "^11.0.4",
                             "staccato":                     "13.0.0-alpha.11",
                             "verbatim":                     "0.1.2"
     },

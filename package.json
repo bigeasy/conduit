@@ -23,7 +23,7 @@
                             "destructible":                 "7.0.0-alpha.68",
                             "extant":                       "^2.0.0-alpha.3",
                             "interlocutor":                 "^1.0.8",
-                            "interrupt":                    "11.0.0-alpha.20",
+                            "interrupt":                    "11.0.0-alpha.24",
                             "isochronous":                  "^5.0.2",
                             "perhaps":                      "0.0.11",
                             "prolific.logger":              "^11.0.4",

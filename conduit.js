@@ -9,7 +9,7 @@ const Interrupt = require('interrupt')
 // A tree of cancellable strands.
 const Destructible = require('destructible')
 
-const Future = new require('perhaps')
+const { Future } = new require('perhaps')
 
 const Verbatim = require('verbatim')
 

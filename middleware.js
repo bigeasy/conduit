@@ -1,7 +1,7 @@
 // Asynchronous control flow.
 // An `async`/`await` work queue.
 var Queue = require('avenue')
-const once = require('eject')
+const { once } = require('eject')
 
 // Container for Sencha Connect middleware.
 var Interlocutor = require('interlocutor')

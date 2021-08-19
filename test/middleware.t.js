@@ -10,7 +10,7 @@ async function prove (okay) {
 
     const destroyer = require('server-destroy')
 
-    const once = require('eject')
+    const { once } = require('eject')
 
     const http = require('http')
     const Destructible = require('destructible')

@@ -1,4 +1,4 @@
-const { Staccato } = require('staccato')
+const Staccato = require('staccato')
 
 const { coalesce } = require('extant')
 
